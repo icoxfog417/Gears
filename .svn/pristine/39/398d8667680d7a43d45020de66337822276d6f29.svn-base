@@ -1,0 +1,120 @@
+﻿@charset "utf-8"; 
+/*
+    Gearsフレームワーク用スタイルシート
+*/
+
+/* ログ出力スタイル */
+.gs-log-head
+{
+    font-weight:bold;
+    font-size:medium;
+}
+.gs-log-table
+{
+    border:1px solid steelblue;
+    font-size:small;
+}
+.gs-log-table-head td
+{
+    font-weight:bold;
+    background-color:steelblue;
+    color:White;
+}
+
+.g-msg-success
+{
+    font-weight:bold;
+    color:royalblue;
+    }
+
+.g-msg-warning
+{
+    font-weight:bold;
+    color:darkorange;
+    }
+
+.g-msg-error
+{
+    font-weight:bold;
+    color:firebrick;
+    }
+
+
+/*　フォーム部品用CSS　*/
+.gs-layout-frame
+{
+    width:175px;
+    height:55px;
+	float:left;
+	margin:0px 5px 0px 0px;
+    }
+
+.gs-layout-frame td
+{
+
+    white-space: nowrap;
+}    
+
+td.gs-layout-label
+{
+	border-left: double 3px #55ccff;  /*  #FFDEAD; */
+	padding:2px 0px 0px 3px;
+    width:100%;
+    color:#1188bb;  /* #884400 */
+    }
+    
+.gs-layout-ctrl
+{
+    width:150px;
+    margin-left:5px;
+ }
+td.gs-layout-ctrl
+{
+	height:25px;
+	width:100%;
+}
+
+/*　検索ボタンつきフォーム部品->フォーム用とボタン用 */
+.gs-layout-frame td.gs-for-search input[type="text"]
+{
+    width:115px;
+   }    
+.gs-layout-frame td.gs-for-search input[type="button"]
+{
+    width:25px;
+   }    
+
+/* 検索ボタンつきフォーム部品-> IE6用。IE6出ない場合はフォームのセレクタがきく */
+.gs-for-search-text
+{
+    width:125px;
+    }
+.gs-for-search-text-ralign
+{
+    width:115px;
+    text-align: right;
+    }
+.gs-for-search-button
+{
+    width:25px;
+    display:inline;
+    }   
+
+/* バリデーション用 */
+.gs-number
+{
+	text-align:right;
+}
+.gs-length
+{
+	/* formにMax-lengthを指定するためのマーカークラス ※実際にはgs-length_1_3などのように、実際の長さがつく */
+}
+.gs-date
+{
+	/* date型のformに何らかの処理をするためのマーカークラス */
+}
+.gs-validation-error
+{
+    /* バリデーションエラーの項目に対するスタイル */
+    border: medium solid coral;
+}

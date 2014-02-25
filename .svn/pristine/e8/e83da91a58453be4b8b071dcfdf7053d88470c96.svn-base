@@ -1,0 +1,182 @@
+﻿Imports Microsoft.VisualBasic
+Imports System.Reflection
+
+Namespace Gears
+
+    '検証用メソッドのアノテーション
+    <System.AttributeUsage(AttributeTargets.Method, AllowMultiple:=True, Inherited:=True)>
+    Public Class ModelValidationMethod
+        Inherits System.Attribute
+
+        Public Const DEFAULT_ORDER As Integer = 999
+
+        Private _falseAsAlert As Boolean = False
+        Public Property FalseAsAlert() As Boolean
+            Get
+                Return _falseAsAlert
+            End Get
+            Set(ByVal value As Boolean)
+                _falseAsAlert = value
+            End Set
+        End Property
+
+        Private _onlyWhenTheseValueExist As String = ""
+        Public Property OnlyWhenTheseValueExist() As String
+            Get
+                Return _onlyWhenTheseValueExist
+            End Get
+            Set(ByVal value As String)
+                _onlyWhenTheseValueExist = value
+            End Set
+        End Property
+
+
+        Private _order As Integer = DEFAULT_ORDER
+        Public Property Order() As Integer
+            Get
+                Return _order
+            End Get
+            Set(ByVal value As Integer)
+                _order = value
+            End Set
+        End Property
+
+
+    End Class
+
+
+    Public MustInherit Class AbsModelValidator
+
+        Protected Delegate Function ModelValidator(ByVal sqlb As SqlBuilder) As Boolean
+
+        Private _validResult As New ValidationResults
+        Public ReadOnly Property IsValid As Boolean
+            Get
+                Return _validResult.IsValid
+            End Get
+        End Property
+        Public ReadOnly Property IsValidIgnoreAlert As Boolean
+            Get
+                Return _validResult.IsValidIgnoreAlert
+            End Get
+        End Property
+
+        Private _errorMessage As String = "" 'メソッドでのメッセージ更新用(表には出ない)
+        Public Property ErrorMessage As String
+            Get
+                Return _validResult.ErrorMessage
+            End Get
+            Protected Set(value As String)
+                _errorMessage = value
+            End Set
+        End Property
+
+        Private _errorSource As String = ""
+        Public Property ErrorSource() As String
+            Get
+                Return _validResult.ErrorSource
+            End Get
+            Protected Set(value As String)
+                _errorSource = value
+            End Set
+        End Property
+
+
+        '検証実行前処理
+        Public Overridable Sub setUpValidation(ByVal sqlb As SqlBuilder)
+        End Sub
+
+        '検証実行後処理
+        Public Overridable Sub tearDownValidation(ByVal sqlb As SqlBuilder)
+        End Sub
+
+
+        Public Function Validate(ByVal sqlb As SqlBuilder) As ValidationResults
+            'ModelValidationMethod　アノテーションの付与された、返り値が BooleanのPublicメソッドを実行していく。
+            _validResult.Clear()
+            Dim myType As Type = Me.GetType
+            Dim validators As New Dictionary(Of String, ModelValidationMethod)
+
+            '検証処理のセットアップ
+            setUpValidation(sqlb)
+
+            For Each m As MethodInfo In Me.GetType.GetMethods()
+
+                Dim attr As ModelValidationMethod = Attribute.GetCustomAttribute(m, GetType(ModelValidationMethod))
+                If Not attr Is Nothing AndAlso Not validators.ContainsKey(m.Name) Then
+                    'ある項目が指定されていた場合のみバリデーションを行う、という指定について処理
+                    Dim isExist As Boolean = True
+                    If Not String.IsNullOrEmpty(attr.OnlyWhenTheseValueExist) Then
+                        Dim mustNeedValues As String() = Split(attr.OnlyWhenTheseValueExist, ",")
+                        For Each item As String In mustNeedValues
+                            If getValidateeValue(sqlb, item) Is Nothing Then
+                                isExist = False
+                                Exit For
+                            End If
+                        Next
+                    End If
+
+                    If isExist Then
+                        validators.Add(m.Name, attr)
+                    End If
+
+                End If
+
+            Next
+
+            '検証処理の実行
+            Dim query = From v As KeyValuePair(Of String, ModelValidationMethod) In validators
+                        Order By v.Value.Order
+                        Select v
+
+            For Each v As KeyValuePair(Of String, ModelValidationMethod) In query
+                _errorMessage = ""
+                _errorSource = ""
+
+                Dim mv As ModelValidator = [Delegate].CreateDelegate(GetType(ModelValidator), Me, v.Key)
+                Dim result As Boolean = mv(sqlb)
+
+                If result Then
+                    _validResult.Add(ValidationResultType.Success, "", "")
+                Else
+                    If v.Value.FalseAsAlert Then
+                        _validResult.Add(ValidationResultType.Alert, _errorMessage, _errorSource)
+                    Else
+                        _validResult.Add(ValidationResultType.Critical, _errorMessage, _errorSource)
+                        Exit For 'Criticalのエラーが発生した場合、これ以上処理を続けても無駄なのでループを抜ける
+                    End If
+                End If
+            Next
+
+
+            '検証処理の終了
+            tearDownValidation(sqlb)
+
+            Return _validResult
+
+        End Function
+
+        Public Function throwException() As GearsModelValidationException
+            Dim ex As New GearsModelValidationException(_validResult)
+            Throw ex
+        End Function
+
+ 
+        '検証用値取得メソッド
+        Public Function getValidateeValue(ByVal sqlb As SqlBuilder, ByVal colName As String, Optional ByVal nothingAsSpace As Boolean = False) As String
+            If sqlb.getSelection(colName) Is Nothing Then
+                If Not nothingAsSpace Then
+                    Return Nothing
+                Else
+                    Return ""
+                End If
+            Else
+                Return sqlb.getSelection(colName).Value
+            End If
+        End Function
+
+    End Class
+
+
+
+End Namespace

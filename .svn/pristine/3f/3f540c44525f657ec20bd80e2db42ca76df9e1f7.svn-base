@@ -1,0 +1,29 @@
+﻿<?xml version="1.0"?>
+<configuration>
+  <connectionStrings>
+    <add name="SampleConnect" connectionString="Provider=Microsoft.Jet.OLEDB.4.0;Data Source=|DataDirectory|data.xls;Extended Properties=&quot;Excel 8.0;HDR=YES;&quot;" providerName="System.Data.OleDb"/>
+    <add name="SqLiteConnect" connectionString="Data Source=|DataDirectory|data.db;Version=3;Pooling=False;" providerName="System.Data.SQLite"/>
+
+  </connectionStrings>
+	<system.web>
+		<compilation debug="true" targetFramework="4.0"/>
+		<pages controlRenderingCompatibilityVersion="3.5" clientIDMode="AutoID">
+		  <controls>
+		 	<add tagPrefix="ajaxToolkit" namespace="AjaxControlToolkit" assembly="AjaxControlToolkit"/>
+		  </controls>
+		</pages>
+	</system.web>
+
+  <appSettings>
+    <add key="GearsConnection" value="Master.ConnectionName" />
+    <add key="GearsDsNameSpace" value="GSDataSource" />
+  </appSettings>
+
+  <system.data>
+    <DbProviderFactories>
+      <remove invariant="System.Data.SQLite"/>
+      <add name="SQLite Data Provider" invariant="System.Data.SQLite" description=".Net Framework Data Provider for SQLite" type="System.Data.SQLite.SQLiteFactory, System.Data.SQLite" />
+    </DbProviderFactories>
+  </system.data>
+  
+</configuration>

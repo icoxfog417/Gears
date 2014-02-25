@@ -1,0 +1,61 @@
+﻿<?xml version="1.0"?>
+<doc>
+<assembly>
+<name>
+Gears
+</name>
+</assembly>
+<members>
+<member name="T:Gears.GPageEvent">
+	<summary>
+ Gearsフレームワークを使用する場合の、継承元となるページ。
+ </summary>
+	<remarks></remarks>
+</member><member name="T:Gears.ExceptionLevel">
+	<summary>
+	</summary>
+	<remarks></remarks>
+</member><member name="P:My.Resources.Resources.ResourceManager">
+	<summary>
+  このクラスで使用されているキャッシュされた ResourceManager インスタンスを返します。
+</summary>
+</member><member name="P:My.Resources.Resources.Culture">
+	<summary>
+  厳密に型指定されたこのリソース クラスを使用して、すべての検索リソースに対し、
+  現在のスレッドの CurrentUICulture プロパティをオーバーライドします。
+</summary>
+</member><member name="T:My.Resources.Resources">
+	<summary>
+  ローカライズされた文字列などを検索するための、厳密に型指定されたリソース クラスです。
+</summary>
+</member><member name="F:Gears.ActionType.NONE">
+	<summary>NONE:Nothingに該当。初期値用</summary>
+</member><member name="F:Gears.ActionType.SEL">
+	<summary>NONE:Nothingに該当。初期値用</summary>
+</member><member name="F:Gears.ActionType.UPD">
+	<summary>SEL :SELECT処理を表す</summary>
+</member><member name="F:Gears.ActionType.INS">
+	<summary>UPD :UPDATE処理を表す</summary>
+</member><member name="F:Gears.ActionType.DEL">
+	<summary>INS :INSERT処理を表す</summary>
+</member><member name="F:Gears.ActionType.SAVE">
+	<summary>SAVE:既に該当キーが存在する場合UPDATE、そうでない場合INSERTを行う</summary>
+</member><member name="T:Gears.ActionType">
+	<summary>
+ データベースへの更新の種別を表す
+ </summary>
+</member><member name="F:Gears.GDSTemplate.ViewName">
+	<summary>
+ データを選択するためのビュー/テーブル名。
+ </summary>
+</member><member name="F:Gears.GDSTemplate.UpdateTarget">
+	<summary>
+ データの更新対象となるビュー/テーブル名。
+ </summary>
+</member><member name="F:Gears.GDSTemplate.inContext">
+	<summary>
+ Select処理について、本当のSelectか、UpdateやInsert前の確認用Selectなのか判別する
+ </summary>
+</member>
+</members>
+</doc>
