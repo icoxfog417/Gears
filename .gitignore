@@ -20,5 +20,5 @@ LastBuild.log
 *.shfbproj_*
 Help/
 *.nupkg
-
+.svn/
 app.Debug.config
