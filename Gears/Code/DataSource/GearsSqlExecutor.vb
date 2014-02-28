@@ -173,13 +173,13 @@ Namespace Gears
             clearCommand()
 
             'SELECTは必須で設定する(更新後の結果セット取得のために必要)
-            If sql.getPredictiveType <> ActionType.INS Then
+            If sql.Action <> ActionType.INS Then
                 setCommand(ActionType.SEL, createSqlCommand(sql, ActionType.SEL))
             Else
                 'INSERTの場合フィルタ値がないため、設定値をフィルタ値に変換してセット
                 Dim sqlbForInsert As New SqlBuilder(sql)
-                For Each selection As SqlSelectItem In sql.getSelection
-                    If sqlbForInsert.getFilter(selection.Column) Is Nothing Then
+                For Each selection As SqlSelectItem In sql.Selection
+                    If sqlbForInsert.Filter(selection.Column) Is Nothing Then
                         sqlbForInsert.addFilter(selection.filter)
                     End If
                 Next
@@ -187,17 +187,17 @@ Namespace Gears
             End If
 
             'SELECT以外の更新系
-            If sql.getPredictiveType <> ActionType.SEL Then
-                setCommand(sql.getPredictiveType, createSqlCommand(sql))
+            If sql.Action <> ActionType.SEL Then
+                setCommand(sql.Action, createSqlCommand(sql))
             End If
 
         End Sub
 
         Public Function createSqlCommand(ByVal sql As SqlBuilder, Optional ByVal asType As ActionType = ActionType.NONE, Optional ByVal isNeedOrder As Boolean = True) As DbCommand
-            Dim params As Dictionary(Of String, String) = New Dictionary(Of String, String)
+            Dim params As New Dictionary(Of String, Object)
             Dim sqlstr As String = ""
             Dim com As DbCommand = Nothing
-            Dim aType As ActionType = sql.getPredictiveType
+            Dim aType As ActionType = sql.Action
             If asType <> ActionType.NONE Then
                 aType = asType
             End If
@@ -220,12 +220,12 @@ Namespace Gears
 
         End Function
 
-        Public Function createSqlCommand(ByVal sql As String, ByRef params As Dictionary(Of String, String), ByVal atype As ActionType) As DbCommand
+        Public Function createSqlCommand(ByVal sql As String, ByRef params As Dictionary(Of String, Object), ByVal atype As ActionType) As DbCommand
             Dim com As DbCommand = SQL_CON.CreateCommand
 
             com.CommandText = sql
             If Not params Is Nothing Then
-                For Each item As KeyValuePair(Of String, String) In params
+                For Each item As KeyValuePair(Of String, Object) In params
                     Dim param As DbParameter = com.CreateParameter
                     param.ParameterName = item.Key
                     param.Value = item.Value
@@ -287,7 +287,7 @@ Namespace Gears
             Try
                 SQL_CON.Open()
                 SQL_ADAPTER.Fill(resultSet)
-                formatResultSet(sql.getdsColConvertor)
+                formatResultSet(sql.ItemColExchanger)
             Catch ex As Exception
                 gex = New GearsDataAccessException(ActionType.SEL, "データベースの読み込みに失敗しました " + toStringCommand(ActionType.SEL), ex)
                 gex.addMsgDebug(ex.Message, toStringCommand(ActionType.SEL))
@@ -333,11 +333,11 @@ Namespace Gears
 
         End Function
         Public Sub execute(ByVal sql As SqlBuilder)
-            If sql.getPredictiveType <> ActionType.SEL Then 'selectは対象外
+            If sql.Action <> ActionType.SEL Then 'selectは対象外
                 resultSet = New DataTable()
 
                 Dim com As DbCommand = Nothing
-                Dim executeType As ActionType = sql.getPredictiveType
+                Dim executeType As ActionType = sql.Action
                 Dim gex As GearsDataAccessException = Nothing
 
                 setSql(sql)
@@ -347,7 +347,7 @@ Namespace Gears
                     com = getCommand(executeType)
                     com.ExecuteNonQuery()
                     SQL_ADAPTER.Fill(resultSet) '更新後データをロード
-                    formatResultSet(sql.getdsColConvertor)
+                    formatResultSet(sql.ItemColExchanger)
                 Catch ex As Exception
                     gex = New GearsDataAccessException(executeType, "データベースの更新に失敗しました ", ex)
                     gex.addMsgDebug(ex.Message, toStringCommand(executeType))
@@ -373,14 +373,14 @@ Namespace Gears
 
             Dim transaction As DbTransaction = Nothing
             Dim actionNow As ActionType
-            Dim params As Dictionary(Of String, String) = New Dictionary(Of String, String)
+            Dim params As Dictionary(Of String, Object) = New Dictionary(Of String, Object)
 
             Try
                 SQL_CON.Open()
                 transaction = SQL_CON.BeginTransaction()
 
                 For i As Integer = 0 To sqlbs.Count - 1
-                    actionNow = sqlbs(i).getPredictiveType
+                    actionNow = sqlbs(i).Action
 
                     setSql(sqlbs(i))
                     com = getCommand(actionNow)
@@ -409,7 +409,7 @@ Namespace Gears
                     setSql(sqlbs(0))
                     com = getCommand(ActionType.SEL)
                     SQL_ADAPTER.Fill(resultSet) '更新後データをロード
-                    formatResultSet(sqlbs(0).getdsColConvertor)
+                    formatResultSet(sqlbs(0).ItemColExchanger)
 
                     If Not SQL_CON Is Nothing Then
                         SQL_CON.Close()

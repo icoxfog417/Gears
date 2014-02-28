@@ -236,43 +236,43 @@ Namespace Gears
             End If
 
             For Each item As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
-                If GPageMediator.isTargetControl(item.Value.getControl) Then
+                If GPageMediator.isTargetControl(item.Value.Control) Then
 
                     '前回ロード時の値がある場合、過去ロード値にセット
                     If Not reloadLoadedValue(item.Key) Is Nothing Then
-                        item.Value.setLoadedValue(reloadLoadedValue(item.Key))
+                        item.Value.LoadedValue = reloadLoadedValue(item.Key)
                     End If
 
                     'データロード
                     If Not IsPostBack Then
                         '初回であれば、設定されたデータソースから値をロードする。
-                        item.Value.init()
+                        item.Value.dataBind()
 
                         'CSSからアトリビュートをロード
-                        If TypeOf item.Value.getControl Is WebControl Then
-                            initialCss.Add(item.Key, CType(item.Value.getControl, WebControl).CssClass)
+                        If TypeOf item.Value.Control Is WebControl Then
+                            initialCss.Add(item.Key, CType(item.Value.Control, WebControl).CssClass)
                             item.Value.loadAttribute()
-                            CType(item.Value.getControl, WebControl).CssClass = item.Value.GCssClass 'CSSを書き換え
+                            CType(item.Value.Control, WebControl).CssClass = item.Value.GCssClass 'CSSを書き換え
                         End If
 
                         'リストコントロールのAttributeが確保されない対応
-                        saveListItemAttribute(item.Value.getControl)
+                        saveListItemAttribute(item.Value.Control)
                     Else
                         'Postbackの場合、基本はViewStateが担保されているのでロードは行わないが、
                         'ViewStateEnableがFalseでデータが消える場合、リロードをかける
-                        If item.Value.getControl.EnableViewState = False Then
-                            item.Value.reload()
+                        If item.Value.Control.EnableViewState = False Then
+                            item.Value.dataBind()
                         End If
 
                         '保管しておいた初期CSSからアトリビュートをロード/エラースタイルを消去
-                        If TypeOf item.Value.getControl Is WebControl AndAlso initialCss.ContainsKey(item.Key) Then
+                        If TypeOf item.Value.Control Is WebControl AndAlso initialCss.ContainsKey(item.Key) Then
                             item.Value.loadAttribute(initialCss(item.Key))
-                            CType(item.Value.getControl, WebControl).CssClass = CType(item.Value.getControl, WebControl).CssClass.Replace(" " + GearsAttribute.ERR_STYLE, "")
+                            CType(item.Value.Control, WebControl).CssClass = CType(item.Value.Control, WebControl).CssClass.Replace(" " + GearsAttribute.ERR_STYLE, "")
                         End If
 
 
                         'リストコントロールのAttributeが確保されない対応
-                        loadListItemAttribute(item.Value.getControl)
+                        loadListItemAttribute(item.Value.Control)
                     End If
 
                 End If
@@ -288,14 +288,14 @@ Namespace Gears
         Private Sub reloadControlData()
 
             For Each item As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
-                If GPageMediator.isTargetControl(item.Value.getControl) Then
+                If GPageMediator.isTargetControl(item.Value.Control) Then
 
                     'データロード
                     If IsPostBack Then
                         'Postbackの場合、基本はViewStateが担保されているのでロードは行わないが、
                         'ViewStateEnableがFalseでデータが消える場合、リロードをかける
-                        If item.Value.getControl.EnableViewState = False Then
-                            item.Value.reload()
+                        If item.Value.Control.EnableViewState = False Then
+                            item.Value.dataBind()
                         End If
                     End If
                 End If
@@ -324,10 +324,10 @@ Namespace Gears
                 result = False
                 'エラー項目にスタイル適用
                 For Each item As KeyValuePair(Of String, GearsException) In Log
-                    If Not GPageMediator.GControl(item.Key) Is Nothing AndAlso TypeOf GPageMediator.GControl(item.Key).getControl Is WebControl AndAlso _
+                    If Not GPageMediator.GControl(item.Key) Is Nothing AndAlso TypeOf GPageMediator.GControl(item.Key).Control Is WebControl AndAlso _
                         TypeOf item.Value Is GearsDataValidationException Then
 
-                        Dim wcon As WebControl = CType(GPageMediator.GControl(item.Key).getControl, WebControl)
+                        Dim wcon As WebControl = CType(GPageMediator.GControl(item.Key).Control, WebControl)
                         wcon.CssClass += " " + GearsAttribute.ERR_STYLE
                         Exit For '一件発見したら抜ける(とりあえず)
                     End If
@@ -484,8 +484,8 @@ Namespace Gears
 
                 'エラー対象コントロールにスタイルを適用
                 Dim eSource As WebControl = (From con As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
-                                             Where con.Value.DataSourceID = mv.Result.ErrorSource And TypeOf con.Value.getControl Is WebControl
-                                             Select con.Value.getControl).FirstOrDefault
+                                             Where con.Value.DataSourceID = mv.Result.ErrorSource And TypeOf con.Value.Control Is WebControl
+                                             Select con.Value.Control).FirstOrDefault
 
                 If Not eSource Is Nothing Then
                     eSource.CssClass += " " + GearsAttribute.ERR_STYLE
@@ -526,7 +526,7 @@ Namespace Gears
 
                     If gcon.IsFormAttribute Then '対象項目の場合
                         'ロードした値を格納
-                        GPageMediator.fetchControls(gcon.getControl, AddressOf Me.fetchLoadedValue, AddressOf GPageMediator.isRegisteredAsTarget)
+                        GPageMediator.fetchControls(gcon.Control, AddressOf Me.fetchLoadedValue, AddressOf GPageMediator.isRegisteredAsTarget)
                         'ロック用項目がセットされている場合それも格納
                         saveLockValueIfExist(gcon)
                     End If
@@ -546,18 +546,18 @@ Namespace Gears
 
         'ロックチェック用カラムのデータ確保(GearsControlのデータソースを直接参照)
         Protected Sub saveLockValueIfExist(ByRef gcon As GearsControl)
-            If Not gcon.getDataSource Is Nothing Then
-                If gcon.getDataSource.getLockCheckColCount > 0 Then
-                    Dim lockParams As Dictionary(Of String, String) = gcon.getDataSource.getLockedCheckColValue
-                    For Each item As KeyValuePair(Of String, String) In lockParams
+            If Not gcon.DataSource Is Nothing Then
+                If gcon.DataSource.getLockCheckColCount > 0 Then
+                    Dim lockParams As Dictionary(Of String, Object) = gcon.DataSource.getLockedCheckColValue
+                    For Each item As KeyValuePair(Of String, Object) In lockParams
                         ViewState(V_LOCKCOL + VIEW_STATE_SEPARATOR + gcon.ControlID + VIEW_STATE_SEPARATOR + item.Key) = item.Value
                     Next
                 End If
 
             End If
         End Sub
-        Protected Function reloadLockValue(ByRef con As Control) As Dictionary(Of String, String)
-            Dim result As New Dictionary(Of String, String)
+        Protected Function reloadLockValue(ByRef con As Control) As Dictionary(Of String, Object)
+            Dim result As New Dictionary(Of String, Object)
 
             For Each key As String In ViewState.Keys
                 If key.StartsWith(V_LOCKCOL + VIEW_STATE_SEPARATOR + con.ID + VIEW_STATE_SEPARATOR) Then

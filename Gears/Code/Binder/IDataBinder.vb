@@ -5,6 +5,7 @@ Namespace Gears
     Public Interface IDataBinder
 
         Function dataBind(ByRef con As Control, ByRef dset As DataTable) As Boolean
+        Function isBindable(ByRef con As Control) As Boolean
         Function dataAttach(ByRef con As Control, ByRef dset As DataTable) As Boolean
 
         Function getValue(ByRef con As Control) As String

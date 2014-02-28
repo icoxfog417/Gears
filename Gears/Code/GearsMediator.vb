@@ -155,7 +155,7 @@ Namespace Gears
         Public Sub addRelation(ByVal conF As String, ByVal conT As String)
 
             If Not GControl(conF) Is Nothing And Not GControl(conT) Is Nothing Then
-                addRelation(GControl(conF).getControl, GControl(conT).getControl)
+                addRelation(GControl(conF).Control, GControl(conT).Control)
             End If
 
         End Sub
@@ -334,8 +334,8 @@ Namespace Gears
         Private Sub fetchControlValue(ByRef control As Control, ByRef dto As GearsDTO)
             '除外対象のものは収集しない
             Dim isEscape As Boolean = False
-            If Not dto.getAttrInfo(RELATION_STORE_KEY) Is Nothing AndAlso _sendEscapes.ContainsKey(dto.getAttrInfo(RELATION_STORE_KEY)) Then
-                Dim escapeList As List(Of String) = _sendEscapes(dto.getAttrInfo(RELATION_STORE_KEY))
+            If Not dto.AttrInfo(RELATION_STORE_KEY) Is Nothing AndAlso _sendEscapes.ContainsKey(dto.AttrInfo(RELATION_STORE_KEY)) Then
+                Dim escapeList As List(Of String) = _sendEscapes(dto.AttrInfo(RELATION_STORE_KEY))
 
                 Dim now As Control = control
                 While Not now Is Nothing '自身のルートがescape対象でないか確認する。(なお、いつかは親がNothingになるはず)
@@ -354,10 +354,10 @@ Namespace Gears
                 Dim conInfos As List(Of GearsControlInfo) = GControl(control.ID).createControlInfo
                 If Not conInfos Is Nothing Then
                     For Each cf As GearsControlInfo In conInfos
-                        If Not dto.getControlInfo(PARENT_CONTROL_KEY) Is Nothing Then
-                            If dto.getControlInfo(PARENT_CONTROL_KEY).Item(0).IsFormAttribute Then
+                        If Not dto.ControlInfo(PARENT_CONTROL_KEY) Is Nothing Then
+                            If dto.ControlInfo(PARENT_CONTROL_KEY).Item(0).IsFormAttribute Then
                                 cf.IsFormAttribute = True
-                            ElseIf dto.getControlInfo(PARENT_CONTROL_KEY).Item(0).IsFilterAttribute Then
+                            ElseIf dto.ControlInfo(PARENT_CONTROL_KEY).Item(0).IsFilterAttribute Then
                                 cf.IsFilterAttribute = True
                             End If
                         End If
@@ -393,13 +393,13 @@ Namespace Gears
                     End If
 
                     Try
-                        Dim bindResult As Boolean = gcon.behave(sender)
+                        Dim bindResult As Boolean = gcon.dataBind(sender)
                         '配下のコントロールへの展開を開始(パネル型の場合)
                         If bindResult Then
                             '探索用リストを作成
                             Dim visitedList As New VisitedList(fromControl.ID, _
-                                                               makeFromToKey(fromControl, GControl(conKey).getControl), _
-                                                               getControlsInArea(gcon.getControl))
+                                                               makeFromToKey(fromControl, GControl(conKey).Control), _
+                                                               getControlsInArea(gcon.Control))
                             attachData(gcon, visitedList)
                         End If
 
@@ -425,7 +425,7 @@ Namespace Gears
         '指定コントロール内のリレーションをたどり、取得した値をセットしていく 例外はスローして外でキャッチ
         Private Sub attachData(ByRef gcon As GearsControl, ByRef visitedList As VisitedList, Optional ByRef ds As GearsDataSource = Nothing)
             Dim outerRelation As List(Of String) = getValueSafe(_relations, gcon.ControlID)
-            Dim innerRelation As List(Of String) = extractRootsInArea(gcon.getControl)
+            Dim innerRelation As List(Of String) = extractRootsInArea(gcon.Control)
             Dim dsData As GearsDataSource = Nothing
             Dim isIgnore As Boolean = False
 
@@ -465,7 +465,7 @@ Namespace Gears
                 For Each rel As String In outerRelation
                     'ルートノード未到達かつターゲットコントロール(パネルやビューなどは連鎖リレーション解決の対象にしない)
                     If Not visitedList.isVisited(rel) And visitedList.isNeighbor(GControl(rel).ControlID) Then
-                        GControl(rel).behave(makeSendMessage(gcon.getControl, Nothing, Nothing))
+                        GControl(rel).dataBind(makeSendMessage(gcon.Control, Nothing, Nothing))
                         attachData(GControl(rel), visitedList, dsData)
                     ElseIf Not visitedList.isNeighbor(GControl(rel).ControlID) Then
                         GearsLogStack.setLog("関連先 " + rel + " は、派生元 " + visitedList.Visiter + " に含まれないため、処理されません")
@@ -513,7 +513,7 @@ Namespace Gears
         End Function
         Public Function isRegisteredAsTarget(ByRef control As Control) As Boolean
             If isRegisteredControl(control) Then
-                If isTargetControl(GControl(control.ID).getControl) Then
+                If isTargetControl(GControl(control.ID).Control) Then
                     Return True
                 Else
                     Return False

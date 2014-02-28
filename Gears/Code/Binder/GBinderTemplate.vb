@@ -29,6 +29,17 @@ Namespace Gears
             End Set
         End Property
 
+        Public Function isBindable(ByRef con As Control) As Boolean Implements IDataBinder.isBindable
+
+            If TypeOf con Is ListControl Or _
+                TypeOf con Is CompositeDataBoundControl Then
+                Return True
+            Else
+                Return False
+            End If
+
+        End Function
+
         Public Shared Function dataBind(ByRef con As Control, ByRef dsClass As GDSTemplate, Optional ByVal dto As GearsDTO = Nothing) As Boolean
             Dim db As New GBinderTemplate()
             Dim bindData As DataTable = Nothing
@@ -46,10 +57,13 @@ Namespace Gears
         Public Function dataBind(ByRef con As Control, ByRef dset As System.Data.DataTable) As Boolean Implements IDataBinder.dataBind
             Dim result As Boolean = True
             Try
-                If TypeOf con Is ListControl Then
-                    result = listBind(CType(con, ListControl), dset)
-                ElseIf TypeOf con Is CompositeDataBoundControl Then 'GridViewとかそのあたり
-                    result = compositBind(CType(con, CompositeDataBoundControl), dset)
+                If isBindable(con) Then
+                    Select Case con.GetType
+                        Case GetType(ListControl)
+                            result = listBind(CType(con, ListControl), dset)
+                        Case GetType(CompositeDataBoundControl)
+                            result = compositBind(CType(con, CompositeDataBoundControl), dset)
+                    End Select
 
                 Else
                     'dataBindという概念がないため処理しない(行うとすればattachのはず)
@@ -144,7 +158,7 @@ Namespace Gears
                         Next
                     Else
 
-                        Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.getDataSourceid(con.ID), dset)
+                        Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(con.ID), dset)
                         If Not value Is Nothing Then 'Nothing = データテーブルに該当項目がない
                             setValue(con, value)
                         End If
@@ -164,7 +178,7 @@ Namespace Gears
             For i = dset.Rows.Count - 1 To 0 Step -1
                 'データソースIDに基づきバインドを行う(リストキー項目がデータソース名である保証はない)
                 'Dim value As String = GearsSqlExecutor.getDataSetValue(list.DataValueField, dset, i)
-                Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.getDataSourceid(list.ID), dset, i)
+                Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(list.ID), dset, i)
                 If Not value Is Nothing Then
                     If Not list.Items.FindByValue(value) Is Nothing Then
                         list.SelectedValue = value
@@ -181,7 +195,7 @@ Namespace Gears
             Return result
 
         End Function
-        
+
 
         Public Function getValue(ByRef con As Control) As String Implements IDataBinder.getValue
             Dim value As String = ""
@@ -277,7 +291,6 @@ Namespace Gears
             End If
 
         End Sub
-
 
     End Class
 

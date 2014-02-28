@@ -226,14 +226,14 @@ Namespace Gears
         ''' <returns></returns>
         ''' ------------------------------------------------------------------------------
         Public Function getValidateeValue(ByVal sqlb As SqlBuilder, ByVal colName As String, Optional ByVal nothingAsSpace As Boolean = False) As String
-            If sqlb.getSelection(colName) Is Nothing Then
+            If sqlb.Selection(colName) Is Nothing Then
                 If Not nothingAsSpace Then
                     Return Nothing
                 Else
                     Return ""
                 End If
             Else
-                Return sqlb.getSelection(colName).Value
+                Return sqlb.Selection(colName).Value
             End If
         End Function
 

@@ -53,8 +53,8 @@ Namespace Gears
                     Case ActionType.SAVE
                         gSave(dto)
                     Case ActionType.SEL
-                        If dto.isSetLimit Then
-                            gSelectPageBy(dto.getMaximumRows(), dto.getStartRowIndex, dto)
+                        If dto.isPaging Then
+                            gSelectPageBy(dto.RowsInPage(), dto.RowIndexOfPage, dto)
                         Else
                             gSelect(dto)
                         End If
@@ -117,7 +117,7 @@ Namespace Gears
 
         Public Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByRef data As GearsDTO) As DataTable Implements IDataSource.gSelectPageBy
             Dim sqlb As SqlBuilder = makeSqlBuilder(data)
-            sqlb.limit(startRowIndex, maximumRows)
+            sqlb.setPaging(startRowIndex, maximumRows)
             Return gSelect(sqlb)
 
         End Function
@@ -166,9 +166,9 @@ Namespace Gears
             gSave(sqlb)
         End Sub
         Public Overridable Sub gSave(ByRef sqlb As SqlBuilder)
-            If sqlb.getPredictiveType = ActionType.INS Then
+            If sqlb.Action = ActionType.INS Then
                 gInsert(sqlb)
-            ElseIf sqlb.getPredictiveType = ActionType.UPD Then
+            ElseIf sqlb.Action = ActionType.UPD Then
                 gUpdate(sqlb)
             End If
         End Sub
@@ -194,7 +194,7 @@ Namespace Gears
 
                 If ModelValidator.IsValid Then
                     result = True
-                ElseIf ModelValidator.IsValidIgnoreAlert AndAlso sqlb.IgnoreAlert Then
+                ElseIf ModelValidator.IsValidIgnoreAlert AndAlso sqlb.IsIgnoreAlert Then
                     result = True
                 Else
                     ModelValidator.throwException()
@@ -234,17 +234,17 @@ Namespace Gears
         End Sub
         Protected Sub setLockCheckColValueToSql(ByRef sqlb As SqlBuilder)
             For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
-                If sqlb.getSelection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
+                If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
                     sqlb.addSelection(SqlBuilder.newSelect(item.Key).setValue(getLockTypeValue(item.Value)))
                 End If
             Next
         End Sub
-        Public Function getLockedCheckColValue() As Dictionary(Of String, String)
-            Dim param As New Dictionary(Of String, String)
+        Public Function getLockedCheckColValue() As Dictionary(Of String, Object)
+            Dim param As New Dictionary(Of String, Object)
             If GExecutor.getDataSet.Rows.Count > 0 Then
                 For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
-                    Dim value As String = GearsSqlExecutor.getDataSetValue(item.Key, GExecutor.getDataSet)
-                    If Not value Is Nothing Or value <> "" Then
+                    Dim value As Object = GearsSqlExecutor.getDataSetValue(item.Key, GExecutor.getDataSet)
+                    If Not value Is Nothing OrElse Not String.IsNullOrEmpty(value.ToString) Then
                         param.Add(item.Key, value)
                     End If
                 Next

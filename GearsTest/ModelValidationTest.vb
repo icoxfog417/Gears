@@ -9,7 +9,7 @@ Namespace GearsTest
         <Test()>
         Public Sub testAlert()
             Dim validator As New ModelValidator
-            Dim sqlb As New SqlBuilder()
+            Dim sqlb As New SqlBuilder(ActionType.SEL)
             sqlb.addSelection(SqlBuilder.newSelect("VALUE").setValue("1"))
 
             Assert.IsTrue(validator.Validate(sqlb).IsValidIgnoreAlert)
@@ -38,7 +38,7 @@ Namespace GearsTest
         Public Sub testError()
 
             Dim validator As New ModelValidator
-            Dim sqlb As New SqlBuilder()
+            Dim sqlb As New SqlBuilder(ActionType.SEL)
             sqlb.addSelection(SqlBuilder.newSelect("VALUE").setValue("0"))
 
             Assert.IsFalse(validator.Validate(sqlb).IsValid)

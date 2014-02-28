@@ -30,7 +30,7 @@ Namespace Gears
             clearMsg(MSG_ATYPE)
         End Sub
         Public Sub setActionType(ByVal a As ActionType)
-            setMsg(MSG_ATYPE, GearsDTO.getAtypeString(a))
+            setMsg(MSG_ATYPE, GearsDTO.ActionToString(a))
         End Sub
 
     End Class

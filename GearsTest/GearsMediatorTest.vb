@@ -276,16 +276,16 @@ Namespace GearsTest
             initGControls(mediator)
 
             '処理対象外コントロールの設定（これらのコントロールの値は送信されない）
-            mediator.setEscapesWhenSend(filter.getControl, Nothing, "ddlGROUPN__FIL", "ddlUNITS__FIL")
+            mediator.setEscapesWhenSend(filter.Control, Nothing, "ddlGROUPN__FIL", "ddlUNITS__FIL")
             '処理対象外コントロールの設定（これらのコントロールの値は受信されない）
-            mediator.setEscapesWhenReceive(view.getControl, form.getControl, "txtENAME")
+            mediator.setEscapesWhenReceive(view.Control, form.Control, "txtENAME")
 
             '選択から一覧を出力
             mediator.GControl("txtFILTER__FIL").setValue("1")
-            mediator.executeBehavior(mediator.GControl(FILTER_PANEL).getControl, Nothing, Nothing)
+            mediator.executeBehavior(mediator.GControl(FILTER_PANEL).Control, Nothing, Nothing)
 
             '一覧をセレクト
-            Dim viewControl As GridView = CType(view.getControl, GridView)
+            Dim viewControl As GridView = CType(view.Control, GridView)
             Assert.AreEqual(empsCount, viewControl.Rows.Count)
 
             Dim indexInView As Integer = 0
@@ -298,11 +298,11 @@ Namespace GearsTest
 
             Assert.AreNotEqual(indexInView, viewControl.Rows.Count)
 
-            CType(view.getControl, GridView).SelectedIndex = indexInView
+            CType(view.Control, GridView).SelectedIndex = indexInView
             Assert.AreEqual("", mediator.GControl("txtEMPNO").getValue) 'この時点では当然空白
 
             '一覧からフォームへ
-            mediator.executeBehavior(mediator.GControl(TABLE_VIEW).getControl, Nothing, Nothing)
+            mediator.executeBehavior(mediator.GControl(TABLE_VIEW).Control, Nothing, Nothing)
 
             '反映された値をチェック
             Assert.AreEqual(empNo, mediator.GControl("txtEMPNO").getValue)
@@ -343,20 +343,20 @@ Namespace GearsTest
             initGControls(mediator)
 
             mediator.GControl("txtEMPNO").setValue(notExistEmp)
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").getControl, Nothing, Nothing)
+            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, Nothing, Nothing)
 
             Assert.AreEqual(notExistEmp, mediator.GControl("txtEMPNO").getValue) '値はロードされず、残る
 
             '項目限定
             mediator.GControl("txtEMPNO").setValue(TestEmps(0))
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").getControl, Nothing, Nothing)
+            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, Nothing, Nothing)
             Dim firstName As String = mediator.GControl("txtEMPNO").getValue
             Dim firstSAL As String = mediator.GControl("txtSAL").getValue
 
             Dim selectDto As New GearsDTO(ActionType.SEL)
             selectDto.addSelection(SqlBuilder.newSelect("ENAME"))
             mediator.GControl("txtEMPNO").setValue(TestEmps(1))
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").getControl, Nothing, selectDto)
+            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, Nothing, selectDto)
 
             Assert.AreNotEqual(firstName, mediator.GControl("txtENAME").getValue)
             Assert.AreEqual(firstSAL, mediator.GControl("txtSAL").getValue) '取得されていない項目はそのまま
@@ -388,11 +388,11 @@ Namespace GearsTest
             initGControls(mediator)
 
             '除外対象設定
-            mediator.setEscapesWhenSend(form.getControl, form.getControl, "pnlDeptInfos")
+            mediator.setEscapesWhenSend(form.Control, form.Control, "pnlDeptInfos")
 
             'データをロード
             mediator.GControl("txtEMPNO").setValue(testEmp)
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").getControl, form.getControl, New GearsDTO(ActionType.SEL))
+            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, form.Control, New GearsDTO(ActionType.SEL))
 
             Assert.IsFalse(String.IsNullOrEmpty(mediator.GControl("txtENAME").getValue))
 
@@ -402,41 +402,41 @@ Namespace GearsTest
             mediator.GControl("txtENAME").setValue(changedValue)
 
             Dim executeDto As New GearsDTO(ActionType.SAVE)
-            Dim lockedValue As Dictionary(Of String, String) = form.getDataSource.getLockedCheckColValue
+            Dim lockedValue As Dictionary(Of String, Object) = form.DataSource.getLockedCheckColValue
             executeDto.addLockItem(lockedValue) 'データロード時のロック値をセット
-            mediator.executeBehavior(form.getControl, form.getControl, executeDto)
+            mediator.executeBehavior(form.Control, form.Control, executeDto)
 
-            Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.getDataSource.gResultSet))
+            Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.DataSource.gResultSet))
             '元に戻す(ロック考慮なし)
             mediator.GControl("txtENAME").setValue(originalName)
-            mediator.executeBehavior(form.getControl, form.getControl, New GearsDTO(ActionType.SAVE))
+            mediator.executeBehavior(form.Control, form.Control, New GearsDTO(ActionType.SAVE))
 
             'ロックエラー発生(上記で更新を行っているため、ロード時のキーではエラーになるはず)
             mediator.GControl("txtENAME").setValue(originalName)
-            mediator.executeBehavior(form.getControl, form.getControl, executeDto)
+            mediator.executeBehavior(form.Control, form.Control, executeDto)
 
             Assert.AreEqual(mediator.getLog.Count, 1)
             Assert.IsInstanceOf(GetType(GearsOptimisticLockCheckInvalid), mediator.getLog.Values(0))
 
             '挿入(キーの値だけ変えて更新) -----------------------------------------
             Dim newEmpno As String = "8888"
-            mediator.GControl("txtEMPNO").setLoadedValue(mediator.GControl("txtEMPNO").getValue) '更新前の値を保持
+            mediator.GControl("txtEMPNO").LoadedValue = mediator.GControl("txtEMPNO").getValue '更新前の値を保持
             mediator.GControl("txtEMPNO").setValue(newEmpno)
-            mediator.executeBehavior(form.getControl, form.getControl, executeDto)
+            mediator.executeBehavior(form.Control, form.Control, executeDto)
 
             Assert.AreEqual(newEmpno, GearsSqlExecutor.getDataSetValue("EMPNO", form.getDataSource.gResultSet))
 
             '更新(キー変更更新OFFの場合) ------------------------------------------
             executeDto.IsPermitOtherKeyUpdate = False
-            mediator.GControl("txtEMPNO").setLoadedValue(testEmp) '更新前の値を保持
+            mediator.GControl("txtEMPNO").LoadedValue = testEmp '更新前の値を保持
             mediator.GControl("txtENAME").setValue(changedValue)
-            mediator.executeBehavior(form.getControl, form.getControl, executeDto)
+            mediator.executeBehavior(form.Control, form.Control, executeDto)
             Assert.AreEqual(mediator.getLog.Count, 1)
             Assert.IsInstanceOf(GetType(GearsTargetIsAlreadyExist), mediator.getLog.Values(0))
 
             'キー更新OKで実行
             executeDto.IsPermitOtherKeyUpdate = True
-            mediator.executeBehavior(form.getControl, form.getControl, executeDto)
+            mediator.executeBehavior(form.Control, form.Control, executeDto)
             Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.getDataSource.gResultSet))
 
             '削除処理 ------------------------------------------------------------
@@ -445,14 +445,14 @@ Namespace GearsTest
 
             '異なるキー更新はエラー
             deleteDto.IsPermitOtherKeyUpdate = False
-            mediator.executeBehavior(form.getControl, form.getControl, deleteDto)
+            mediator.executeBehavior(form.Control, form.Control, deleteDto)
             Assert.AreEqual(mediator.getLog.Count, 1)
             Assert.IsInstanceOf(GetType(GearsTargetIsAlreadyExist), mediator.getLog.Values(0))
 
             deleteDto.IsPermitOtherKeyUpdate = True
             deleteDto.removeLockItem()
             deleteDto.addLockItem(form.getDataSource.getLockedCheckColValue)
-            mediator.executeBehavior(form.getControl, form.getControl, deleteDto)
+            mediator.executeBehavior(form.Control, form.Control, deleteDto)
 
             Dim confirmDto As New GearsDTO(ActionType.SEL)
             confirmDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newEmpno))
@@ -485,8 +485,8 @@ Namespace GearsTest
 
         Private Sub initGControls(ByRef m As GearsMediator)
             For Each gcon As KeyValuePair(Of String, GearsControl) In m.GControls
-                If m.isTargetControl(gcon.Value.getControl) Then
-                    gcon.Value.init()
+                If m.isTargetControl(gcon.Value.Control) Then
+                    gcon.Value.dataBind()
                 End If
             Next
         End Sub

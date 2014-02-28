@@ -41,8 +41,8 @@ Namespace GearsTest
             '項目変換マッパー
             Dim mapper As New ViewItemAndColumnMapperTemplete()
             mapper.addRule("BUMON", "DNAME") '双方変換
-            mapper.addRuleWhenSend("SHIGOTO", "JOB") '送信時のみ
-            mapper.addRuleWhenGet("SHAIN_NO", "EMPNO") '読取時のみ
+            mapper.addRuleWhenToCol("SHIGOTO", "JOB") '送信時のみ
+            mapper.addRuleWhenToItem("SHAIN_NO", "EMPNO") '読取時のみ
 
             '普通にSELECTした結果
             Dim dbData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE DNAME = :pdname AND job = :pjob ORDER BY EMPNO ", SimpleDBA.makeParameters("pdname", dname, "pjob", job))
@@ -74,7 +74,7 @@ Namespace GearsTest
             'ページング
             Dim start As Integer = 5
             Dim count As Integer = 3
-            selectDto.setLimit(5, 3)
+            selectDto.setPaging(5, 3)
             selectDto.addSelection(SqlBuilder.newSelect("EMPNO").ASC.isNoSelect)
             dbData = SimpleDBA.executeSql(mainConnection, "SELECT * FROM EMP ORDER BY EMPNO LIMIT + " + count.ToString + " OFFSET " + start.ToString)
             DsData = ds.execute(selectDto)
@@ -178,7 +178,7 @@ Namespace GearsTest
             Assert.AreEqual("9999", ds.Item("SAL"))
 
             'DELETE
-            updateDto.setAtype(ActionType.DEL)
+            updateDto.Action = ActionType.DEL
             ds.execute(updateDto)
 
             Assert.AreEqual(0, SimpleDBA.executeSql(mainConnection, "SELECT 1 FROM EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", newKey)).Rows.Count)
@@ -198,14 +198,14 @@ Namespace GearsTest
             saveDto.addSelection(SqlBuilder.newSelect("JOB").setValue("TRAIN"))
 
             'SAVE
-            saveDto.setAtype(ActionType.SAVE) 'INSERT判断
+            saveDto.Action = ActionType.SAVE 'INSERT判断
             ds.execute(saveDto)
 
             Assert.AreEqual(1, ds.gResultCount)
             Assert.AreEqual(newKey, ds.Item("EMPNO"))
 
             'ロックキーを設定
-            Dim savedLock As Dictionary(Of String, String) = ds.getLockedCheckColValue
+            Dim savedLock As Dictionary(Of String, Object) = ds.getLockedCheckColValue
             saveDto.addLockItem(savedLock)
 
             saveDto.addSelection(SqlBuilder.newSelect("COMM").setValue("アップ"))

@@ -18,13 +18,12 @@ Namespace Gears
 
         End Sub
 
-        Public Sub addRuleWhenSend(ByVal viewItem As String, ByVal toCol As String)
-            addDictionarySafe(itemToCol, viewItem, toCol)
+        Public Sub addRuleWhenToCol(ByVal fromItem As String, ByVal toCol As String)
+            addDictionarySafe(itemToCol, fromItem, toCol)
         End Sub
-        Public Sub addRuleWhenGet(ByVal viewItem As String, ByVal toCol As String)
-            addDictionarySafe(colToItem, toCol, viewItem)
+        Public Sub addRuleWhenToItem(ByVal fromCol As String, ByVal toItem As String)
+            addDictionarySafe(colToItem, fromCol, toItem)
         End Sub
-
 
         Public Sub addAttribute(ByVal key As String, ByVal attr As String, ByVal attrVal As String)
             Dim list As Dictionary(Of String, String) = getDictionarySafe(colAttr, key)

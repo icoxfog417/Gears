@@ -94,7 +94,7 @@ Namespace Gears
             _column = col
             _prefix = px
         End Sub
-        Public Sub New(ByVal sqlf As SqlFilterItem, Optional ByVal val As String = "")
+        Public Sub New(ByVal sqlf As SqlFilterItem, Optional ByVal val As Object = Nothing)
             MyBase.New(sqlf, val)
             _operand = sqlf.Operand
             _paramName = sqlf.ParamName
@@ -103,7 +103,7 @@ Namespace Gears
             _isNots = sqlf.IsNots
         End Sub
 
-        Public Function filterAs(ByVal filterType As String, ByVal value As String) As SqlFilterItem
+        Public Function filterAs(ByVal filterType As String, ByVal value As Object, Optional ByVal isWrapWhenLike As Boolean = False) As SqlFilterItem
             Select Case filterType.ToUpper
                 Case SqlFilterItem.TXT_EQUAL
                     Return eq(value)
@@ -118,7 +118,11 @@ Namespace Gears
                 Case SqlFilterItem.TXT_LTEQ
                     Return lteq(value)
                 Case SqlFilterItem.TXT_LIKE
-                    Return likes(value)
+                    Return likes(If(Not isWrapWhenLike, value, "%" + value + "%"))
+                Case SqlFilterItem.TXT_START_WITH
+                    Return likes(If(Not isWrapWhenLike, value, value + "%"))
+                Case SqlFilterItem.TXT_END_WITH
+                    Return likes(If(Not isWrapWhenLike, value, "%" + value))
                 Case Else
                     Return Me 'Continue Method Chain
             End Select
@@ -139,17 +143,17 @@ Namespace Gears
             Return Me
         End Function
 
-        Private Sub setFormula(ByVal opr As String, ByVal value As String)
+        Private Sub setFormula(ByVal opr As String, ByVal value As Object)
             _operand = opr
             _value = value
         End Sub
 
-        Public Function eq(ByVal value As String) As SqlFilterItem
+        Public Function eq(ByVal value As Object) As SqlFilterItem
             _operand = "="
             _value = value
             Return Me
         End Function
-        Public Function neq(ByVal value As String) As SqlFilterItem
+        Public Function neq(ByVal value As Object) As SqlFilterItem
             _operand = "<>"
             _value = value
             Return Me
@@ -160,28 +164,28 @@ Namespace Gears
             Return Me
         End Function
 
-        Public Function lt(ByVal value As String) As SqlFilterItem
+        Public Function lt(ByVal value As Object) As SqlFilterItem
             _operand = "<"
             _value = value
             Return Me
         End Function
-        Public Function gt(ByVal value As String) As SqlFilterItem
+        Public Function gt(ByVal value As Object) As SqlFilterItem
             _operand = ">"
             _value = value
             Return Me
         End Function
 
-        Public Function lteq(ByVal value As String) As SqlFilterItem
+        Public Function lteq(ByVal value As Object) As SqlFilterItem
             _operand = "<="
             _value = value
             Return Me
         End Function
-        Public Function gteq(ByVal value As String) As SqlFilterItem
+        Public Function gteq(ByVal value As Object) As SqlFilterItem
             _operand = ">="
             _value = value
             Return Me
         End Function
-        Public Function likes(ByVal value As String) As SqlFilterItem
+        Public Function likes(ByVal value As Object) As SqlFilterItem
             _operand = " LIKE "
             _value = value
             Return Me
@@ -203,7 +207,7 @@ Namespace Gears
 
         Public Overrides Function toString() As String
             Dim str As String = ""
-            str += Column + " " + _operand + " " + Value
+            str += Column + " " + _operand + " " + If(Value IsNot Nothing, Value.ToString, "NULL")
 
             Return str
 

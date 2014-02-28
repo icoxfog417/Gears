@@ -4,10 +4,17 @@ Imports System.Web.UI.WebControls
 
 Namespace Gears
 
+    ''' <summary>
+    ''' GearsControlの情報をまとめたクラス
+    ''' </summary>
+    ''' <remarks></remarks>
     <Serializable()>
     Public Class GearsControlInfo
 
         Private _controlId As String = ""
+        ''' <summary>
+        ''' コントロールID
+        ''' </summary>
         Public ReadOnly Property ControlID() As String
             Get
                 Return _controlId
@@ -15,6 +22,9 @@ Namespace Gears
         End Property
 
         Private _dataSourceId As String = ""
+        ''' <summary>
+        ''' データソースクラスのID
+        ''' </summary>
         Public ReadOnly Property DataSourceID() As String
             Get
                 Return _dataSourceId
@@ -22,6 +32,9 @@ Namespace Gears
         End Property
 
         Private _value As String = ""
+        ''' <summary>
+        ''' コントロールの値
+        ''' </summary>
         Public ReadOnly Property Value() As String
             Get
                 Return _value
@@ -29,6 +42,9 @@ Namespace Gears
         End Property
 
         Private _pastValue As String = ""
+        ''' <summary>
+        ''' ロード前の値
+        ''' </summary>
         Public ReadOnly Property PastValue() As String
             Get
                 Return _pastValue
@@ -36,6 +52,9 @@ Namespace Gears
         End Property
 
         Private _isFormAttribute As Boolean = False
+        ''' <summary>
+        ''' 更新フォーム属性
+        ''' </summary>
         Public Property IsFormAttribute() As Boolean
             Get
                 Return _isFormAttribute
@@ -46,6 +65,9 @@ Namespace Gears
         End Property
 
         Private _isFilterAttribute As Boolean = False
+        ''' <summary>
+        ''' 検索フォーム属性
+        ''' </summary>
         Public Property IsFilterAttribute() As Boolean
             Get
                 Return _isFilterAttribute
@@ -56,6 +78,9 @@ Namespace Gears
         End Property
 
         Private _isKey As Boolean = False
+        ''' <summary>
+        ''' キーか否か
+        ''' </summary>
         Public Property IsKey() As Boolean
             Get
                 Return _isKey
@@ -66,6 +91,9 @@ Namespace Gears
         End Property
 
         Private _operatorAttribute As String = ""
+        ''' <summary>
+        ''' 検索時のオペレーター設定
+        ''' </summary>
         Public Property OperatorAttribute() As String
             Get
                 Return _operatorAttribute
@@ -81,6 +109,7 @@ Namespace Gears
             _value = val
             _pastValue = p
         End Sub
+
         Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String, ByVal p As String, _
                        ByVal key As Boolean, ByVal form As Boolean, ByVal filter As Boolean, ByVal opr As String)
             _controlId = conId
@@ -94,14 +123,13 @@ Namespace Gears
         End Sub
 
         Public Sub New(ByRef g As GearsControl)
-            Me.New(g.ControlID, g.DataSourceID, g.getValue, g.getLoadedValue, _
-                   g.key, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
+            Me.New(g.ControlID, g.DataSourceID, g.getValue, g.LoadedValue, _
+                   g.IsKey, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
         End Sub
         Public Sub New(ByRef g As GearsControlInfo)
             Me.New(g.ControlID, g.DataSourceID, g.Value, g.PastValue, _
                    g.IsKey, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
         End Sub
-
 
         Public Overrides Function toString() As String
             Dim str As String = ""

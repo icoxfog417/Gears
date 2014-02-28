@@ -72,33 +72,34 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Code\Common\IViewItemAndColumnMapper.vb" />
-    <Compile Include="Code\Common\ViewItemAndColumnMapperTemplete.vb" />
-    <Compile Include="Code\DataSourceTemplete\GBinderTemplate.vb" />
-    <Compile Include="Code\DataSourceTemplete\GDSTemplate.vb" />
-    <Compile Include="Code\Exception\GearsDataAccessException.vb" />
-    <Compile Include="Code\Exception\GearsDataAttachException.vb" />
-    <Compile Include="Code\Exception\GearsDataBindException.vb" />
-    <Compile Include="Code\Exception\GearsDataIntegrityException.vb" />
-    <Compile Include="Code\Exception\GearsDataValidationException.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsMultipleTargetExist.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsOptimisticLockCheckInvalid.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsRequestedActionInvalid.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsTargetIsAlreadyExist.vb" />
-    <Compile Include="Code\Exception\Validation\GearsModelValidationException.vb" />
+    <Compile Include="Code\SqlBuilder\SqlItemContainer.vb" />
+    <Compile Include="Code\Util\IViewItemAndColumnMapper.vb" />
+    <Compile Include="Code\Util\ViewItemAndColumnMapperTemplete.vb" />
+    <Compile Include="Code\Binder\GBinderTemplate.vb" />
+    <Compile Include="Code\DataSource\GDSTemplate.vb" />
+    <Compile Include="Code\Exception\OnDataSource\GearsDataAccessException.vb" />
+    <Compile Include="Code\Exception\OnBinder\GearsDataAttachException.vb" />
+    <Compile Include="Code\Exception\OnBinder\GearsDataBindException.vb" />
+    <Compile Include="Code\Exception\OnDataSource\GearsDataIntegrityException.vb" />
+    <Compile Include="Code\Exception\OnValidation\GearsDataValidationException.vb" />
+    <Compile Include="Code\Exception\OnDataSource\GearsMultipleTargetExist.vb" />
+    <Compile Include="Code\Exception\OnDataSource\GearsOptimisticLockCheckInvalid.vb" />
+    <Compile Include="Code\Exception\OnDataSource\GearsRequestedActionInvalid.vb" />
+    <Compile Include="Code\Exception\OnDataSource\GearsTargetIsAlreadyExist.vb" />
+    <Compile Include="Code\Exception\OnValidation\GearsModelValidationException.vb" />
     <Compile Include="Code\GearsControl.vb" />
     <Compile Include="Code\GearsControlInfo.vb" />
-    <Compile Include="Code\GearsDataSource.vb" />
+    <Compile Include="Code\DataSource\GearsDataSource.vb" />
     <Compile Include="Code\GearsDTO.vb" />
-    <Compile Include="Code\GearsException.vb" />
-    <Compile Include="Code\GearsLogStack.vb" />
+    <Compile Include="Code\Exception\GearsException.vb" />
+    <Compile Include="Code\Log\GearsLogStack.vb" />
     <Compile Include="Code\GearsMediator.vb" />
     <Compile Include="Code\GearsPage.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Code\GearsSqlExecutor.vb" />
-    <Compile Include="Code\IDataBinder.vb" />
-    <Compile Include="Code\IDataSource.vb" />
+    <Compile Include="Code\DataSource\GearsSqlExecutor.vb" />
+    <Compile Include="Code\Binder\IDataBinder.vb" />
+    <Compile Include="Code\DataSource\IDataSource.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -159,11 +160,7 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Code\Exception\DataAccess\" />
-    <Folder Include="Code\Exception\DataAttach\" />
-    <Folder Include="Code\Exception\DataBind\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
