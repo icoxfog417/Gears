@@ -98,7 +98,7 @@ Namespace Gears
 
             '事前チェック
             If Not dataFrom Is Nothing Then
-                If dataFrom.getAtype = ActionType.NONE Or dataFrom.getAtype = ActionType.SEL Then
+                If dataFrom.Action = ActionType.NONE Or dataFrom.Action = ActionType.SEL Then
                     GearsLogStack.setLog("DTOに更新用処理タイプが設定されていません(設定されている更新タイプ：" + GearsDTO.ActionToString(dataFrom) + ")")
                     result = False
                 End If
@@ -151,10 +151,10 @@ Namespace Gears
 
 
             ''ログ出力
-            'If dataFrom.getAtype = ActionType.SAVE Then
-            '    GearsLogStack.setLog(GearsDTO.getAtypeString(dataFrom) + "処理を" + GearsDTO.getAtypeString(whatType) + "として実行します", GExecutor.toStringCommand(whatType.getAtype))
+            'If dataFrom.Action = ActionType.SAVE Then
+            '    GearsLogStack.setLog(GearsDTO.ActionString(dataFrom) + "処理を" + GearsDTO.ActionString(whatType) + "として実行します", GExecutor.toStringCommand(whatType.Action))
             'Else
-            '    GearsLogStack.setLog(GearsDTO.getAtypeString(dataFrom) + "処理を実行します", GExecutor.toStringCommand(whatType.getAtype))
+            '    GearsLogStack.setLog(GearsDTO.ActionString(dataFrom) + "処理を実行します", GExecutor.toStringCommand(whatType.Action))
             'End If
 
             Return sqlb
@@ -198,14 +198,14 @@ Namespace Gears
                             isKeyEqualTarget = False
 
                             sqlb.removeFilter(item.Column)
-                            sqlb.addFilter(item.filter) 'キー項目についてフィルタの値を変更(更新値にあわせる)
-                            data.addFilter(item.filter) '後から追加したfilterで追加したものがSQLでは優先される
+                            sqlb.addFilter(item.toFilter) 'キー項目についてフィルタの値を変更(更新値にあわせる)
+                            data.addFilter(item.toFilter) '後から追加したfilterで追加したものがSQLでは優先される
                         End If
                     Else
                         '必要なフィルター値を設定(通常、挿入処理の場合が該当)
                         'キーを更新したいが制約はかけない、というのは通常ありえない(必ず重複キーエラーになる)
-                        sqlb.addFilter(item.filter)
-                        data.addFilter(item.filter)
+                        sqlb.addFilter(item.toFilter)
+                        data.addFilter(item.toFilter)
                     End If
                 Next
 

@@ -9,38 +9,73 @@ Imports System.Text
 Imports System.Reflection
 
 Namespace Gears
+
     ''' <summary>
-    ''' Gearsフレームワークを使用する場合の、継承元となるページ。
+    ''' Gearsフレームワークを使用する場合の、継承元となるページ
     ''' </summary>
     ''' <remarks></remarks>
-    ''' 
-    Public Enum GPageEvent
-        Init
-        PreLoad
-        Load
-        LoadComplete
-    End Enum
-
     Public MustInherit Class GearsPage
         Inherits Page
 
-        '定数
-        Public Const V_LIST_ATTRIBUTES As String = "LIST_ATTRIBUTES"
-        Public Const V_LOADED As String = "VALUE_LOADED"
-        Public Const V_LOCKCOL As String = "VALUE_FOR_LOCK"
-        Public Const V_S_TIME_STAMP As String = "TIME_STAMP"
-        Public Const V_VALIDATORS As String = "GEARS_VALIDATORS"
-        Public Const ROLE_AUTH_ALLOW As String = "AUTHORIZATIONALLOW"
-        Public Const ROLE_EVAL_ACTION As String = "ROLEEVALACTION"
-        Public Const GEARS_IS_LOG_OUT As String = "gs_log_out"
-        Const ALERT_PROMPT_SCRIPT_NAME As String = "AlertPromptScript"
-        Const ALERT_IS_IGNORE_FLG As String = "YesAlertIgnore"
-        Protected Const VIEW_STATE_SEPARATOR As String = "/"
-        Protected Const CONTROL_ID_SEPARATOR As String = "/"
 
-        'プロパティ
-        'リロード判定をするか否か
+        ''' <summary>
+        ''' 使用するConnectionNameを設定するためのConfig<br/>
+        ''' Master.xxxと設定することで、Masterページのプロパティに設定した値を参照させることができる<br/>
+        ''' 例:Master.ConnectionNameと設定した場合、MasterページのConnectionNameプロパティの値が参照される
+        ''' </summary>
+        Public Const CONFIG_CONNECTION_NAME As String = "GearsConnection"
+
+        ''' <summary>
+        ''' 使用する名称空間を設定するためのConfig<br/>
+        ''' Master.xxxと設定することで、Masterページのプロパティに設定した値を参照させることができる<br/>
+        ''' </summary>
+        Public Const CONFIG_DSNAMESPACE As String = "GearsDsNameSpace"
+
+        ''' <summary>
+        ''' ListItemのAttributeがPostBack時に消えてしまうため、これをViewStateに補完するためのキー<br/>
+        ''' http://stackoverflow.com/questions/8157363/is-it-possible-to-maintain-added-attributes-on-a-listitem-while-posting-back
+        ''' </summary>
+        ''' <remarks></remarks>
+        Public Const V_LIST_ATTRIBUTES As String = "GEARS_LIST_ATTRIBUTES"
+
+        ''' <summary>画面ロードされた値をViewStateに保持しておくためのキー</summary>
+        Public Const V_LOADED As String = "GEARS_VALUE_LOADED"
+
+        ''' <summary>画面ロードされた、楽観ロック用の値をViewStateに保持しておくためのキー</summary>
+        Public Const V_LOCKCOL As String = "GEARS_VALUE_FOR_LOCK"
+
+        ''' <summary>リロード防止用のタイムスタンプをViewStateに保持するためのキー</summary>
+        Public Const V_S_TIME_STAMP As String = "GEARS_TIME_STAMP"
+
+        ''' <summary>
+        ''' バリデーション情報が保管されたCssClassを保持する。<br/>
+        ''' 初回以降は各属性のスタイルで書き換えられてしまうため、初回の値を保持
+        ''' </summary>
+        Public Const V_VALIDATORS As String = "GEARS_VALIDATORS"
+
+        ''' <summary>権限を設定するための属性名</summary>
+        Public Const ROLE_AUTH_ALLOW As String = "AUTHORIZATIONALLOW"
+
+        ''' <summary>権限の有無によって切り替える属性(VISIBLE/ENABLEなど)</summary>
+        Public Const ROLE_EVAL_ACTION As String = "ROLEEVALACTION"
+
+        ''' <summary>
+        ''' ログ出力を行うか否かの引数指定<br/>
+        ''' gs_log_out=trueを設定することでログの出力が可能
+        ''' </summary>
+        Public Const GEARS_IS_LOG_OUT As String = "gs_log_out"
+
+        ''' <summary>警告のプロンプトを出すためのスクリプト名</summary>
+        Const ALERT_PROMPT_SCRIPT_NAME As String = "GearsAlertPromptScript"
+
+        ''' <summary>警告を無視するか否かを設定したhiddenフィールド</summary>
+        Const ALERT_IS_IGNORE_FLG As String = "GearsYesAlertIgnore"
+
+        ''' <summary>ViewStateに値を設定する際の区切り文字</summary>
+        Protected Const VIEW_STATE_SEPARATOR As String = "/"
+
         Private _isNeedJudgeReload As Boolean = True
+        ''' <summary>リロードを判定するか否かのフラグ</summary>
         Public Property IsNeedJudgeReload() As Boolean
             Get
                 Return _isNeedJudgeReload
@@ -50,95 +85,100 @@ Namespace Gears
             End Set
         End Property
 
-        'リロードが否かの判定
         Private _isReload As Boolean = False
+        ''' <summary>リクエストがリロードか否かの判定</summary>
         Public ReadOnly Property IsReload() As Boolean
             Get
                 Return _isReload
             End Get
         End Property
 
-        'メンバ変数
+        ''' <summary>コントロール間の関連を管理するクラス</summary>
         Protected GPageMediator As GearsMediator = Nothing
+
+        ''' <summary>ログ</summary>
         Protected Log As New Dictionary(Of String, GearsException)
-        Private initialCss As New Dictionary(Of String, String)
 
-        Public Sub initMediator(ByVal con As String, Optional ByVal dns As String = "")
+        ''' <summary>
+        ''' コントロールの管理を行うGearsMediatorを初期化する<br/>
+        ''' 個別に呼び出す場合はGPageInitをオーバーライドし、その中で呼び出すこと。
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <param name="dns"></param>
+        ''' <remarks></remarks>
+        Protected Sub initMediator(ByVal conName As String, Optional ByVal dns As String = "")
+            Dim pageConName As String = conName
+            Dim pageDsNspace As String = dns
+            Dim readProperty = Function(p As String) As String
+                                   Dim result As String = p
+                                   'マスターページプロパティを参照するものは、その値を取得
+                                   If Not String.IsNullOrEmpty(p) AndAlso p.StartsWith("Master.") Then
+                                       Dim prop As String = getMasterProperty(Replace(p, "Master.", ""))
+                                       If Not prop Is Nothing Then
+                                           result = prop.ToString
+                                       End If
+                                   End If
+                                   Return result
+                               End Function
 
-            If Not String.IsNullOrEmpty(con) Then
-                Dim connectionName As String = con
-                Dim dsNameSpace As String = ""
+            'Config設定を読み込む
+            Dim conInfo As String = Trim(ConfigurationManager.AppSettings(CONFIG_CONNECTION_NAME))
+            Dim dnsInfo As String = Trim(ConfigurationManager.AppSettings(CONFIG_DSNAMESPACE))
 
-                If Not String.IsNullOrEmpty(dns) Then
-                    dsNameSpace = dns
-                ElseIf Not GPageMediator Is Nothing Then
-                    dsNameSpace = GPageMediator.DsNameSpace
-                End If
+            '設定
+            If String.IsNullOrEmpty(pageConName) Then pageConName = conInfo
+            pageConName = readProperty(pageConName)
 
-                If GPageMediator Is Nothing Then
-                    GPageMediator = New GearsMediator(connectionName, dsNameSpace)
-                ElseIf connectionName <> GPageMediator.ConnectionName Or _
-                    dsNameSpace <> GPageMediator.DsNameSpace Then
-                    GPageMediator = New GearsMediator(connectionName, dsNameSpace)
+            If String.IsNullOrEmpty(pageDsNspace) Then pageDsNspace = dnsInfo
+            pageDsNspace = readProperty(pageDsNspace)
 
-                End If
-
+            '未作成か、設定値が異なる場合更新
+            If GPageMediator Is Nothing OrElse (GPageMediator.ConnectionName <> pageConName Or GPageMediator.DsNameSpace <> pageDsNspace) Then
+                GPageMediator = New GearsMediator(pageConName, pageDsNspace)
             End If
 
         End Sub
-        Public Function getMediator() As GearsMediator
-            Return GPageMediator
-        End Function
 
-        Protected Overridable Sub GPageInit() 'initMediatorのコール必須
-            Dim conInfo As String = Trim(ConfigurationManager.AppSettings("GearsConnection"))
-            Dim dsInfo As String = Trim(ConfigurationManager.AppSettings("GearsDsNameSpace"))
-
-            If Not conInfo Is Nothing AndAlso Not String.IsNullOrEmpty(conInfo) Then '接続文字列は必須
-                Dim conValue As String = conInfo
-                Dim dsValue As String = dsInfo
-                If conValue.StartsWith("Master.") Then
-                    Dim conProperty As String = getMasterProperty(Replace(conValue, "Master.", ""))
-                    If Not conProperty Is Nothing Then
-                        conValue = conProperty.ToString
-                    End If
-                End If
-
-                If Not String.IsNullOrEmpty(dsValue) AndAlso dsValue.StartsWith("Master.") Then
-                    Dim dsProperty As String = getMasterProperty(Replace(dsValue, "Master.", ""))
-                    If Not dsProperty Is Nothing Then
-                        dsValue = dsProperty.ToString
-                    End If
-                End If
-
-                initMediator(conValue, dsValue)
-            End If
-
+        ''' <summary>
+        ''' ページの初期化処理を行う<br/>
+        ''' Overrideを行うことで、GearsMediator登録前(コントロール処理前)にカスタム処理を挿入することができる
+        ''' </summary>
+        ''' <remarks></remarks>
+        Protected Overridable Sub GPageInit()
+            initMediator(String.Empty, String.Empty)
         End Sub
-        Private Function getMasterProperty(ByVal pName As String) As Object
-            Dim masterType As Type = Master.GetType
-            Dim masterProperty As PropertyInfo = masterType.GetProperty(pName)
 
-            If Not masterProperty Is Nothing Then
-                Return masterProperty.GetValue(Master, Nothing)
-            Else
-                Return Nothing
-            End If
-
-        End Function
-
-
-        'イベント処理
-        '権限管理　許可されたロール以外からのアクセスの場合コントロールを不活性化する
+        ''' <summary>
+        ''' ページ初期化イベント<br/>
+        ''' GPageInit(Override可)の実行を行う
+        ''' </summary>
+        ''' <param name="e"></param>
+        ''' <remarks></remarks>
         Protected Overrides Sub OnInit(ByVal e As System.EventArgs)
-            GPageInit() '最優先(GearsMediatorのインスタンス化)
+            GPageInit() 'GearsMediatorのインスタンス化を最優先で行う
+
             MyBase.OnInit(e)
 
-            evaluateAutorization(Me)
+            evaluateAutorization(Me) 'コントロールロード後、権限評価を実施する
 
         End Sub
 
-        'MyControlsの登録　→　実行はどのイベントが好ましいか？は諸説あり。ここでは、loadの直前にする
+        ''' <summary>
+        ''' 与えられたControl領域について、権限の評価を行う
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <remarks></remarks>
+        Public Sub evaluateAutorization(ByRef con As Control)
+            'ロールベースコントロールについて、指定ロール以外の場合コントロールを非表示/非活性化
+            GPageMediator.fetchControls(con, AddressOf Me.fetchRoleBaseControl, AddressOf Me.isRoleBaseControl)
+
+        End Sub
+
+        ''' <summary>
+        ''' 画面上のコントロールをGearsControl化し、GearsMediatorの管理下に配置する
+        ''' </summary>
+        ''' <param name="e"></param>
+        ''' <remarks></remarks>
         Protected Overrides Sub OnPreLoad(ByVal e As System.EventArgs)
             MyBase.OnPreLoad(e)
 
@@ -175,12 +215,6 @@ Namespace Gears
                 GearsLogStack.traceEnd()
             End If
 
-
-        End Sub
-
-        Public Sub evaluateAutorization(ByRef con As Control)
-            'ロールベースコントロールについて、指定ロール以外の場合コントロールを非活性化
-            GPageMediator.fetchControls(con, AddressOf Me.fetchRoleBaseControl, AddressOf Me.isRoleBaseControl)
 
         End Sub
 
@@ -230,7 +264,7 @@ Namespace Gears
             'Gearsフレームワークへのコントロールの登録
             GPageMediator.addGControls(Me, isAutoLoadAttr:=False)
 
-            initialCss = CType(ViewState(V_VALIDATORS), Dictionary(Of String, String))
+            Dim initialCss As Dictionary(Of String, String) = CType(ViewState(V_VALIDATORS), Dictionary(Of String, String))
             If initialCss Is Nothing Then
                 initialCss = New Dictionary(Of String, String)
             End If
@@ -361,10 +395,10 @@ Namespace Gears
             Dim result As Boolean = True
             Log.Clear()
             If Not dto Is Nothing AndAlso _
-                  (dto.getAtype <> ActionType.SEL And dto.getAtype <> ActionType.NONE) Then
+                  (dto.Action <> ActionType.SEL And dto.Action <> ActionType.NONE) Then
                 If IsReload Then
                     Log.Add(fromControl.ID, New GearsException("画面のリフレッシュのみ行いました。更新処理は実行されていません。"))
-                    dto.setAtype(ActionType.SEL)
+                    dto.Action = ActionType.SEL
                 End If
             End If
 
@@ -375,7 +409,7 @@ Namespace Gears
             End If
 
             'バリデーションチェック 
-            If dto.getAtype <> ActionType.SEL Then '更新系の場合、バリデーション処理を実行
+            If dto.Action <> ActionType.SEL Then '更新系の場合、バリデーション処理を実行
                 If Not isValidateOk(fromControl) Then
                     GearsLogStack.setLog(fromControl.ID + " でのバリデーション処理でエラーが発生しました。")
                     Return False
@@ -420,7 +454,7 @@ Namespace Gears
             End If
 
             '更新系処理の場合、データの更新によるドロップダウンリストの項目増減がありうるため、実行(成否に関わらない)
-            If dto.getAtype <> ActionType.SEL Then
+            If dto.Action <> ActionType.SEL Then
                 reloadControlData()
             End If
 
@@ -866,6 +900,23 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 親ページのプロパティを取得する
+        ''' </summary>
+        ''' <param name="propName"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Protected Function getMasterProperty(ByVal propName As String) As Object
+            Dim masterType As Type = Master.GetType
+            Dim masterProperty As PropertyInfo = masterType.GetProperty(propName)
+
+            If Not masterProperty Is Nothing Then
+                Return masterProperty.GetValue(Master, Nothing)
+            Else
+                Return Nothing
+            End If
+
+        End Function
 
         Public Function isLoggingMode() As Boolean
             Dim isLogging As String = getQueryString(GEARS_IS_LOG_OUT)

@@ -52,8 +52,8 @@ Namespace GearsTest
             sql.addFilter(SqlBuilder.newFilter("BUMON").eq(dname))
             sql.addFilter(SqlBuilder.newFilter("SHIGOTO").eq(job))
             sql.addFilter(SqlBuilder.newFilter("EMPNO").gt(0))
-            sql.addSelection(SqlBuilder.newSelect("EMPNO").ASC.isNoSelect)
-            sql.setdsColConvertor(mapper)
+            sql.addSelection(SqlBuilder.newSelect("EMPNO").ASC.asNoSelect)
+            sql.ItemColExchanger = mapper
 
             Dim DsData As DataTable = ds.gSelect(sql)
             Assert.AreEqual(dbData.Rows.Count, DsData.Rows.Count)
@@ -75,7 +75,7 @@ Namespace GearsTest
             Dim start As Integer = 5
             Dim count As Integer = 3
             selectDto.setPaging(5, 3)
-            selectDto.addSelection(SqlBuilder.newSelect("EMPNO").ASC.isNoSelect)
+            selectDto.addSelection(SqlBuilder.newSelect("EMPNO").ASC.asNoSelect)
             dbData = SimpleDBA.executeSql(mainConnection, "SELECT * FROM EMP ORDER BY EMPNO LIMIT + " + count.ToString + " OFFSET " + start.ToString)
             DsData = ds.execute(selectDto)
 
@@ -143,25 +143,25 @@ Namespace GearsTest
 
             'INSERT
             Dim insertDto As New GearsDTO(ActionType.INS)
-            insertDto.addSelection(SqlBuilder.newSelect("EMPNO").setValue(newKey).key)
+            insertDto.addSelection(SqlBuilder.newSelect("EMPNO").setValue(newKey).asKey())
             insertDto.addSelection(SqlBuilder.newSelect("ENAME").setValue("ランディージョンソン"))
             insertDto.addSelection(SqlBuilder.newSelect("JOB").setValue("FREE"))
 
             Try '存在しないキーをUPDATEしようとした場合、エラーになるはず
-                insertDto.setAtype(ActionType.UPD)
+                insertDto.Action = ActionType.UPD
                 ds.execute(insertDto)
             Catch ex As Exception
                 Assert.IsInstanceOf(GetType(GearsRequestedActionInvalid), ex)
             End Try
 
             Try '存在しないキーをDELETEしようとした場合も同様
-                insertDto.setAtype(ActionType.DEL)
+                insertDto.Action = ActionType.DEL
                 ds.execute(insertDto)
             Catch ex As Exception
                 Assert.IsInstanceOf(GetType(GearsRequestedActionInvalid), ex)
             End Try
 
-            insertDto.setAtype(ActionType.INS)
+            insertDto.Action = ActionType.INS
             ds.execute(insertDto)
 
             Assert.AreEqual(1, ds.gResultCount)
@@ -171,7 +171,7 @@ Namespace GearsTest
             Dim updateDto As New GearsDTO(ActionType.UPD)
             updateDto.addSelection(SqlBuilder.newSelect("SAL").setValue("9999"))
             updateDto.addSelection(SqlBuilder.newSelect("HIREDATE").setValue("9000-01-01")) 'DBごとに書式を設定する必要あり(SQLiteだとハイフンつなぎ)
-            updateDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).key)
+            updateDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).asKey())
             ds.execute(updateDto)
 
             Assert.AreEqual(1, ds.gResultCount)
@@ -193,7 +193,7 @@ Namespace GearsTest
 
             Dim saveDto As New GearsDTO(ActionType.SAVE)
 
-            saveDto.addSelection(SqlBuilder.newSelect("EMPNO").setValue(newKey).key)
+            saveDto.addSelection(SqlBuilder.newSelect("EMPNO").setValue(newKey).asKey)
             saveDto.addSelection(SqlBuilder.newSelect("ENAME").setValue("山手五郎"))
             saveDto.addSelection(SqlBuilder.newSelect("JOB").setValue("TRAIN"))
 
@@ -244,7 +244,7 @@ Namespace GearsTest
 
             '削除しておく
             Dim clearDto As New GearsDTO(ActionType.DEL)
-            clearDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).key)
+            clearDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).asKey())
             ds.execute(clearDto)
 
         End Sub

@@ -10,13 +10,13 @@ Namespace Gears
     Public Enum ActionType As Integer
         ''' <summary>NONE:Nothingに該当。初期値用</summary>
         NONE
-        ''' <summary>NONE:Nothingに該当。初期値用</summary>
-        SEL
         ''' <summary>SEL :SELECT処理を表す</summary>
-        UPD
+        SEL
         ''' <summary>UPD :UPDATE処理を表す</summary>
-        INS
+        UPD
         ''' <summary>INS :INSERT処理を表す</summary>
+        INS
+        ''' <summary>DEL :DELETE処理を表す</summary>
         DEL
         ''' <summary>SAVE:既に該当キーが存在する場合UPDATE、そうでない場合INSERTを行う</summary>
         SAVE
@@ -40,11 +40,16 @@ Namespace Gears
     ''' </summary>
     ''' <remarks></remarks>
     Public Enum LockType As Integer
-        UDATE       '日付型(※未実装)
-        UDATESTR    '日付文字列型(20110101など)
-        UTIMESTR    '時刻文字列型(120000など)
-        VNUM        'バージョン番号型
-        USER       'ユーザー
+        ''' <summary>日付型(※未実装)</summary>
+        UDATE
+        ''' <summary>日付文字列型(20110101など)</summary>
+        UDATESTR
+        ''' <summary>時刻文字列型(120000など)</summary>
+        UTIMESTR
+        ''' <summary>バージョン番号型</summary>
+        VNUM
+        ''' <summary>ユーザー</summary>
+        USER
     End Enum
 
     ''' <summary>
@@ -55,7 +60,7 @@ Namespace Gears
         Inherits SqlItemContainer
 
         ''' <summary>パラメーターの接頭辞。SQL Serverなら@など</summary>
-        Private PARAM_HEAD As String = "" 'パラメーターの接頭辞。SQL Serverなら@
+        Private PARAM_HEAD As String = ""
 
         ''' <summary>
         ''' マルチバイトカラムを使用する際のエスケープ文字列<br/>
@@ -221,7 +226,7 @@ Namespace Gears
 
         <Obsolete("Selection.Where(Function(s) Not s.NoSelect).Count を使用してください(メソッドで提供しない)")>
         Public Function getSelectionCount() As Integer
-            Return Selection.Where(Function(s) Not s.NoSelect).Count
+            Return Selection.Where(Function(s) Not s.IsNoSelect).Count
         End Function
 
         ''' <summary>
@@ -308,7 +313,7 @@ Namespace Gears
         Private Function formatSource(ByVal source As SqlDataSource) As String
             Dim result As String = source.DataSource
 
-            If IsMultiByte And source.getValue.Count = 0 Then 'マルチバイト対応が必要で、パイプライン表関数でない(引数がない)
+            If IsMultiByte And source.Value.Count = 0 Then 'マルチバイト対応が必要で、パイプライン表関数でない(引数がない)
                 result = String.Format(MULTIBYTE_FORMAT, result)
             End If
 
@@ -355,7 +360,7 @@ Namespace Gears
         ''' <param name="isNeedOrder"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Private Function makeSelect(ByRef params As Dictionary(Of String, Object), Optional ByVal isNeedOrder As Boolean = True) As String
+        Public Function makeSelect(ByRef params As Dictionary(Of String, Object), Optional ByVal isNeedOrder As Boolean = True) As String
             Dim sql As String = ""
             Dim p_select As String = makeSelection()
             Dim p_from As String = makeFrom(params)
@@ -427,9 +432,9 @@ Namespace Gears
 
             For i As Integer = 0 To Selection.Count - 1
                 Dim item As SqlSelectItem = Selection(i)
-                Dim name As String = "u" + i.ToString
+                Dim name As String = If(String.IsNullOrEmpty(item.ParamName), "u" + i.ToString, item.ParamName)
 
-                If Not item.NoSelect Then
+                If Not item.IsNoSelect Then
                     If item.hasValue Then
                         sets.Add(formatColumn(item) + " = " + PARAM_HEAD + name)
                         params.Add(name, item.Value)
@@ -464,7 +469,8 @@ Namespace Gears
 
             For i As Integer = 0 To Selection.Count - 1
                 Dim item As SqlSelectItem = Selection(i)
-                Dim name As String = "i" + i.ToString
+                Dim name As String = If(String.IsNullOrEmpty(item.ParamName), "i" + i.ToString, item.ParamName)
+
                 If item.hasValue Then
                     cols.Add(formatColumn(item))
                     vals.Add(PARAM_HEAD + name)
@@ -505,7 +511,7 @@ Namespace Gears
             Dim selectStr As String = ""
 
             Dim selects = From s As SqlSelectItem In Selection()
-                          Where Not s.NoSelect
+                          Where Not s.IsNoSelect
                           Let sel As String = formatColumn(s, True)
                           Select s
 
@@ -566,27 +572,27 @@ Namespace Gears
         Private Function makeRelationStr(ByVal ds As SqlDataSource, ByRef params As Dictionary(Of String, Object)) As String
             Dim source As String = ""
 
-            ds.getValue(params)
+            ds.readValues(params)
 
             If Not ds.hasRelation Then
                 source = formatSource(ds)
             Else
 
-                Dim relations As List(Of SqlDataSource) = ds.getRels
+                Dim relations As List(Of SqlDataSource) = ds.JoinTargets
                 For Each relation As SqlDataSource In relations
                     Dim relSource As String = ""
                     If relation.hasRelation Then
                         '再帰呼び出し
                         relSource = makeRelationStr(relation, params)
                     Else
-                        Select Case ds.getRelKind(relation.DataSource)
+                        Select Case ds.getRelation(relation.DataSource)
                             Case RelationKind.INNER_JOIN
                                 relSource += " INNER JOIN " + formatSource(relation) + " ON "
                             Case RelationKind.LEFT_OUTER_JOIN
                                 relSource += " LEFT OUTER JOIN " + formatSource(relation) + " ON "
                         End Select
 
-                        Dim joins = From j As SqlFilterItem In ds.getRelKey(relation.DataSource)
+                        Dim joins = From j As SqlFilterItem In ds.getJoinKey(relation.DataSource)
                                     Select formatColumn(j) + " = " + formatColumn(j.JoinTarget)
                         relSource = String.Join(" AND ", joins)
                     End If
@@ -629,7 +635,7 @@ Namespace Gears
 
             '条件式を作成するマクロ
             Dim makefPart = Function(tf As SqlFilterItem, tp As String)
-                                Dim part As String = If(tf.IsNots, "NOT ", "")
+                                Dim part As String = If(tf.Negation, "NOT ", "")
                                 If tf.hasValue Then
                                     Return part + formatColumn(tf) + " " + tf.Operand + " " + PARAM_HEAD + tp
                                 Else

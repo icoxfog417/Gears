@@ -106,9 +106,12 @@ Namespace Gears
         ''' </summary>
         Public Property IsKey As Boolean
 
-        <Obsolete("IsKeyプロパティを使用してください")>
+        <Obsolete("asKeyかIsKeyプロパティを使用してください")>
         Public Sub setAskey()
-            _isKey = True
+            _IsKey = True
+        End Sub
+        Public Sub asKey()
+            _IsKey = True
         End Sub
 
         Private _isFormAttribute As Boolean = False

@@ -45,7 +45,7 @@ Namespace Gears
 
             Try
                 'データベース更新処理
-                Select Case dto.getAtype
+                Select Case dto.Action
                     Case ActionType.DEL
                         gDelete(dto)
                     Case ActionType.INS
@@ -82,7 +82,7 @@ Namespace Gears
             End If
             sqlb.IsMultiByte = _isMultiByte
 
-            If sqlb.getSelectionCount > 0 Then
+            If sqlb.Selection.Where(Function(s) Not s.IsNoSelect).Count > 0 Then
                 'SELECT * 指定の場合は追加しない(更新の場合は明示的に列が指定されるため0以上の列が指定されているはず)。
                 setLockCheckColValueToSql(sqlb)
             End If

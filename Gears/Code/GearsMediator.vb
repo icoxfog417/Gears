@@ -430,8 +430,8 @@ Namespace Gears
             Dim isIgnore As Boolean = False
 
             If ds Is Nothing Then '初回実行
-                dsData = gcon.getDataSource
-                GearsLogStack.setLog("データアタッチの開始", gcon.ControlID + " のデータソース " + TypeName(gcon.getDataSource).ToUpper + " を配下のコントロールへアタッチします ", visitedList.ToString)
+                dsData = gcon.DataSource
+                GearsLogStack.setLog("データアタッチの開始", gcon.ControlID + " のデータソース " + TypeName(gcon.DataSource).ToUpper + " を配下のコントロールへアタッチします ", visitedList.ToString)
             Else
                 If _receiveEscapes.ContainsKey(visitedList.Relation) AndAlso _receiveEscapes(visitedList.Relation).Contains(gcon.ControlID) Then
                     GearsLogStack.setLog("データアタッチ中", "コントロール " + gcon.ControlID + " は除外対象として設定されているため、アタッチは行われません(配下のコントロールも同様です) ", visitedList.ToString)

@@ -180,7 +180,7 @@ Namespace Gears
                 Dim sqlbForInsert As New SqlBuilder(sql)
                 For Each selection As SqlSelectItem In sql.Selection
                     If sqlbForInsert.Filter(selection.Column) Is Nothing Then
-                        sqlbForInsert.addFilter(selection.filter)
+                        sqlbForInsert.addFilter(selection.toFilter)
                     End If
                 Next
                 setCommand(ActionType.SEL, createSqlCommand(sqlbForInsert, ActionType.SEL))

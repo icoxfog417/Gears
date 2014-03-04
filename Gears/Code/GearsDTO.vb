@@ -95,11 +95,11 @@ Namespace Gears
 
                     If ginfo.IsFormAttribute Then
                         If ginfo.IsKey Then
-                            sqlb.addSelection(SqlBuilder.newSelect(ginfo.DataSourceID).setValue(ginfo.Value).key)
+                            sqlb.addSelection(SqlBuilder.newSelect(ginfo.DataSourceID).setValue(ginfo.Value).asKey())
                             If ginfo.PastValue <> "" Then
-                                sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.PastValue).key) '前回ロード時の値をフィルタ値として設定
+                                sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.PastValue).asKey()) '前回ロード時の値をフィルタ値として設定
                             Else
-                                sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value).key) '前回ロード時の値がない場合、現在値をフィルタ値として設定
+                                sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey()) '前回ロード時の値がない場合、現在値をフィルタ値として設定
                             End If
                         Else
                             sqlb.addSelection(SqlBuilder.newSelect(ginfo.DataSourceID).setValue(ginfo.Value))
@@ -107,7 +107,7 @@ Namespace Gears
 
                     Else 'フィルタパネル、もしくは何も設定がない場合はフィルタ値として判断する
                         If ginfo.IsKey Then
-                            sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value).key)
+                            sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())
                         Else
                             sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value))
                         End If

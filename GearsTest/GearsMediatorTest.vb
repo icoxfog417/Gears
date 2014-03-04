@@ -263,14 +263,14 @@ Namespace GearsTest
 
             Dim deptDto As New GearsDTO(ActionType.SEL)
             deptDto.addFilter(SqlBuilder.newFilter("DEPTNO").eq(deptnoValue))
-            Dim deptnoCount As Integer = mediator.GControl("ddlDEPTNO").getDataSource.gSelectCount(New GearsDTO(ActionType.SEL))
-            Dim areaCount As Integer = mediator.GControl("ddlAREA").getDataSource.gSelectCount(deptDto)
-            Dim groupnCount As Integer = mediator.GControl("ddlGROUPN").getDataSource.gSelectCount(deptDto)
+            Dim deptnoCount As Integer = mediator.GControl("ddlDEPTNO").DataSource.gSelectCount(New GearsDTO(ActionType.SEL))
+            Dim areaCount As Integer = mediator.GControl("ddlAREA").DataSource.gSelectCount(deptDto)
+            Dim groupnCount As Integer = mediator.GControl("ddlGROUPN").DataSource.gSelectCount(deptDto)
 
-            Dim groupnTopValue As String = GearsSqlExecutor.getDataSetValue("GROUPN", mediator.GControl("ddlGROUPN").getDataSource.gSelect(deptDto))
+            Dim groupnTopValue As String = GearsSqlExecutor.getDataSetValue("GROUPN", mediator.GControl("ddlGROUPN").DataSource.gSelect(deptDto))
             Dim groupnDto As New GearsDTO(ActionType.SEL)
             groupnDto.addFilter(SqlBuilder.newFilter("GROUPN").eq(groupnTopValue))
-            Dim unitCount As Integer = mediator.GControl("ddlUNITS").getDataSource.gSelectCount(groupnDto)
+            Dim unitCount As Integer = mediator.GControl("ddlUNITS").DataSource.gSelectCount(groupnDto)
 
             '初期化(GPageの処理に相当)
             initGControls(mediator)
@@ -309,13 +309,13 @@ Namespace GearsTest
             Assert.AreEqual("", mediator.GControl("txtENAME").getValue) 'setEscapesWhenReceiveで設定しているため、空白のはず
 
             Assert.AreEqual(deptnoValue, mediator.GControl("ddlDEPTNO").getValue)
-            Assert.AreEqual(deptnoCount, mediator.GControl("ddlDEPTNO").getDataSource.gResultCount)
+            Assert.AreEqual(deptnoCount, mediator.GControl("ddlDEPTNO").DataSource.gResultCount)
 
             Assert.AreEqual(areaValue, mediator.GControl("ddlAREA").getValue)
-            Assert.AreEqual(areaCount, mediator.GControl("ddlAREA").getDataSource.gResultCount)
+            Assert.AreEqual(areaCount, mediator.GControl("ddlAREA").DataSource.gResultCount)
 
-            Assert.AreEqual(groupnCount, mediator.GControl("ddlGROUPN").getDataSource.gResultCount)
-            Assert.AreEqual(unitCount, mediator.GControl("ddlUNITS").getDataSource.gResultCount)
+            Assert.AreEqual(groupnCount, mediator.GControl("ddlGROUPN").DataSource.gResultCount)
+            Assert.AreEqual(unitCount, mediator.GControl("ddlUNITS").DataSource.gResultCount)
 
 
         End Sub
@@ -382,7 +382,7 @@ Namespace GearsTest
             mediator.addRelation("txtEMPNO", FORM_PANEL)
 
             'キー設定
-            mediator.GControl("txtEMPNO").setAskey()
+            mediator.GControl("txtEMPNO").IsKey = True
 
             '初期化処理
             initGControls(mediator)
@@ -424,7 +424,7 @@ Namespace GearsTest
             mediator.GControl("txtEMPNO").setValue(newEmpno)
             mediator.executeBehavior(form.Control, form.Control, executeDto)
 
-            Assert.AreEqual(newEmpno, GearsSqlExecutor.getDataSetValue("EMPNO", form.getDataSource.gResultSet))
+            Assert.AreEqual(newEmpno, GearsSqlExecutor.getDataSetValue("EMPNO", form.DataSource.gResultSet))
 
             '更新(キー変更更新OFFの場合) ------------------------------------------
             executeDto.IsPermitOtherKeyUpdate = False
@@ -437,7 +437,7 @@ Namespace GearsTest
             'キー更新OKで実行
             executeDto.IsPermitOtherKeyUpdate = True
             mediator.executeBehavior(form.Control, form.Control, executeDto)
-            Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.getDataSource.gResultSet))
+            Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.DataSource.gResultSet))
 
             '削除処理 ------------------------------------------------------------
             Dim deleteDto As New GearsDTO(ActionType.DEL)
@@ -451,7 +451,7 @@ Namespace GearsTest
 
             deleteDto.IsPermitOtherKeyUpdate = True
             deleteDto.removeLockItem()
-            deleteDto.addLockItem(form.getDataSource.getLockedCheckColValue)
+            deleteDto.addLockItem(form.DataSource.getLockedCheckColValue)
             mediator.executeBehavior(form.Control, form.Control, deleteDto)
 
             Dim confirmDto As New GearsDTO(ActionType.SEL)
