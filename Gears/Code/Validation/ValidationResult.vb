@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation
     ''' ------------------------------------------------------------------------------
     ''' <summary>
     ''' 検証結果の種別

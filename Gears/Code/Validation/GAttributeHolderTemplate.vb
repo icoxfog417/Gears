@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation
 
     Public Class GAttributeHolderTemplate
         Implements IAttributeHolder

@@ -1,6 +1,6 @@
 ﻿
 
-Namespace Gears
+Namespace Gears.DataSource
 
     ''' <summary>
     ''' SQL実行に必要なパラメータを管理するコンテナ
@@ -171,10 +171,8 @@ Namespace Gears
         End Sub
 
         ''' <summary>楽観ロック項目の追加(一括)</summary>
-        Public Sub addLockItem(ByRef items As Dictionary(Of String, Object))
-            For Each item As KeyValuePair(Of String, Object) In items
-                _lockitem.Add(SqlBuilder.newFilter(item.Key).eq(item.Value))
-            Next
+        Public Sub addLockItems(ByRef items As List(Of SqlFilterItem))
+            items.ForEach(Sub(f) _lockitem.Add(f))
         End Sub
 
         ''' <summary>楽観ロック項目の削除</summary>

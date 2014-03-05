@@ -1,7 +1,7 @@
 ﻿Imports Microsoft.VisualBasic
-Imports Gears.AbsModelValidator
+Imports Gears.Validation
 
-Namespace Gears
+Namespace Gears.Validation
 
     Public Class GearsModelValidationException
         Inherits GearsException
@@ -15,7 +15,7 @@ Namespace Gears
 
         'コンストラクタ
         Public Sub New(ByVal result As ValidationResults)
-            MyBase.new(result.ErrorMessage)
+            MyBase.New(result.ErrorMessage)
             _result = result
         End Sub
 

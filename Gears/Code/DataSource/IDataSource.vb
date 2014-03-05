@@ -1,7 +1,7 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Data
 
-Namespace Gears
+Namespace Gears.DataSource
 
     Public Interface IDataSource
 
@@ -13,7 +13,6 @@ Namespace Gears
         Sub gUpdate(ByRef data As GearsDTO)
         Sub gDelete(ByRef data As GearsDTO)
 
-        Function gResultCount() As Integer
         Function gResultSet() As DataTable
 
     End Interface

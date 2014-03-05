@@ -1,7 +1,7 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Collections.Generic
 
-Namespace Gears
+Namespace Gears.DataSource
 
     ''' <summary>
     ''' 結合条件種別

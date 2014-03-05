@@ -2,25 +2,7 @@
 Imports System.Collections.Generic
 Imports System.Collections
 
-Namespace Gears
-
-    ''' <summary>
-    ''' データベースへの更新の種別を表す
-    ''' </summary>
-    Public Enum ActionType As Integer
-        ''' <summary>NONE:Nothingに該当。初期値用</summary>
-        NONE
-        ''' <summary>SEL :SELECT処理を表す</summary>
-        SEL
-        ''' <summary>UPD :UPDATE処理を表す</summary>
-        UPD
-        ''' <summary>INS :INSERT処理を表す</summary>
-        INS
-        ''' <summary>DEL :DELETE処理を表す</summary>
-        DEL
-        ''' <summary>SAVE:既に該当キーが存在する場合UPDATE、そうでない場合INSERTを行う</summary>
-        SAVE
-    End Enum
+Namespace Gears.DataSource
 
     ''' <summary>
     ''' データベース種別
@@ -90,15 +72,15 @@ Namespace Gears
         ''' データベース上のカラムと画面で使用する項目名が一致しない場合、変換をかけるために使用<br/>
         ''' (既存のテーブルを使用する場合など)
         ''' </summary>
-        Public Property ItemColExchanger As IViewItemAndColumnMapper = Nothing
+        Public Property ItemColExchanger As INameExchanger = Nothing
 
         <Obsolete("ItemColExchangerプロパティを使用してください")>
-        Public Sub setdsColConvertor(ByVal ice As IViewItemAndColumnMapper)
+        Public Sub setdsColConvertor(ByVal ice As INameExchanger)
             ItemColExchanger = ice
         End Sub
 
         <Obsolete("ItemColExchangerプロパティを使用してください")>
-        Public Function getdsColConvertor() As IViewItemAndColumnMapper
+        Public Function getdsColConvertor() As INameExchanger
             Return ItemColExchanger()
         End Function
 

@@ -1,17 +1,22 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Runtime.Serialization
 
-Namespace Gears
+Namespace Gears.DataSource
 
-    Public Class GearsDataAccessException
+    Public Class GearsSqlException
         Inherits GearsException
 
         Protected Const MSG_ATYPE As String = "MSG_ATYPE"
 
         'コンストラクタ
         Public Sub New()
-            MyBase.new()
+            MyBase.New()
         End Sub
+
+        Public Sub New(ByVal msg As String)
+            MyBase.New(msg)
+        End Sub
+
         Public Sub New(atype As ActionType, message As String, ByVal innerException As Exception)
             MyBase.New(message, innerException)
             setActionType(atype)

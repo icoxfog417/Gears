@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.DataSource
 
     ''' <summary>
     ''' ORDER の種類

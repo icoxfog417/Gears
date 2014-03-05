@@ -1,7 +1,26 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Collections.Generic
+Imports Gears.DataSource
 
 Namespace Gears
+
+    ''' <summary>
+    ''' データベースへの更新の種別を表す
+    ''' </summary>
+    Public Enum ActionType As Integer
+        ''' <summary>NONE:Nothingに該当。初期値用</summary>
+        NONE
+        ''' <summary>SEL :SELECT処理を表す</summary>
+        SEL
+        ''' <summary>UPD :UPDATE処理を表す</summary>
+        UPD
+        ''' <summary>INS :INSERT処理を表す</summary>
+        INS
+        ''' <summary>DEL :DELETE処理を表す</summary>
+        DEL
+        ''' <summary>SAVE:既に該当キーが存在する場合UPDATE、そうでない場合INSERTを行う</summary>
+        SAVE
+    End Enum
 
     ''' <summary>
     ''' Controlの値などをGearsDataSourceへ渡す役割を担うクラス<br/>

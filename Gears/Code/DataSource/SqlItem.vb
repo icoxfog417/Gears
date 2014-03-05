@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.DataSource
 
     ''' <summary>
     ''' SQL内で使用する項目を表す抽象クラス

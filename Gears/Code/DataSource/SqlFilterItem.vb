@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.DataSource
 
     ''' <summary>
     ''' SQLの選択条件をグループ化するためのクラス<br/>

@@ -1,7 +1,8 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Reflection
+Imports Gears.Validation.Validator
 
-Namespace Gears
+Namespace Gears.Validation
 
     Public Class GearsAttributeCreator
 

@@ -4,6 +4,9 @@ Imports System.Collections
 Imports System
 Imports System.Web.UI.WebControls
 Imports System.Reflection
+Imports Gears.DataSource
+Imports Gears.Validation
+Imports Gears.Binder
 
 Namespace Gears
 
@@ -13,7 +16,7 @@ Namespace Gears
     ''' dataBindによりリストなどの選択値、dataAttachにより実際の値がセットされます。<br/>
     ''' 例えば、A・B・Cというの選択肢があり選択中の値はB、という場合、A・B・Cという値はdataBindによりロードされ、
     ''' Bという値はdataAttachにより設定されます。dataAttachは主に特定の一行のDataTableを引数とし、この中で自Controlに該当する値を選択しセットします。
-    ''' <see cref="Gears.GBinderTemplate.dataAttach"/>
+    ''' <see cref="Gears.Binder.GBinderTemplate.dataAttach"/>
     ''' <br/>
     ''' なお、値の設定はsetValueを使用し直接的に行うことも可能です。dataBind/dataAttachによるプロセスはGearsPage等から自動的に処理される際に使用されます<br/>
     ''' <br/>
@@ -36,8 +39,20 @@ Namespace Gears
         ''' <summary>IDに含まれることで、更新キーであることを示す文字列</summary>
         Public Const KEY_ATTRIBUTE As String = "KEY"
 
-        ''' <summary>検索時のオペレーター指定</summary>
+        ''' <summary>IDに含まれることで、登録対象コントロールであることを示す文字列</summary>
+        Public Const GCON_TARGET As String = "GCON"
+
+        ''' <summary>IDに含まれることで、登録対象だが送信対象外であることを示す文字列</summary>
+        Public Const GCON_TARGET_BUT_EXCEPT As String = "GCONX"
+
+        ''' <summary>検索時のオペレーターを指定するための属性</summary>
         Public Const KEY_OPERATOR As String = "OPERATOR"
+
+        ''' <summary>名称空間を指定するための属性</summary>
+        Public Const DS_NAMESPACE As String = "DSNAMESPACE"
+
+        ''' <summary>接続文字列を指定するための属性</summary>
+        Public Const DS_CONNECTION_NAME As String = "DSCONNECTIONNAME"
 
         ''' <summary>Serializeを行うための区切り文字</summary>
         Public Const VALUE_SEPARATOR As String = vbVerticalTab
@@ -173,11 +188,11 @@ Namespace Gears
 
         <Obsolete("DataSourceプロパティを使用してください")>
         Public Sub setDataSource(ByRef ds As GearsDataSource)
-            _dataSource = ds
+            _DataSource = ds
         End Sub
         <Obsolete("DataSourceプロパティを使用してください")>
         Public Function getDataSource() As GearsDataSource
-            Return _dataSource
+            Return _DataSource
         End Function
 
         ''' <summary>
@@ -187,7 +202,7 @@ Namespace Gears
 
         Private _attributes As GearsAttribute = Nothing
         ''' <summary>
-        ''' バリデーションを行うための情報となるGearsAttribute<see cref="Gears.GearsAttribute"/><br/>
+        ''' バリデーションを行うための情報となるGearsAttribute<see cref="Gears.Validation.GearsAttribute"/><br/>
         ''' </summary>
         ''' <remarks></remarks>
         Public Property GAttribute As GearsAttribute Implements IAttributeHolder.GAttribute
@@ -239,7 +254,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Sub New(ByRef con As Control, ByRef gs As GearsDataSource, Optional isAutoLoadAttr As Boolean = True)
             ConnectionName = gs.getConnectionName
-            _dataSource = gs
+            _DataSource = gs
             initInstance(con, isAutoLoadAttr)
 
         End Sub
@@ -258,7 +273,7 @@ Namespace Gears
             If TypeOf con Is WebControl Then
                 Dim wcon As WebControl = CType(con, WebControl)
                 If Not wcon.Attributes(KEY_OPERATOR) Is Nothing Then
-                    _operatorAttribute = wcon.Attributes(KEY_OPERATOR)
+                    _OperatorAttribute = wcon.Attributes(KEY_OPERATOR)
                 End If
             End If
 
@@ -290,7 +305,7 @@ Namespace Gears
 
                 'キー値設定
                 If isIdAttributeExist(KEY_ATTRIBUTE) Then
-                    _isKey = True
+                    _IsKey = True
                 End If
 
                 'コントロールの種別設定
@@ -341,7 +356,7 @@ Namespace Gears
 
                     If Not classtype Is Nothing Then
                         Dim instance As Object = Activator.CreateInstance(classtype, ConnectionName)
-                        _dataSource = CType(instance, GearsDataSource)
+                        _DataSource = CType(instance, GearsDataSource)
                     End If
 
                 Catch ex As Exception
@@ -391,7 +406,7 @@ Namespace Gears
         ''' <param name="attr"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function isIdAttributeExist(ByVal id As String, ByVal attr As String) As String
+        Public Shared Function isIdAttributeExist(ByVal id As String, ByVal attr As String) As Boolean
             Dim idEls() As String = id.Split(ID_SEPARATOR)
             Dim result As Boolean = False
             If idEls.Length > 1 Then
@@ -404,6 +419,32 @@ Namespace Gears
             End If
             Return result
 
+        End Function
+
+        ''' <summary>
+        ''' コントロールのアトリビュートを取得する
+        ''' </summary>
+        ''' <param name="attr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function getControlAttribute(ByVal attr As String) As String
+            Return getControlAttribute(Me.Control, attr)
+        End Function
+
+        ''' <summary>
+        ''' コントロールのアトリビュートを取得する
+        ''' </summary>
+        ''' <param name="attr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Shared Function getControlAttribute(ByVal con As Control, ByVal attr As String) As String
+            Dim result As String = ""
+            If TypeOf con Is WebControl Then
+                Dim wControl = CType(con, WebControl)
+                'コントロールにアトリビュートが保持されているかどうか判定する
+                result = wControl.Attributes(attr).ToString
+            End If
+            Return result
         End Function
 
         ''' <summary>
@@ -507,15 +548,16 @@ Namespace Gears
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function getValue() As String
-            Dim result As String = DataBinder.getValue(_control)
-            '数値型の場合は、空白だと型変換ができないためNothing(NULL)として扱う
-            If Not _attributes Is Nothing AndAlso _
-                (_attributes.hasMarker(GetType(MarkerNumeric)) And String.IsNullOrEmpty(result)) Then
-                Return Nothing
-            Else
-                Return result
+            Dim value As Object = DataBinder.getValue(_control)
+            Dim result As String = If(value Is Nothing, "", value.ToString)
+
+            If Not _attributes Is Nothing AndAlso _attributes.hasMarker(GetType(Marker.MarkerNumeric)) Then
+                If String.IsNullOrWhiteSpace(result.ToString) Then
+                    result = Nothing '数値の場合Nothing化する
+                End If
             End If
             Return result
+
         End Function
 
         ''' <summary>
@@ -523,7 +565,7 @@ Namespace Gears
         ''' </summary>
         ''' <param name="value"></param>
         ''' <remarks></remarks>
-        Public Sub setValue(ByVal value As String)
+        Public Sub setValue(ByVal value As Object)
             DataBinder.setValue(_control, value)
         End Sub
 

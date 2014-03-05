@@ -3,35 +3,63 @@ Imports System.Web
 
 Namespace Gears
 
+    ''' <summary>
+    ''' 内部ログを記録するためのクラス<br/>
+    ''' Sharedで履歴を管理し、各インスタンスをShared配列に格納する形でログを収集する
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsLogStack
 
-        Private Shared LogStack As New Dictionary(Of String, GearsLogStack)
+        ''' <summary>
+        ''' ログを格納した配列
+        ''' </summary>
+        ''' <remarks></remarks>
+        Private Shared _LogStack As New Dictionary(Of String, GearsLogStack)
 
-        Private isTrace As Boolean = False
-        Private logs As New List(Of GearsException)
+        Private _isTrace As Boolean = False
+        Private _logs As New List(Of GearsException)
 
         'インスタンス生成不可
         Private Sub New()
         End Sub
 
-        'Shared
+        ''' <summary>
+        ''' ログをクリアする
+        ''' </summary>
+        ''' <remarks></remarks>
         Public Shared Sub clearLogStack()
-            LogStack.Clear()
+            _LogStack.Clear()
         End Sub
+
+        ''' <summary>
+        ''' 現在位置でログトレースをオンにする<br/>
+        ''' </summary>
+        ''' <remarks></remarks>
         Public Shared Sub traceOn()
             Dim logStore As New GearsLogStack
             logStore.setTrace(True)
 
             If getLogStack() Is Nothing Then
-                LogStack.Add(getStoreKey(), logStore)
+                _LogStack.Add(getStoreKey(), logStore)
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' トレースをオフにする
+        ''' </summary>
+        ''' <remarks></remarks>
         Public Shared Sub traceEnd()
             If Not getLogStack() Is Nothing Then
-                LogStack.Remove(getStoreKey())
+                _LogStack.Remove(getStoreKey())
             End If
         End Sub
+
+        ''' <summary>
+        ''' トレースがオンになっているか確認する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function IsTraceOn() As Boolean
             If Not getLogStackItem() Is Nothing Then
                 Return True
@@ -40,6 +68,12 @@ Namespace Gears
             End If
         End Function
 
+        ''' <summary>
+        ''' ログを書き込む
+        ''' </summary>
+        ''' <param name="msg"></param>
+        ''' <param name="msgDetail"></param>
+        ''' <remarks></remarks>
         Public Shared Sub setLog(ByVal msg As String, ByVal ParamArray msgDetail() As String)
             Dim logStore As GearsLogStack = getLogStackItem()
 
@@ -52,6 +86,12 @@ Namespace Gears
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' 例外からログを書き込む
+        ''' </summary>
+        ''' <param name="msg"></param>
+        ''' <remarks></remarks>
         Public Shared Sub setLog(ByRef msg As GearsException)
             Dim logStore As GearsLogStack = getLogStackItem()
 
@@ -61,6 +101,11 @@ Namespace Gears
 
         End Sub
 
+        ''' <summary>
+        ''' ストアされたログを取得する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function getLogStack() As List(Of GearsException)
             If Not getLogStackItem() Is Nothing Then
                 Return getLogStackItem().getLogs
@@ -70,6 +115,14 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' ログをHTMLで出力する<br/>
+        ''' * gs-log-head:ログのタイトル
+        ''' * gs-log-table:ログ出力を表示しているtableのスタイル
+        ''' * gs-log-table-head":ログ出力を表示しているtableのヘッダのスタイル
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function makeDisplayString() As String
             Dim logTemp As List(Of GearsException) = getLogStack()
 
@@ -123,27 +176,55 @@ Namespace Gears
 
         End Function
 
-
+        ''' <summary>
+        ''' トレースのON/OFFを設定する
+        ''' </summary>
+        ''' <param name="bool"></param>
+        ''' <remarks></remarks>
         Private Sub setTrace(ByVal bool As Boolean)
-            isTrace = bool
+            _isTrace = bool
         End Sub
+
+        ''' <summary>
+        ''' ログを書き込む
+        ''' </summary>
+        ''' <param name="log"></param>
+        ''' <remarks></remarks>
         Private Sub addLog(ByRef log As GearsException)
-            If isTrace = True Then
-                logs.Add(log)
+            If _isTrace = True Then
+                _logs.Add(log)
             End If
         End Sub
+
+        ''' <summary>
+        ''' ログを取得する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function getLogs() As List(Of GearsException)
-            Return logs
+            Return _logs
         End Function
+
+        ''' <summary>
+        ''' 自身のストアキーのオブジェクトを取り出す
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Shared Function getLogStackItem() As GearsLogStack
             Dim logStore As GearsLogStack = Nothing
-            If LogStack.ContainsKey(getStoreKey()) Then
-                logStore = LogStack(getStoreKey())
+            If _LogStack.ContainsKey(getStoreKey()) Then
+                logStore = _LogStack(getStoreKey())
             End If
 
             Return logStore
 
         End Function
+
+        ''' <summary>
+        ''' 自身のストアキーを作成する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Shared Function getStoreKey() As String
             If Not HttpContext.Current Is Nothing Then
                 Return HttpContext.Current.Request.Path

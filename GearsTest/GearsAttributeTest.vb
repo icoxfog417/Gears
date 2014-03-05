@@ -1,5 +1,7 @@
 ﻿Imports NUnit.Framework
 Imports Gears
+Imports Gears.Validation
+Imports Gears.Validation.Validator
 
 Namespace GearsTest
 

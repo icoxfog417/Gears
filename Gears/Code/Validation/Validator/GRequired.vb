@@ -1,6 +1,7 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation.Validator
+
     Public Class GRequired
         Inherits GearsAttribute
 

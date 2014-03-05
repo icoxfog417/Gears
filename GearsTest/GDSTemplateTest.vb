@@ -1,7 +1,8 @@
 ﻿Imports NUnit.Framework
-Imports Gears
 Imports System.Data.Common
 Imports System.Configuration
+Imports Gears
+Imports Gears.DataSource
 
 Namespace GearsTest
 
@@ -22,7 +23,7 @@ Namespace GearsTest
             Assert.AreEqual(dbData.Rows.Count, DsData.Rows.Count)
             Assert.AreEqual(dbData.Rows.Count, ds.gSelectCount(selectDto)) 'カウント検証
 
-             '条件付
+            '条件付
             Dim whereDto As New GearsDTO(ActionType.SEL)
             whereDto.addFilter(SqlBuilder.newFilter("JOB").eq("MANAGER"))
             dbData = SimpleDBA.executeSql(mainConnection, "SELECT * FROM EMP WHERE JOB = :manager ", SimpleDBA.makeParameters("manager", "MANAGER"))
@@ -39,7 +40,7 @@ Namespace GearsTest
             Dim job As String = "SALESMAN"
 
             '項目変換マッパー
-            Dim mapper As New ViewItemAndColumnMapperTemplete()
+            Dim mapper As New NameExchangerTemplete()
             mapper.addRule("BUMON", "DNAME") '双方変換
             mapper.addRuleWhenToCol("SHIGOTO", "JOB") '送信時のみ
             mapper.addRuleWhenToItem("SHAIN_NO", "EMPNO") '読取時のみ
@@ -151,20 +152,20 @@ Namespace GearsTest
                 insertDto.Action = ActionType.UPD
                 ds.execute(insertDto)
             Catch ex As Exception
-                Assert.IsInstanceOf(GetType(GearsRequestedActionInvalid), ex)
+                Assert.IsInstanceOf(GetType(GearsSqlException), ex)
             End Try
 
             Try '存在しないキーをDELETEしようとした場合も同様
                 insertDto.Action = ActionType.DEL
                 ds.execute(insertDto)
             Catch ex As Exception
-                Assert.IsInstanceOf(GetType(GearsRequestedActionInvalid), ex)
+                Assert.IsInstanceOf(GetType(GearsSqlException), ex)
             End Try
 
             insertDto.Action = ActionType.INS
             ds.execute(insertDto)
 
-            Assert.AreEqual(1, ds.gResultCount)
+            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
             Assert.AreEqual(newKey, ds.Item("EMPNO"))
 
             'UPDATE
@@ -174,7 +175,7 @@ Namespace GearsTest
             updateDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).asKey())
             ds.execute(updateDto)
 
-            Assert.AreEqual(1, ds.gResultCount)
+            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
             Assert.AreEqual("9999", ds.Item("SAL"))
 
             'DELETE
@@ -201,26 +202,26 @@ Namespace GearsTest
             saveDto.Action = ActionType.SAVE 'INSERT判断
             ds.execute(saveDto)
 
-            Assert.AreEqual(1, ds.gResultCount)
+            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
             Assert.AreEqual(newKey, ds.Item("EMPNO"))
 
             'ロックキーを設定
-            Dim savedLock As Dictionary(Of String, Object) = ds.getLockedCheckColValue
-            saveDto.addLockItem(savedLock)
+            Dim savedLock As List(Of SqlFilterItem) = ds.getLockCheckColValue
+            saveDto.addLockItems(savedLock)
 
             saveDto.addSelection(SqlBuilder.newSelect("COMM").setValue("アップ"))
             ds.execute(saveDto) 'UPDATE判断
 
-            Assert.AreEqual(1, ds.gResultCount)
+            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
             Assert.AreEqual("アップ", ds.Item("COMM"))
 
             'ロックエラー
             saveDto.removeLockItem()
-            saveDto.addLockItem(savedLock)
+            saveDto.addLockItems(savedLock)
             Try
                 ds.execute(saveDto)
             Catch ex As Exception
-                Assert.IsInstanceOf(GetType(GearsOptimisticLockCheckInvalid), ex)
+                Assert.IsInstanceOf(GetType(GearsOptimisticLockException), ex)
             End Try
 
             'キー変更更新
@@ -229,17 +230,17 @@ Namespace GearsTest
             Try
                 ds.execute(saveDto)
             Catch ex As Exception
-                Assert.IsInstanceOf(GetType(GearsTargetIsAlreadyExist), ex)
+                Assert.IsInstanceOf(GetType(GearsSqlException), ex)
             End Try
 
             saveDto.IsPermitOtherKeyUpdate = True
             saveDto.addSelection(SqlBuilder.newSelect("SAL").setValue("10"))
             saveDto.removeLockItem()
-            saveDto.addLockItem(ds.getLockedCheckColValue)
+            saveDto.addLockItems(ds.getLockCheckColValue)
 
             ds.execute(saveDto)
 
-            Assert.AreEqual(1, ds.gResultCount)
+            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
             Assert.AreEqual("10", ds.Item("SAL"))
 
             '削除しておく

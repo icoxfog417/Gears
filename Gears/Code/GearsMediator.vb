@@ -1,13 +1,15 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Collections.Generic
+Imports Gears.DataSource
 
 Namespace Gears
 
+    ''' <summary>
+    ''' コントロール間の関連を管理するクラス
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsMediator
 
-        Public Const GCON_TARGET As String = "GCON"
-        Public Const DS_NAMESPACE As String = "DSNAMESPACE"
-        Public Const DS_CONNECTION_NAME As String = "DSCONNECTIONNAME"
         Public Const RELATION_STORE_KEY As String = "RELATION_STORE_KEY"
         Public Const PARENT_CONTROL_KEY As String = "+PARENT_CONTROL_KEY+" 'controlとして設定不可能な文字列
         Public Const CONTROL_ID_SEPARATOR As String = "/"
@@ -16,8 +18,8 @@ Namespace Gears
         Public Delegate Sub fetchControl(ByRef control As Control, ByRef dto As GearsDTO)
         Public Delegate Function isFetchTgt(ByRef control As Control) As Boolean
 
-        'プロパティ
         Private _dsNameSpace As String = ""
+        ''' <summary>デフォルトで使用する名称空間</summary>
         Public Property DsNameSpace() As String
             Get
                 Return _dsNameSpace
@@ -26,7 +28,9 @@ Namespace Gears
                 _dsNameSpace = value
             End Set
         End Property
+
         Private _connectionName As String = ""
+        ''' <summary>デフォルトで使用する接続文字列</summary>
         Public Property ConnectionName() As String
             Get
                 Return _connectionName
@@ -37,11 +41,14 @@ Namespace Gears
         End Property
 
         Private _gcontrols As New Dictionary(Of String, GearsControl)
+        ''' <summary>画面コントロールをGearsControl化し登録した配列</summary>
         Public ReadOnly Property GControls() As Dictionary(Of String, GearsControl)
             Get
                 Return _gcontrols
             End Get
         End Property
+
+        ''' <summary>指定したIDのGearsControlを取得する</summary>
         Public Function GControl(ByVal id As String) As GearsControl
             If Not id Is Nothing AndAlso _gcontrols.ContainsKey(id) Then
                 Return _gcontrols(id)
@@ -62,23 +69,36 @@ Namespace Gears
             _dsNameSpace = dsn
         End Sub
 
-        'コントロールの探索
-        '各コントロールに対する処理、及び対処か否かの判定処理を引数にして処理を行うメソッド
-        '判定処理が単純な場合、また判定後のキャストなどがある場合処理が重複するので構成要検討(対象か否かの判定が"横断的関心"として有用ならこれもありか))
-        Public Sub fetchControls(ByRef parent As Control, ByVal callback As fetchControl, ByVal isFetch As isFetchTgt, Optional ByRef dto As GearsDTO = Nothing)
+        ''' <summary>
+        ''' 与えられたコントロールに対し探索を実施する<br/>
+        ''' isTargetの判定がTrueになるものに対し、callbackを実行する。
+        ''' </summary>
+        ''' <param name="parent"></param>
+        ''' <param name="callback"></param>
+        ''' <param name="isTarget"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
+        Public Sub fetchControls(ByRef parent As Control, ByVal callback As fetchControl, ByVal isTarget As isFetchTgt, Optional ByRef dto As GearsDTO = Nothing)
 
-            If parent.HasControls() Then
+            If parent IsNot Nothing AndAlso parent.HasControls() Then
                 Dim child As Control
                 For Each child In parent.Controls()
-                    If isFetch Is Nothing OrElse isFetch(child) Then '対象と判定されたもののみ、Fetchする(ない場合All True)
+                    If isTarget Is Nothing OrElse isTarget(child) Then '対象と判定されたもののみ、Fetchする(ない場合All True)
                         callback(child, dto)
                     End If
-                    fetchControls(child, callback, isFetch, dto)
+                    fetchControls(child, callback, isTarget, dto)
                 Next
             End If
 
         End Sub
 
+        ''' <summary>
+        ''' 与えられたコントロールは以下のコントロールを自身に登録する
+        ''' </summary>
+        ''' <param name="parent"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function addGControls(ByRef parent As Control, Optional isAutoLoadAttr As Boolean = True) As Boolean
             Dim result As Boolean = True
             For Each gcon As GearsControl In createGControls(parent, isAutoLoadAttr)
@@ -90,11 +110,26 @@ Namespace Gears
             Return result
 
         End Function
+
+        ''' <summary>
+        ''' 単一のコントロールを自身に登録する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function addGControl(ByRef con As Control, Optional isAutoLoadAttr As Boolean = True) As Boolean
 
             Return addGControl(createGControl(con, isAutoLoadAttr))
 
         End Function
+
+        ''' <summary>
+        ''' コントロールを自身に登録する
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function addGControl(ByRef gcon As GearsControl) As Boolean
             If Not containsKeySafe(_gcontrols, gcon.ControlID) Then
                 _gcontrols.Add(gcon.ControlID, gcon)
@@ -104,6 +139,14 @@ Namespace Gears
                 Return False
             End If
         End Function
+
+        ''' <summary>
+        ''' GearsControlを作成する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function createGControl(ByRef con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
 
             Dim cn = ConnectionName
@@ -111,12 +154,13 @@ Namespace Gears
             Dim addedControl As New List(Of String)
 
             If TypeOf con Is WebControl Then 'コントロールに名称空間/データソース接続の直接指定があればそちらを優先
-                Dim wcon As WebControl = CType(con, WebControl)
-                If Not String.IsNullOrEmpty(wcon.Attributes(DS_CONNECTION_NAME)) Then
-                    cn = wcon.Attributes(DS_CONNECTION_NAME)
+                Dim conset As String = GearsControl.getControlAttribute(con, GearsControl.DS_CONNECTION_NAME)
+                Dim dnsset As String = GearsControl.getControlAttribute(con, GearsControl.DS_NAMESPACE)
+                If Not String.IsNullOrEmpty(conset) Then
+                    cn = conset
                 End If
-                If Not String.IsNullOrEmpty(wcon.Attributes(DS_NAMESPACE)) Then
-                    ds = wcon.Attributes(DS_NAMESPACE)
+                If Not String.IsNullOrEmpty(dnsset) Then
+                    ds = dnsset
                 End If
             End If
 
@@ -125,6 +169,14 @@ Namespace Gears
             Return gcon
 
         End Function
+
+        ''' <summary>
+        ''' 特定コントロール配下のコントロールを登録する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function createGControls(ByRef con As Control, Optional isAutoLoadAttr As Boolean = True) As List(Of GearsControl)
             Dim gcons As New List(Of GearsControl)
 
@@ -135,6 +187,13 @@ Namespace Gears
 
             Return gcons
         End Function
+
+        ''' <summary>
+        ''' コントロール同士の関連を登録する
+        ''' </summary>
+        ''' <param name="conF"></param>
+        ''' <param name="conT"></param>
+        ''' <remarks></remarks>
         Public Sub addRelation(ByRef conF As Control, ByRef conT As Control)
             Dim templateString As String = "{0} はまだフレームワークに登録されていません。addRelationを行う前に、registerMyControlを使用し、コントロールの登録を行ってください"
             If GControl(conF.ID) Is Nothing Then
@@ -152,6 +211,13 @@ Namespace Gears
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' コントロール同士の関連を登録する(文字列でIDを指定)
+        ''' </summary>
+        ''' <param name="conF"></param>
+        ''' <param name="conT"></param>
+        ''' <remarks></remarks>
         Public Sub addRelation(ByVal conF As String, ByVal conT As String)
 
             If Not GControl(conF) Is Nothing And Not GControl(conT) Is Nothing Then
@@ -215,7 +281,6 @@ Namespace Gears
             End If
 
         End Sub
-
 
         Public Function extractRelation(ByVal conid As String) As List(Of GearsControl)
             If _relations.ContainsKey(conid) Then
@@ -484,7 +549,7 @@ Namespace Gears
                     Dim prefix As String = control.ID.Substring(0, 4)
                     '小文字3文字+大文字～で始まるかチェック(例：txtHOGEなど)
                     If System.Text.RegularExpressions.Regex.IsMatch(prefix, "^[a-z]{3}[A-Z]") Then
-                        Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GCON_TARGET)
+                        Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GearsControl.GCON_TARGET)
                         If _
                             TypeOf control Is ListControl Or _
                             (TypeOf control Is RadioButton And Not TypeOf control.Parent Is RadioButtonList) Or _
@@ -554,7 +619,6 @@ Namespace Gears
 
             End If
         End Function
-
 
         Public Overrides Function toString() As String
             Dim str As String = ""

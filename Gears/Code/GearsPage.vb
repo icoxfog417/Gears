@@ -1,12 +1,14 @@
-﻿Imports System
+﻿Imports Microsoft.VisualBasic
+Imports System
 Imports System.Collections.Generic
 Imports System.Web.UI
 Imports System.Web.UI.WebControls
-Imports Microsoft.VisualBasic
 Imports System.Web
 Imports System.Web.Security
 Imports System.Text
 Imports System.Reflection
+Imports Gears.Validation
+Imports Gears.DataSource
 
 Namespace Gears
 
@@ -190,17 +192,23 @@ Namespace Gears
             'コントロールへのデータ/アトリビュートのセット
             setUpPageControls()
 
-            'ログオンの場合トレース開始
+            'ログ出力モードの場合トレースを開始する
             If isLoggingMode() Then
                 GearsLogStack.traceOn()
             End If
 
         End Sub
 
+        ''' <summary>
+        ''' ロード完了後イベント
+        ''' </summary>
+        ''' <param name="e"></param>
+        ''' <remarks></remarks>
         Protected Overrides Sub OnLoadComplete(e As System.EventArgs)
             MyBase.OnLoadComplete(e)
 
             If isLoggingMode() Then
+                '記録されたログを書き出し
                 If Me.FindControl(GEARS_IS_LOG_OUT) Is Nothing Then
                     Dim label As New Label
                     label.Text = GearsLogStack.makeDisplayString
@@ -208,108 +216,134 @@ Namespace Gears
                 Else
                     CType(Me.FindControl(GEARS_IS_LOG_OUT), Label).Text = GearsLogStack.makeDisplayString
                 End If
-                GearsLogStack.traceEnd()
 
             ElseIf Not Me.FindControl(GEARS_IS_LOG_OUT) Is Nothing Then
                 Me.Controls.Remove(Me.FindControl(GEARS_IS_LOG_OUT))
-                GearsLogStack.traceEnd()
             End If
 
+            GearsLogStack.traceEnd()
 
         End Sub
 
+        ''' <summary>
+        ''' 発生したPostBackがリロードによるものか否かを判定する
+        ''' </summary>
+        ''' <remarks></remarks>
         Private Sub setIsReload()
 
             Response.Cache.SetCacheability(HttpCacheability.NoCache)
-            Response.Cache.SetNoStore() 'IE以外の場合、nostoreも使用しないと駄目な模様 http://d.hatena.ne.jp/manymanytips/20110120/1295500136
+            'IE以外の場合、nostoreも使用しないと駄目な模様 http://d.hatena.ne.jp/manymanytips/20110120/1295500136
+            Response.Cache.SetNoStore()
 
             Dim dateNow As DateTime = Now
-            Dim isAsync As Boolean = ScriptManager.GetCurrent(Me).IsInAsyncPostBack()
-            'ポストバック時、[F5]での二重登録防止判定 ※Asyncの場合はリロードがあり得ないため、判定を行わない
-            If IsPostBack And Not isAsync Then
-                'タイムスタンプが設定されていない場合(一度もNot PostBackでページがロードされていない場合=ポストバックで遷移してき)
-                If Session(Request.FilePath & V_S_TIME_STAMP) Is Nothing Or ViewState(Request.FilePath & V_S_TIME_STAMP) Is Nothing Then
-                    'ポストバックで遷移してきて、タイムスタンプが空の場合もリロードと判定する 
-                    _isReload = True
-                Else
+            Dim isAsync As Boolean = isPageAsync()
+            'ポストバック時、[F5]での二重登録防止判定 ※AsyncによるPostBackは除外する
+            If Not isAsync Then
 
-                    Dim dateSessionStamp As DateTime = DirectCast(Session(Request.FilePath & V_S_TIME_STAMP), DateTime)
-                    Dim dateViewStateStamp As DateTime = DirectCast(ViewState(Request.FilePath & V_S_TIME_STAMP), DateTime)
-
-                    '[F5]を押下したとき(リロード)のViewStateのタイムスタンプは、前回送信情報のまま
-                    If dateSessionStamp <> dateViewStateStamp Then
+                If IsPostBack Then
+                    'タイムスタンプが設定されていない場合
+                    If Session(Request.FilePath & V_S_TIME_STAMP) Is Nothing Or ViewState(Request.FilePath & V_S_TIME_STAMP) Is Nothing Then
+                        'ポストバックで遷移してきて、タイムスタンプが空の場合もリロードと判定する 
                         _isReload = True
                     Else
-                        _isReload = False
+
+                        Dim dateSessionStamp As DateTime = DirectCast(Session(Request.FilePath & V_S_TIME_STAMP), DateTime)
+                        Dim dateViewStateStamp As DateTime = DirectCast(ViewState(Request.FilePath & V_S_TIME_STAMP), DateTime)
+
+                        '[F5]を押下したとき(リロード)のViewStateのタイムスタンプは、前回送信情報のまま
+                        If dateSessionStamp <> dateViewStateStamp Then
+                            _isReload = True
+                        Else
+                            _isReload = False
+                        End If
+
                     End If
-
                 End If
-            End If
 
-            'タイムスタンプを記録 ※非同期更新の場合はタイムスタンプの更新を行わない(ViewStateが更新されず、Sessionのみタイムスタンプが更新されてしまうため)
-            If Not isAsync Then
+                'タイムスタンプを記録 ※非同期更新の場合はタイムスタンプの更新を行わない(ViewStateが更新されず、Sessionのみタイムスタンプが更新されてしまうため)
                 Session(Request.FilePath & V_S_TIME_STAMP) = dateNow
                 ViewState(Request.FilePath & V_S_TIME_STAMP) = dateNow
+
             End If
 
         End Sub
 
+        ''' <summary>
+        ''' ページ更新が非同期更新かどうかチェックする
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function isPageAsync() As Boolean
+
+            'TODO ToolkitScriptManagerの考慮が必要
+            Dim s As ScriptManager = ScriptManager.GetCurrent(Me)
+            If s IsNot Nothing Then
+                Return s.IsInAsyncPostBack()
+            Else
+                Return False
+            End If
+
+        End Function
+
+        ''' <summary>
+        ''' ページ
+        ''' </summary>
+        ''' <remarks></remarks>
         Protected Sub setUpPageControls()
 
             If GPageMediator Is Nothing Then
-                Throw New GearsException("ページの初期化が行われていません", "initMediatorを呼び出し接続文字列・名称空間を設定してください")
+                Throw New GearsException("ページの初期化が行われていません", "web.configの" + CONFIG_CONNECTION_NAME + "等の設定を確認して下さい")
             End If
 
-            'フォームコントロールの登録処理
-            'Gearsフレームワークへのコントロールの登録
+            'コントロールを管理するGearsMediatorへコントロールを追加する
+            '属性情報は、初回ロード以後は初回ロード時のCssClassを使用するため、自動ロードしない
             GPageMediator.addGControls(Me, isAutoLoadAttr:=False)
 
+            '初回ロード時のCSS
             Dim initialCss As Dictionary(Of String, String) = CType(ViewState(V_VALIDATORS), Dictionary(Of String, String))
             If initialCss Is Nothing Then
                 initialCss = New Dictionary(Of String, String)
             End If
 
+            '登録されたコントロールに対し、属性をセット
             For Each item As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
-                If GPageMediator.isTargetControl(item.Value.Control) Then
 
-                    '前回ロード時の値がある場合、過去ロード値にセット
-                    If Not reloadLoadedValue(item.Key) Is Nothing Then
-                        item.Value.LoadedValue = reloadLoadedValue(item.Key)
-                    End If
-
-                    'データロード
-                    If Not IsPostBack Then
-                        '初回であれば、設定されたデータソースから値をロードする。
-                        item.Value.dataBind()
-
-                        'CSSからアトリビュートをロード
-                        If TypeOf item.Value.Control Is WebControl Then
-                            initialCss.Add(item.Key, CType(item.Value.Control, WebControl).CssClass)
-                            item.Value.loadAttribute()
-                            CType(item.Value.Control, WebControl).CssClass = item.Value.GCssClass 'CSSを書き換え
-                        End If
-
-                        'リストコントロールのAttributeが確保されない対応
-                        saveListItemAttribute(item.Value.Control)
-                    Else
-                        'Postbackの場合、基本はViewStateが担保されているのでロードは行わないが、
-                        'ViewStateEnableがFalseでデータが消える場合、リロードをかける
-                        If item.Value.Control.EnableViewState = False Then
-                            item.Value.dataBind()
-                        End If
-
-                        '保管しておいた初期CSSからアトリビュートをロード/エラースタイルを消去
-                        If TypeOf item.Value.Control Is WebControl AndAlso initialCss.ContainsKey(item.Key) Then
-                            item.Value.loadAttribute(initialCss(item.Key))
-                            CType(item.Value.Control, WebControl).CssClass = CType(item.Value.Control, WebControl).CssClass.Replace(" " + GearsAttribute.ERR_STYLE, "")
-                        End If
-
-
-                        'リストコントロールのAttributeが確保されない対応
-                        loadListItemAttribute(item.Value.Control)
-                    End If
-
+                '前回ロード時の値がある場合、過去ロード値をセット
+                If Not reloadLoadedValue(item.Key) Is Nothing Then
+                    item.Value.LoadedValue = reloadLoadedValue(item.Key)
                 End If
+
+                'データロード
+                If Not IsPostBack Then
+                    '初回であれば、設定されたデータソースから値をロードする。
+                    item.Value.dataBind()
+
+                    'CSSからアトリビュートをロード
+                    If TypeOf item.Value.Control Is WebControl Then
+                        initialCss.Add(item.Key, CType(item.Value.Control, WebControl).CssClass)
+                        item.Value.loadAttribute()
+                        CType(item.Value.Control, WebControl).CssClass = item.Value.GCssClass 'CSSを書き換え
+                    End If
+
+                    'リストコントロールのAttributeが確保されない対応
+                    saveListItemAttribute(item.Value.Control)
+                Else
+                    'Postbackの場合、基本はViewStateが担保されているのでロードは行わないが、
+                    'ViewStateEnableがFalseでデータが消える場合、リロードをかける
+                    If item.Value.Control.EnableViewState = False Then
+                        item.Value.dataBind()
+                    End If
+
+                    '保管しておいた初期CSSからアトリビュートをロード/エラースタイルを消去
+                    If TypeOf item.Value.Control Is WebControl AndAlso initialCss.ContainsKey(item.Key) Then
+                        item.Value.loadAttribute(initialCss(item.Key))
+                        CType(item.Value.Control, WebControl).CssClass = CType(item.Value.Control, WebControl).CssClass.Replace(" " + GearsAttribute.ERR_STYLE, "")
+                    End If
+
+                    'リストコントロールのAttributeが確保されない対応
+                    loadListItemAttribute(item.Value.Control)
+                End If
+
             Next
 
             '初期CSSを保管
@@ -319,35 +353,16 @@ Namespace Gears
 
         End Sub
 
-        Private Sub reloadControlData()
-
-            For Each item As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
-                If GPageMediator.isTargetControl(item.Value.Control) Then
-
-                    'データロード
-                    If IsPostBack Then
-                        'Postbackの場合、基本はViewStateが担保されているのでロードは行わないが、
-                        'ViewStateEnableがFalseでデータが消える場合、リロードをかける
-                        If item.Value.Control.EnableViewState = False Then
-                            item.Value.dataBind()
-                        End If
-                    End If
-                End If
-            Next
-
-        End Sub
-
         Public Function isValidateOk(Optional ByVal con As Control = Nothing) As Boolean
             Dim result As Boolean = True
-            Dim target As Control = Nothing
+            Dim target As Control = con
             Log.Clear()
 
             If con Is Nothing Then
                 target = Me
-            Else
-                target = con
             End If
 
+            'targetが子コントロールを保持している場合、子コントロールについてもバリデーションを行う
             If Not target Is Nothing AndAlso target.HasControls Then
                 GPageMediator.fetchControls(target, AddressOf Me.fetchEachControlValidate, AddressOf GPageMediator.isRegisteredControl)
             ElseIf GPageMediator.isRegisteredControl(target) Then
@@ -358,12 +373,13 @@ Namespace Gears
                 result = False
                 'エラー項目にスタイル適用
                 For Each item As KeyValuePair(Of String, GearsException) In Log
-                    If Not GPageMediator.GControl(item.Key) Is Nothing AndAlso TypeOf GPageMediator.GControl(item.Key).Control Is WebControl AndAlso _
+                    If Not GPageMediator.GControl(item.Key) Is Nothing AndAlso _
+                        TypeOf GPageMediator.GControl(item.Key).Control Is WebControl AndAlso _
                         TypeOf item.Value Is GearsDataValidationException Then
 
                         Dim wcon As WebControl = CType(GPageMediator.GControl(item.Key).Control, WebControl)
                         wcon.CssClass += " " + GearsAttribute.ERR_STYLE
-                        Exit For '一件発見したら抜ける(とりあえず)
+                        Exit For '一件発見したら抜ける(エラーメッセージがそもそもそんなに表示できないので)
                     End If
                 Next
             End If
@@ -371,6 +387,13 @@ Namespace Gears
             Return result
 
         End Function
+
+        ''' <summary>
+        ''' 各コントロールに対しバリデーションを行う
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
         Private Sub fetchEachControlValidate(ByRef control As Control, ByRef dto As GearsDTO)
             If Not GPageMediator.GControl(control.ID) Is Nothing Then
                 Dim gcon As GearsControl = GPageMediator.GControl(control.ID)
@@ -380,17 +403,53 @@ Namespace Gears
             End If
         End Sub
 
+        ''' <summary>
+        ''' fromコントロールの変更を、関連先に通知するメソッド
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="atype"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function executeBehavior(ByRef fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
             Dim dto As GearsDTO = New GearsDTO(atype)
             Return executeBehavior(fromControl, Nothing, dto)
         End Function
+
+        ''' <summary>
+        ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
+        ''' toコントロールを明示的に指定する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="atype"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function executeBehavior(ByRef fromControl As Control, ByRef toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
             Dim dto As GearsDTO = New GearsDTO(atype)
             Return executeBehavior(fromControl, toControl, dto)
         End Function
+
+        ''' <summary>
+        ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="dto"></param>
+        ''' <param name="isGatherInfo">配下のコントロール情報を収集するか否か</param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function executeBehavior(ByRef fromControl As Control, ByRef dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
             Return executeBehavior(fromControl, Nothing, dto, isGatherInfo)
         End Function
+
+        ''' <summary>
+        ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="dto"></param>
+        ''' <param name="isGatherInfo"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Overridable Function executeBehavior(ByRef fromControl As Control, ByRef toControl As Control, ByRef dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
             Dim result As Boolean = True
             Log.Clear()
@@ -419,9 +478,9 @@ Namespace Gears
             'メイン処理実行
             Dim sender As GearsDTO = Nothing
 
-            If isGatherInfo Then
+            If isGatherInfo Then 'fromControl配下のコントロールの情報を収集
                 sender = GPageMediator.makeSendMessage(fromControl, toControl, dto)
-                sender.addLockItem(reloadLockValue(fromControl)) '楽観的ロックのチェックを追加
+                sender.addLockItems(reloadLockValue(fromControl)) '楽観的ロックのチェックを追加
             Else
                 sender = dto
             End If
@@ -436,7 +495,13 @@ Namespace Gears
             result = GPageMediator.executeBehavior(fromControl, toControl, sender, False) '自身で作っているためここではFalse
 
             '実行結果チェック
-            If Not result Then
+            If result Then
+                GearsLogStack.setLog(fromControl.ID + " での更新に成功しました。")
+                '更新対象のロード時の値を保持 ※失敗した場合は、再処理のためロード時の値更新は行わない
+                saveLoadedValue(fromControl, toControl)
+
+            Else
+
                 For Each logitem As KeyValuePair(Of String, GearsException) In GPageMediator.getLog()
                     If Not Log.ContainsKey(logitem.Key) Then
                         Log.Add(logitem.Key, logitem.Value)
@@ -447,21 +512,27 @@ Namespace Gears
 
                 result = evalModelValidation(Log)
 
-            Else
-                GearsLogStack.setLog(fromControl.ID + " での更新に成功しました。")
-                '更新対象のロード時の値を保持 ※失敗した場合は、再処理のためロード時の値更新は行わない
-                saveLoadedValue(fromControl, toControl)
             End If
 
-            '更新系処理の場合、データの更新によるドロップダウンリストの項目増減がありうるため、実行(成否に関わらない)
-            If dto.Action <> ActionType.SEL Then
-                reloadControlData()
-            End If
+            ''更新系処理の場合、データの更新によるドロップダウンリストの項目増減がありうるため、実行(成否に関わらない)
+            'If dto.Action <> ActionType.SEL Then
+            '    For Each item As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
+            '        If item.Value.Control.EnableViewState = False Then
+            '            item.Value.dataBind()
+            '        End If
+            '    Next
+            'End If
 
             Return result
 
         End Function
 
+        ''' <summary>
+        ''' バリデーション結果を評価する
+        ''' </summary>
+        ''' <param name="logs"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function evalModelValidation(ByRef logs As Dictionary(Of String, GearsException)) As Boolean
             Dim result As Boolean = True
 
@@ -471,16 +542,16 @@ Namespace Gears
                         Where TypeOf ex.Value Is GearsModelValidationException
                         Select ex.Value).FirstOrDefault
 
-            If Not mv Is Nothing Then 'エラーなしだが警告有り
+            If Not mv Is Nothing Then 'モデルバリデーションでエラーが出ている場合
 
                 If mv.Result.IsValidIgnoreAlert Then '警告のケース
                     Dim cs As ClientScriptManager = Me.ClientScript
 
                     '警告表示
                     If (Not cs.IsStartupScriptRegistered(Me.GetType, ALERT_PROMPT_SCRIPT_NAME)) Then
-                        Dim isAsync As Boolean = ScriptManager.GetCurrent(Me).IsInAsyncPostBack
+                        Dim isAsync As Boolean = isPageAsync()
 
-                        Dim handler As Control = GetSubmitCauseControl()
+                        Dim handler As Control = GetSubmitCausedControl()
 
                         Dim alertMsg As String = "警告\n" + mv.Message.Replace(vbCrLf, "\n")
                         Dim scriptTag As New StringBuilder()
@@ -517,6 +588,7 @@ Namespace Gears
                 End If
 
                 'エラー対象コントロールにスタイルを適用
+                'TODO エラースタイルの付与/解除を簡単にできるよう関数化。エラースタイルの解除は初期化処理setUpPageControlsに依存しているため、要工夫
                 Dim eSource As WebControl = (From con As KeyValuePair(Of String, GearsControl) In GPageMediator.GControls
                                              Where con.Value.DataSourceID = mv.Result.ErrorSource And TypeOf con.Value.Control Is WebControl
                                              Select con.Value.Control).FirstOrDefault
@@ -534,21 +606,61 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 配下のコントロール情報を収集しGearsDTOにまとめる<br/>
+        ''' 実装はGearsMediatorに委譲
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="atype"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function makeSendMessage(ByRef fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
             Dim dto As GearsDTO = New GearsDTO(atype)
             Return makeSendMessage(fromControl, Nothing, dto)
         End Function
+
+        ''' <summary>
+        ''' 配下のコントロール情報を収集しGearsDTOにまとめる
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function makeSendMessage(ByRef fromControl As Control, ByRef dto As GearsDTO) As GearsDTO
             Return makeSendMessage(fromControl, Nothing, dto)
         End Function
+
+        ''' <summary>
+        ''' 配下のコントロール情報を収集しGearsDTOにまとめる
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="atype"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function makeSendMessage(ByRef fromControl As Control, ByRef toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
             Return makeSendMessage(fromControl, toControl, New GearsDTO(atype))
         End Function
+
+        ''' <summary>
+        ''' 配下のコントロール情報を収集しGearsDTOにまとめる
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="fromDto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Overridable Function makeSendMessage(ByRef fromControl As Control, ByRef toControl As Control, ByRef fromDto As GearsDTO) As GearsDTO
             Return GPageMediator.makeSendMessage(fromControl, toControl, fromDto)
 
         End Function
-        'ロード時のデータ確保
+
+        ''' <summary>
+        ''' 指定されたコントロールの関連先について、現在ロードされた値を確保する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <remarks></remarks>
         Protected Sub saveLoadedValue(ByRef fromControl As Control, ByRef toControl As Control)
 
             Dim list As List(Of GearsControl) = GPageMediator.extractRelation(fromControl.ID)
@@ -568,37 +680,68 @@ Namespace Gears
             End If
 
         End Sub
-        Protected Sub fetchLoadedValue(ByRef control As Control, ByRef dto As GearsDTO)
+
+        ''' <summary>
+        ''' ロードされた値を保存する(再帰処理用)
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
+        Private Sub fetchLoadedValue(ByRef control As Control, ByRef dto As GearsDTO)
             saveLoadedValue(control.ID)
         End Sub
+
+        ''' <summary>
+        ''' ロードされた値を保存する
+        ''' </summary>
+        ''' <param name="conId"></param>
+        ''' <remarks></remarks>
         Protected Sub saveLoadedValue(ByVal conId As String)
             ViewState(V_LOADED + VIEW_STATE_SEPARATOR + conId) = GPageMediator.GControl(conId).getValue
         End Sub
+
+        ''' <summary>
+        ''' ロードされた値を取得する
+        ''' </summary>
+        ''' <param name="conId"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Protected Function reloadLoadedValue(ByVal conId As String) As String
             Return ViewState(V_LOADED + VIEW_STATE_SEPARATOR + conId)
         End Function
 
-        'ロックチェック用カラムのデータ確保(GearsControlのデータソースを直接参照)
+        ''' <summary>
+        ''' 楽観ロック用の値を取得し、保存する
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <remarks></remarks>
         Protected Sub saveLockValueIfExist(ByRef gcon As GearsControl)
             If Not gcon.DataSource Is Nothing Then
-                If gcon.DataSource.getLockCheckColCount > 0 Then
-                    Dim lockParams As Dictionary(Of String, Object) = gcon.DataSource.getLockedCheckColValue
-                    For Each item As KeyValuePair(Of String, Object) In lockParams
-                        ViewState(V_LOCKCOL + VIEW_STATE_SEPARATOR + gcon.ControlID + VIEW_STATE_SEPARATOR + item.Key) = item.Value
+                Dim lockValue As List(Of SqlFilterItem) = gcon.DataSource.getLockCheckColValue
+                If lockValue.Count > 0 Then
+                    For Each item As SqlFilterItem In lockValue
+                        ViewState(V_LOCKCOL + VIEW_STATE_SEPARATOR + gcon.ControlID + VIEW_STATE_SEPARATOR + item.Column) = item.Value
                     Next
                 End If
 
             End If
         End Sub
-        Protected Function reloadLockValue(ByRef con As Control) As Dictionary(Of String, Object)
-            Dim result As New Dictionary(Of String, Object)
+
+        ''' <summary>
+        ''' 楽観ロック用の値を取得する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Protected Function reloadLockValue(ByRef con As Control) As List(Of SqlFilterItem)
+            Dim result As New List(Of SqlFilterItem)
 
             For Each key As String In ViewState.Keys
                 If key.StartsWith(V_LOCKCOL + VIEW_STATE_SEPARATOR + con.ID + VIEW_STATE_SEPARATOR) Then
                     Dim keySplit() As String = key.Split(VIEW_STATE_SEPARATOR)
                     If keySplit.Length > 0 Then
                         If Not keySplit(2) Is Nothing Then '1:LOCKCOL/コントロールID/ロックカラム名
-                            result.Add(keySplit(2), ViewState(key))
+                            result.Add(New SqlFilterItem(keySplit(2)).eq(ViewState(key)))
                         End If
                     End If
 
@@ -609,7 +752,12 @@ Namespace Gears
 
         End Function
 
-        'ロールによってコントロールの活性/非活性を切り替える
+        ''' <summary>
+        ''' 権限による表示/非表示などの切り替えを行う
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
         Private Sub fetchRoleBaseControl(ByRef control As Control, ByRef dto As GearsDTO)
             'ロールベースコントロールと判定されて来る
             Dim result As Boolean = False
@@ -638,8 +786,9 @@ Namespace Gears
                 End If
 
                 'コントロールへの設定反映
-                If isControlHasAttribute(control, ROLE_EVAL_ACTION) Then
-                    evalType = wControl.Attributes(ROLE_EVAL_ACTION).ToUpper
+                Dim evalTypeAttr = GearsControl.getControlAttribute(control, ROLE_EVAL_ACTION)
+                If Not String.IsNullOrEmpty(evalTypeAttr) Then
+                    evalType = evalTypeAttr.ToUpper
                 End If
 
                 Select Case evalType
@@ -653,24 +802,21 @@ Namespace Gears
 
         End Sub
 
-        'ロール管理コントロールの判定
+        ''' <summary>
+        ''' ロール管理コントロールか否かを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Protected Function isRoleBaseControl(ByRef control As Control) As Boolean
-            Return isControlHasAttribute(control, ROLE_AUTH_ALLOW)
-        End Function
-        Protected Function isControlHasAttribute(ByRef con As Control, ByVal attr As String) As Boolean
-            Dim result As Boolean = False
-            If TypeOf con Is WebControl Then
-                Dim wControl = CType(con, WebControl)
-                'コントロールにアトリビュートが保持されているかどうか判定する
-                Dim attrValue As String = wControl.Attributes(attr)
-                If Not String.IsNullOrEmpty(attrValue) Then
-                    result = True
-                End If
-            End If
-            Return result
+            Return GearsControl.getControlAttribute(control, ROLE_AUTH_ALLOW)
         End Function
 
-        'ListItemのAttributeが消える対策
+        ''' <summary>
+        ''' ListItemのAttributeが消える対策(保管)
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <remarks></remarks>
         Protected Sub saveListItemAttribute(ByRef con As Control)
             Dim liscon As ListControl
             If Not TypeOf con Is ListControl Then
@@ -690,6 +836,11 @@ Namespace Gears
             Next
         End Sub
 
+        ''' <summary>
+        ''' ListItemのAttributeが消える対策(リストア)
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <remarks></remarks>
         Private Sub loadListItemAttribute(ByRef con As Control)
             Dim liscon As ListControl
             If Not TypeOf con Is ListControl Then
@@ -710,10 +861,23 @@ Namespace Gears
             Next
         End Sub
 
-        'ユーティリティメソッド
+        ''' <summary>
+        ''' 登録済みのコントロールを取得する(id指定)
+        ''' TODO メソッド名変更
+        ''' </summary>
+        ''' <param name="id"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getMyControl(ByVal id As String) As GearsControl
             Return GPageMediator.GControl(id)
         End Function
+
+        ''' <summary>
+        ''' 登録済みのコントロールを取得する(Controlから)
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getMyControl(ByRef con As Control) As GearsControl
             If Not con Is Nothing Then
                 Return GPageMediator.GControl(con.ID)
@@ -722,31 +886,44 @@ Namespace Gears
             End If
         End Function
 
+        ''' <summary>
+        ''' 自動で登録されないコントロールを手動で登録する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadDS"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <remarks></remarks>
         Public Sub registerMyControl(ByRef con As Control, Optional isAutoLoadDS As Boolean = True, Optional isAutoLoadAttr As Boolean = True)
             GPageMediator.addGControl(con, isAutoLoadAttr)
         End Sub
+
+        ''' <summary>
+        ''' 自動で登録されないコントロールを手動で登録する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="ds"></param>
+        ''' <remarks></remarks>
         Public Sub registerMyControl(ByRef con As Control, ByRef ds As GearsDataSource)
             Dim gcon As GearsControl = New GearsControl(con, ds)
             GPageMediator.addGControl(gcon)
         End Sub
 
+        ''' <summary>
+        ''' 指定されたIDのコントロールを取得する
+        ''' </summary>
+        ''' <param name="conid"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GFindControl(ByVal conid As String) As Control
             Return GPageMediator.GFindControl(Me, conid)
         End Function
 
-        Public Function setValueToControl(ByVal conid As String, ByVal value As String) As Boolean
-            Dim con As Control = GFindControl(conid)
-            Dim binder As New GBinderTemplate()
-
-            If Not con Is Nothing Then
-                binder.setValue(con, value)
-                Return True
-            Else
-                Return False
-            End If
-        End Function
-
-        Public Function GetSubmitCauseControl() As Control
+        ''' <summary>
+        ''' Submitイベントを発生させたコントロールを特定する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function GetSubmitCausedControl() As Control
             Dim result As Control = Nothing
             Dim controlName As String = Me.Request.Params("__EVENTTARGET")
 
@@ -776,6 +953,13 @@ Namespace Gears
             Return result
 
         End Function
+
+        ''' <summary>
+        ''' イベントが発生したコントロールから、非同期更新を発生させたUpdatePanelを特定する
+        ''' </summary>
+        ''' <param name="causedControl"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GetAsynchronousPostBackPanel(ByVal causedControl As Control) As Control
             If causedControl Is Nothing Then Return Nothing
 
@@ -801,49 +985,76 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 関連を登録する
+        ''' </summary>
+        ''' <param name="conF"></param>
+        ''' <param name="conT"></param>
+        ''' <remarks></remarks>
         Public Sub addRelation(ByRef conF As Control, ByRef conT As Control)
             GPageMediator.addRelation(conF, conT)
         End Sub
+
+        ''' <summary>
+        ''' executeBehaviorを行う際、除外対象とするコントロールを設定する
+        ''' TODO:メソッド名変更Escapeはない。また、IDから推定できるようにすべき
+        ''' </summary>
+        ''' <param name="fromCon"></param>
+        ''' <param name="toCon"></param>
+        ''' <param name="escapes"></param>
+        ''' <remarks></remarks>
         Public Sub setEscapesWhenSend(ByRef fromCon As Control, ByRef toCon As Control, ByVal ParamArray escapes() As String)
             GPageMediator.setEscapesWhenSend(fromCon, toCon, escapes)
         End Sub
+
+        ''' <summary>
+        ''' executeBehaviorを行う際、除外対象としていたコントロールの設定をリセットする
+        ''' </summary>
+        ''' <param name="fromCon"></param>
+        ''' <param name="toCon"></param>
+        ''' <remarks></remarks>
         Public Sub resetEscapesWhenSend(ByRef fromCon As Control, ByRef toCon As Control)
             GPageMediator.resetEscapesWhenSend(fromCon, toCon)
         End Sub
 
+        <Obsolete("Log.Countを使用してください")>
         Public Function getLogCount() As Integer
             Return Log.Count
         End Function
+
+        ''' <summary>
+        ''' 最初のエラーを取得する
+        ''' TODO メソッド名変更
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getLogMsgFirst() As GearsException
             If Log.Count > 0 Then
-                Return getLogMsg(0)
+                Return Log.First.Value
             Else
                 Return Nothing
             End If
         End Function
-        Public Function getLogMsg(ByVal index As Integer) As GearsException
-            Dim logIndex As String = Nothing
-            Dim logContent As GearsException = Nothing
-            Dim i As Integer = 0
 
-            For Each item As KeyValuePair(Of String, GearsException) In Log
-                If index = i Then
-                    logIndex = item.Key
-                    logContent = item.Value
-                    Exit For
-                End If
-                i += 1
-            Next
-
-            Return logContent
-
-        End Function
+        ''' <summary>
+        ''' エラーログをラベルに設定する
+        ''' </summary>
+        ''' <param name="result"></param>
+        ''' <param name="label"></param>
+        ''' <remarks></remarks>
         Public Sub getLogMsgDescription(ByVal result As Boolean, ByRef label As Label)
             Dim desc As KeyValuePair(Of String, String) = getLogMsgDescription(result)
             label.CssClass = desc.Key
             label.Text = desc.Value
 
         End Sub
+
+        ''' <summary>
+        ''' エラーログをスタイル付きで出力する
+        ''' </summary>
+        ''' <param name="result"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Overridable Function getLogMsgDescription(ByVal result As Boolean) As KeyValuePair(Of String, String)
             Dim desc As KeyValuePair(Of String, String) = Nothing
             Dim msg As String
@@ -868,6 +1079,12 @@ Namespace Gears
             Return desc
         End Function
 
+        ''' <summary>
+        ''' クエリ引数を取得する
+        ''' </summary>
+        ''' <param name="keyname"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getQueryString(ByVal keyname As String) As String
             Dim value As String = HttpUtility.UrlDecode(Page.Request.QueryString.Get(keyname))
             If value Is Nothing Then
@@ -876,6 +1093,13 @@ Namespace Gears
                 Return value
             End If
         End Function
+
+        ''' <summary>
+        ''' クエリ引数の値をDictionary型で取得する
+        ''' </summary>
+        ''' <param name="isIgnoreBlank">空白の値を取得するか否か</param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getQueryStrings(Optional ByVal isIgnoreBlank As Boolean = True) As Dictionary(Of String, List(Of String))
             Dim result As New Dictionary(Of String, List(Of String))
 
@@ -918,6 +1142,11 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' ログ出力モードか否かを判定
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function isLoggingMode() As Boolean
             Dim isLogging As String = getQueryString(GEARS_IS_LOG_OUT)
             If Not String.IsNullOrEmpty(isLogging) AndAlso (isLogging.ToLower = "true") Then

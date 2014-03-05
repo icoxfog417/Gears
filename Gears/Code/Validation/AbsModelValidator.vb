@@ -1,7 +1,8 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Reflection
+Imports Gears.DataSource
 
-Namespace Gears
+Namespace Gears.Validation
 
     ''' ------------------------------------------------------------------------------
     ''' <summary>

@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation.Validator
 
     Public Class GByteLength
         Inherits GearsAttribute

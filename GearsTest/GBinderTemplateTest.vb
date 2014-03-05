@@ -1,5 +1,7 @@
 ﻿Imports NUnit.Framework
 Imports Gears
+Imports Gears.Binder
+Imports Gears.DataSource
 
 Namespace GearsTest
 
@@ -53,16 +55,6 @@ Namespace GearsTest
             For i As Integer = 0 To dropDown.Items.Count - 1
                 Assert.AreEqual(dropDown.Items(i).Value, GearsSqlExecutor.getDataSetValue(0, deptData, i))
                 Assert.AreEqual(dropDown.Items(i).Text, GearsSqlExecutor.getDataSetValue(1, deptData, i))
-            Next
-
-            '列指定バインド
-            gbind.KeyField = "DNAME"
-            gbind.ValueField = "DEPTNO"
-            gbind.dataBind(dropDown, deptData)
-
-            For i As Integer = 0 To dropDown.Items.Count - 1
-                Assert.AreEqual(dropDown.Items(i).Value, GearsSqlExecutor.getDataSetValue("DNAME", deptData, i))
-                Assert.AreEqual(dropDown.Items(i).Text, GearsSqlExecutor.getDataSetValue("DEPTNO", deptData, i))
             Next
 
             'アタッチ

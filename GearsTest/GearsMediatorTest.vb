@@ -1,6 +1,7 @@
 ﻿Imports NUnit.Framework
 Imports Gears
 Imports GearsTest.ControlBuilder
+Imports Gears.DataSource
 
 Namespace GearsTest
 
@@ -54,7 +55,7 @@ Namespace GearsTest
             builder.addNode(New HiddenField())
 
             'リレーション検証用ページ
-            Dim dsAttribute As Hashtable = ControlBuilder.makeAttribute(GearsMediator.DS_NAMESPACE, "DataSource")
+            Dim dsAttribute As Hashtable = ControlBuilder.makeAttribute(GearsControl.DS_NAMESPACE, "DataSource")
             builder.initRoot(RelationPage)
 
             With builder.addNode(ControlBuilder.createControl(ControlType.PNL, FORM_PANEL), MoveDirection.UNDER)
@@ -309,13 +310,13 @@ Namespace GearsTest
             Assert.AreEqual("", mediator.GControl("txtENAME").getValue) 'setEscapesWhenReceiveで設定しているため、空白のはず
 
             Assert.AreEqual(deptnoValue, mediator.GControl("ddlDEPTNO").getValue)
-            Assert.AreEqual(deptnoCount, mediator.GControl("ddlDEPTNO").DataSource.gResultCount)
+            Assert.AreEqual(deptnoCount, mediator.GControl("ddlDEPTNO").DataSource.gResultSet.Rows.Count)
 
             Assert.AreEqual(areaValue, mediator.GControl("ddlAREA").getValue)
-            Assert.AreEqual(areaCount, mediator.GControl("ddlAREA").DataSource.gResultCount)
+            Assert.AreEqual(areaCount, mediator.GControl("ddlAREA").DataSource.gResultSet.Rows.Count)
 
-            Assert.AreEqual(groupnCount, mediator.GControl("ddlGROUPN").DataSource.gResultCount)
-            Assert.AreEqual(unitCount, mediator.GControl("ddlUNITS").DataSource.gResultCount)
+            Assert.AreEqual(groupnCount, mediator.GControl("ddlGROUPN").DataSource.gResultSet.Rows.Count)
+            Assert.AreEqual(unitCount, mediator.GControl("ddlUNITS").DataSource.gResultSet.Rows.Count)
 
 
         End Sub
@@ -402,8 +403,8 @@ Namespace GearsTest
             mediator.GControl("txtENAME").setValue(changedValue)
 
             Dim executeDto As New GearsDTO(ActionType.SAVE)
-            Dim lockedValue As Dictionary(Of String, Object) = form.DataSource.getLockedCheckColValue
-            executeDto.addLockItem(lockedValue) 'データロード時のロック値をセット
+            Dim lockedValue As List(Of SqlFilterItem) = form.DataSource.getLockCheckColValue
+            executeDto.addLockItems(lockedValue) 'データロード時のロック値をセット
             mediator.executeBehavior(form.Control, form.Control, executeDto)
 
             Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.DataSource.gResultSet))
@@ -416,7 +417,7 @@ Namespace GearsTest
             mediator.executeBehavior(form.Control, form.Control, executeDto)
 
             Assert.AreEqual(mediator.getLog.Count, 1)
-            Assert.IsInstanceOf(GetType(GearsOptimisticLockCheckInvalid), mediator.getLog.Values(0))
+            Assert.IsInstanceOf(GetType(GearsOptimisticLockException), mediator.getLog.Values(0))
 
             '挿入(キーの値だけ変えて更新) -----------------------------------------
             Dim newEmpno As String = "8888"
@@ -432,7 +433,7 @@ Namespace GearsTest
             mediator.GControl("txtENAME").setValue(changedValue)
             mediator.executeBehavior(form.Control, form.Control, executeDto)
             Assert.AreEqual(mediator.getLog.Count, 1)
-            Assert.IsInstanceOf(GetType(GearsTargetIsAlreadyExist), mediator.getLog.Values(0))
+            Assert.IsInstanceOf(GetType(GearsSqlException), mediator.getLog.Values(0))
 
             'キー更新OKで実行
             executeDto.IsPermitOtherKeyUpdate = True
@@ -441,17 +442,17 @@ Namespace GearsTest
 
             '削除処理 ------------------------------------------------------------
             Dim deleteDto As New GearsDTO(ActionType.DEL)
-            deleteDto.addLockItem(lockedValue) 'データロード時のロック値をセット
+            deleteDto.addLockItems(lockedValue) 'データロード時のロック値をセット
 
             '異なるキー更新はエラー
             deleteDto.IsPermitOtherKeyUpdate = False
             mediator.executeBehavior(form.Control, form.Control, deleteDto)
             Assert.AreEqual(mediator.getLog.Count, 1)
-            Assert.IsInstanceOf(GetType(GearsTargetIsAlreadyExist), mediator.getLog.Values(0))
+            Assert.IsInstanceOf(GetType(GearsSqlException), mediator.getLog.Values(0))
 
             deleteDto.IsPermitOtherKeyUpdate = True
             deleteDto.removeLockItem()
-            deleteDto.addLockItem(form.DataSource.getLockedCheckColValue)
+            deleteDto.addLockItems(form.DataSource.getLockCheckColValue)
             mediator.executeBehavior(form.Control, form.Control, deleteDto)
 
             Dim confirmDto As New GearsDTO(ActionType.SEL)

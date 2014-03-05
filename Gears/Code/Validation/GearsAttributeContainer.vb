@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation
 
     Public Class GearsAttributeContainer
         Inherits GearsAttribute '面倒なので継承してしまっているが、不都合出るようなら解消(Compositパターンに則るならインタフェースだが、実装がかぶるのでこの形)

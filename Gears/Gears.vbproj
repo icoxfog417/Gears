@@ -72,27 +72,23 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Code\SqlBuilder\SqlItemContainer.vb" />
-    <Compile Include="Code\Util\IViewItemAndColumnMapper.vb" />
-    <Compile Include="Code\Util\ViewItemAndColumnMapperTemplete.vb" />
+    <Compile Include="Code\DataSource\SqlItemContainer.vb" />
+    <Compile Include="Code\DataSource\INameExchanger.vb" />
+    <Compile Include="Code\DataSource\NameExchangerTemplate.vb" />
     <Compile Include="Code\Binder\GBinderTemplate.vb" />
     <Compile Include="Code\DataSource\GDSTemplate.vb" />
-    <Compile Include="Code\Exception\OnDataSource\GearsDataAccessException.vb" />
-    <Compile Include="Code\Exception\OnBinder\GearsDataAttachException.vb" />
-    <Compile Include="Code\Exception\OnBinder\GearsDataBindException.vb" />
-    <Compile Include="Code\Exception\OnDataSource\GearsDataIntegrityException.vb" />
-    <Compile Include="Code\Exception\OnValidation\GearsDataValidationException.vb" />
-    <Compile Include="Code\Exception\OnDataSource\GearsMultipleTargetExist.vb" />
-    <Compile Include="Code\Exception\OnDataSource\GearsOptimisticLockCheckInvalid.vb" />
-    <Compile Include="Code\Exception\OnDataSource\GearsRequestedActionInvalid.vb" />
-    <Compile Include="Code\Exception\OnDataSource\GearsTargetIsAlreadyExist.vb" />
-    <Compile Include="Code\Exception\OnValidation\GearsModelValidationException.vb" />
+    <Compile Include="Code\DataSource\GearsSqlException.vb" />
+    <Compile Include="Code\Binder\GearsDataAttachException.vb" />
+    <Compile Include="Code\Binder\GearsDataBindException.vb" />
+    <Compile Include="Code\Validation\GearsDataValidationException.vb" />
+    <Compile Include="Code\DataSource\GearsOptimisticLockException.vb" />
+    <Compile Include="Code\Validation\GearsModelValidationException.vb" />
     <Compile Include="Code\GearsControl.vb" />
     <Compile Include="Code\GearsControlInfo.vb" />
     <Compile Include="Code\DataSource\GearsDataSource.vb" />
     <Compile Include="Code\GearsDTO.vb" />
-    <Compile Include="Code\Exception\GearsException.vb" />
-    <Compile Include="Code\Log\GearsLogStack.vb" />
+    <Compile Include="Code\GearsException.vb" />
+    <Compile Include="Code\GearsLogStack.vb" />
     <Compile Include="Code\GearsMediator.vb" />
     <Compile Include="Code\GearsPage.vb">
       <SubType>ASPXCodeBehind</SubType>
@@ -115,11 +111,11 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="Code\SqlBuilder\SqlBuilder.vb" />
-    <Compile Include="Code\SqlBuilder\SqlDataSource.vb" />
-    <Compile Include="Code\SqlBuilder\SqlFilterItem.vb" />
-    <Compile Include="Code\SqlBuilder\SqlItem.vb" />
-    <Compile Include="Code\SqlBuilder\SqlSelectItem.vb" />
+    <Compile Include="Code\DataSource\SqlBuilder.vb" />
+    <Compile Include="Code\DataSource\SqlDataSource.vb" />
+    <Compile Include="Code\DataSource\SqlFilterItem.vb" />
+    <Compile Include="Code\DataSource\SqlItem.vb" />
+    <Compile Include="Code\DataSource\SqlSelectItem.vb" />
     <Compile Include="Code\Validation\AbsModelValidator.vb" />
     <Compile Include="Code\Validation\GAttributeHolderTemplate.vb" />
     <Compile Include="Code\Validation\GearsAttribute.vb" />
@@ -131,15 +127,15 @@
     <Compile Include="Code\Validation\Validator\GByteLengthBetween.vb" />
     <Compile Include="Code\Validation\Validator\GComp.vb" />
     <Compile Include="Code\Validation\Validator\GDate.vb" />
-    <Compile Include="Code\Validation\Validator\GMarkerNumeric.vb" />
+    <Compile Include="Code\Validation\Marker\GMarkerNumeric.vb" />
     <Compile Include="Code\Validation\Validator\GMatch.vb" />
     <Compile Include="Code\Validation\Validator\GNumber.vb" />
     <Compile Include="Code\Validation\Validator\GNumeric.vb" />
     <Compile Include="Code\Validation\Validator\GPeriodPositionOk.vb" />
     <Compile Include="Code\Validation\Validator\GRequired.vb" />
     <Compile Include="Code\Validation\Validator\GStartWith.vb" />
-    <Compile Include="Code\Validation\Validator\IAttributeMarker.vb" />
-    <Compile Include="Code\Validation\Validator\MarkerNumeric.vb" />
+    <Compile Include="Code\Validation\Marker\IAttributeMarker.vb" />
+    <Compile Include="Code\Validation\Marker\MarkerNumeric.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">

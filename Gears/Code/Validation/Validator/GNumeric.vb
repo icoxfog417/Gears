@@ -1,6 +1,7 @@
 ﻿Imports Microsoft.VisualBasic
+Imports Gears.Validation.Marker
 
-Namespace Gears
+Namespace Gears.Validation.Validator
 
     Public Class GNumeric
         Inherits MarkerNumeric

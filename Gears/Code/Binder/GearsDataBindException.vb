@@ -2,7 +2,7 @@
 Imports System.Runtime.Serialization
 Imports System.Web.UI
 
-Namespace Gears
+Namespace Gears.Binder
 
     Public Class GearsDataBindException
         Inherits GearsException
@@ -11,7 +11,7 @@ Namespace Gears
 
         'コンストラクタ
         Public Sub New()
-            MyBase.new()
+            MyBase.New()
         End Sub
         Public Sub New(ByRef con As Control, Optional ByVal innerException As Exception = Nothing)
             MyBase.New("コントロール " + con.ID + " のデータバインド処理に失敗しました", innerException)

@@ -1,6 +1,7 @@
 ﻿Imports NUnit.Framework
 Imports System.Configuration
 Imports Gears
+Imports Gears.DataSource
 
 Namespace GearsTest
 

@@ -4,7 +4,7 @@ Imports System.Collections.Generic
 Imports System.Data
 Imports System.Data.Common
 
-Namespace Gears
+Namespace Gears.DataSource
 
     Public Class GearsSqlExecutor
 
@@ -124,14 +124,27 @@ Namespace Gears
                 Return resultSet.Rows.Count
             End If
         End Function
-        Public Function getDataSetValue(Of T)(ByVal colindex As T, Optional ByVal rowIndex As Integer = 0) As String
-            Return getDataSetValue(colindex, resultSet, rowIndex)
+        Public Function getDataSetValue(ByVal colindex As String, Optional ByVal rowIndex As Integer = 0) As Object
+            Return getDataSetValue(Of String)(colindex, resultSet, rowIndex)
 
         End Function
-        Public Shared Function getDataSetValue(Of T)(ByVal colindex As T, ByRef dt As DataTable, Optional ByVal rowIndex As Integer = 0) As String
+        Public Function getDataSetValue(ByVal colindex As Integer, Optional ByVal rowIndex As Integer = 0) As Object
+            Return getDataSetValue(Of Integer)(colindex, resultSet, rowIndex)
+
+        End Function
+
+        Public Shared Function getDataSetValue(ByVal colindex As String, ByRef dt As DataTable, Optional ByVal rowIndex As Integer = 0) As Object
+            Return getDataSetValue(Of String)(colindex, dt, rowIndex)
+
+        End Function
+        Public Shared Function getDataSetValue(ByVal colindex As Integer, ByRef dt As DataTable, Optional ByVal rowIndex As Integer = 0) As Object
+            Return getDataSetValue(Of Integer)(colindex, dt, rowIndex)
+
+        End Function
+
+        Private Shared Function getDataSetValue(Of T)(ByVal colindex As T, ByRef dt As DataTable, Optional ByVal rowIndex As Integer = 0) As Object
             Dim index As String = colindex.ToString
             Dim item As Object = Nothing
-            Dim value As String = Nothing
 
             Try
                 If Not dt Is Nothing AndAlso Not dt.Rows Is Nothing Then
@@ -148,11 +161,7 @@ Namespace Gears
                 item = Nothing
             End Try
 
-            If Not item Is Nothing Then 'DBNull を ToStringした場合、空文字列になる
-                value = item.ToString
-            End If
-
-            Return value
+            Return item
 
         End Function
         Private Sub clearDataTable(ByRef dtab As DataTable)
@@ -282,14 +291,14 @@ Namespace Gears
             setSql(sql)
 
             resultSet = New DataTable()
-            Dim gex As GearsDataAccessException = Nothing
+            Dim gex As GearsSqlException = Nothing
 
             Try
                 SQL_CON.Open()
                 SQL_ADAPTER.Fill(resultSet)
                 formatResultSet(sql.ItemColExchanger)
             Catch ex As Exception
-                gex = New GearsDataAccessException(ActionType.SEL, "データベースの読み込みに失敗しました " + toStringCommand(ActionType.SEL), ex)
+                gex = New GearsSqlException(ActionType.SEL, "データベースの読み込みに失敗しました " + toStringCommand(ActionType.SEL), ex)
                 gex.addMsgDebug(ex.Message, toStringCommand(ActionType.SEL))
                 clearDataTable(resultSet)
             Finally
@@ -307,7 +316,7 @@ Namespace Gears
             Dim counter As New DataTable
             Dim com As DbCommand = Nothing
             Dim resultCount As Integer = 0
-            Dim gex As GearsDataAccessException = Nothing
+            Dim gex As GearsSqlException = Nothing
             setSqlForCounting(sql)
 
             Try
@@ -316,7 +325,7 @@ Namespace Gears
                 resultCount = CType(com.ExecuteScalar(), Integer)
 
             Catch ex As Exception
-                gex = New GearsDataAccessException(ActionType.SEL, "データベースの読み込み(件数カウント)に失敗しました " + toStringCommand(ActionType.SEL), ex)
+                gex = New GearsSqlException(ActionType.SEL, "データベースの読み込み(件数カウント)に失敗しました " + toStringCommand(ActionType.SEL), ex)
                 gex.addMsgDebug(ex.Message, SQL_ADAPTER.SelectCommand.CommandText)
                 Throw gex
             Finally
@@ -338,7 +347,7 @@ Namespace Gears
 
                 Dim com As DbCommand = Nothing
                 Dim executeType As ActionType = sql.Action
-                Dim gex As GearsDataAccessException = Nothing
+                Dim gex As GearsSqlException = Nothing
 
                 setSql(sql)
 
@@ -349,7 +358,7 @@ Namespace Gears
                     SQL_ADAPTER.Fill(resultSet) '更新後データをロード
                     formatResultSet(sql.ItemColExchanger)
                 Catch ex As Exception
-                    gex = New GearsDataAccessException(executeType, "データベースの更新に失敗しました ", ex)
+                    gex = New GearsSqlException(executeType, "データベースの更新に失敗しました ", ex)
                     gex.addMsgDebug(ex.Message, toStringCommand(executeType))
                     clearDataTable(resultSet)
                 Finally
@@ -369,7 +378,7 @@ Namespace Gears
             resultSet = New DataTable()
 
             Dim com As DbCommand = Nothing
-            Dim gex As GearsDataAccessException = Nothing
+            Dim gex As GearsSqlException = Nothing
 
             Dim transaction As DbTransaction = Nothing
             Dim actionNow As ActionType
@@ -394,12 +403,12 @@ Namespace Gears
                 Try
                     transaction.Rollback()
                 Catch exWhenRollback As Exception
-                    gex = New GearsDataAccessException(actionNow, "トランザクションのロールバックに失敗しました ", exWhenRollback)
+                    gex = New GearsSqlException(actionNow, "トランザクションのロールバックに失敗しました ", exWhenRollback)
                     gex.addMsgDebug(ex.Message, toStringCommand(actionNow))
                     clearDataTable(resultSet)
                 End Try
 
-                gex = New GearsDataAccessException(actionNow, "トランザクション処理に失敗しました ", ex)
+                gex = New GearsSqlException(actionNow, "トランザクション処理に失敗しました ", ex)
                 gex.addMsgDebug(ex.Message, toStringCommand(actionNow))
                 clearDataTable(resultSet)
 
@@ -415,7 +424,7 @@ Namespace Gears
                         SQL_CON.Close()
                     End If
                 Catch ex As Exception
-                    gex = New GearsDataAccessException(ActionType.SEL, "更新後データの読み込み、コネクションのクローズに失敗しました " + toStringCommand(ActionType.SEL), ex)
+                    gex = New GearsSqlException(ActionType.SEL, "更新後データの読み込み、コネクションのクローズに失敗しました " + toStringCommand(ActionType.SEL), ex)
                     gex.addMsgDebug(ex.Message, toStringCommand(ActionType.SEL))
                     clearDataTable(resultSet)
                 End Try
@@ -430,7 +439,7 @@ Namespace Gears
         End Sub
 
         '項目名変換を行う
-        Private Sub formatResultSet(ByVal conv As IViewItemAndColumnMapper)
+        Private Sub formatResultSet(ByVal conv As INameExchanger)
             If Not conv Is Nothing AndAlso Not resultSet Is Nothing AndAlso resultSet.Columns.Count > 0 Then
                 For Each col As DataColumn In resultSet.Columns
 

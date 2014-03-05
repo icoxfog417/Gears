@@ -1,7 +1,8 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Web.UI
 
-Namespace Gears
+Namespace Gears.Validation
+
     Public MustInherit Class GearsAttribute
         Implements IValidator
 

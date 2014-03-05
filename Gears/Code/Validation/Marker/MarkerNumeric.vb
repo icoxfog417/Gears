@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation.Marker
 
     Public MustInherit Class MarkerNumeric
         Inherits GearsAttribute

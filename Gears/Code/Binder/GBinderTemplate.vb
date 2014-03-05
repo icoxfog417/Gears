@@ -3,32 +3,24 @@ Imports System
 Imports System.Web.UI.WebControls
 Imports System.Collections
 Imports System.Data
+Imports Gears.DataSource
 
-Namespace Gears
+Namespace Gears.Binder
 
+    ''' <summary>
+    ''' コントロールにデータをバインドする処理を実装する
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GBinderTemplate
         Implements IDataBinder
 
-        Private _keyField As String = ""
-        Public Property KeyField() As String
-            Get
-                Return _keyField
-            End Get
-            Set(ByVal value As String)
-                _keyField = value
-            End Set
-        End Property
-
-        Private _valueField As String = ""
-        Public Property ValueField() As String
-            Get
-                Return _valueField
-            End Get
-            Set(ByVal value As String)
-                _valueField = value
-            End Set
-        End Property
-
+        ''' <summary>
+        ''' バインド対象か否かを判定する<br/>
+        ''' 標準では、リストかGridViewのような複合コントロールを対象とする
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function isBindable(ByRef con As Control) As Boolean Implements IDataBinder.isBindable
 
             If TypeOf con Is ListControl Or _
@@ -40,6 +32,15 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' データのバインド処理を行う<br/>
+        ''' バインド対象データは、データソースクラスにdtoを渡した結果が使用される
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="dsClass"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function dataBind(ByRef con As Control, ByRef dsClass As GDSTemplate, Optional ByVal dto As GearsDTO = Nothing) As Boolean
             Dim db As New GBinderTemplate()
             Dim bindData As DataTable = Nothing
@@ -54,6 +55,13 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' データのバインド処理を行う
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function dataBind(ByRef con As Control, ByRef dset As System.Data.DataTable) As Boolean Implements IDataBinder.dataBind
             Dim result As Boolean = True
             Try
@@ -64,13 +72,6 @@ Namespace Gears
                         Case GetType(CompositeDataBoundControl)
                             result = compositBind(CType(con, CompositeDataBoundControl), dset)
                     End Select
-
-                Else
-                    'dataBindという概念がないため処理しない(行うとすればattachのはず)
-                    'Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.getDataSourceId(con.ID), dset)
-                    'If Not value Is Nothing Then
-                    '    setValue(con, value)
-                    'End If
                 End If
 
             Catch ex As Exception
@@ -81,13 +82,20 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' リスト型コントロールに対しバインド処理を行う
+        ''' </summary>
+        ''' <param name="list"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Protected Overridable Function listBind(ByRef list As ListControl, ByRef dset As System.Data.DataTable) As Boolean
 
             Dim defFirst As ArrayList = New ArrayList
             Dim defEnd As ArrayList = New ArrayList
             Dim result As Boolean = True
 
-            '既存リスト項目の削除
+            '既存リスト項目を一旦削除する。ただし、デフォルトで表示する設定のものは残す
             For Each item As ListItem In list.Items
                 If item.Attributes("Default") <> "" Then
                     If item.Attributes("Position") = "F" Then
@@ -100,30 +108,19 @@ Namespace Gears
             list.Items.Clear()
 
             'アイテム追加
+            '先頭に追加するアイテムを設定
             For Each item As ListItem In defFirst
                 list.Items.Add(item)
             Next
+
+            If String.IsNullOrEmpty(list.DataValueField) Then list.DataValueField = dset.Columns(0).ColumnName
+            If String.IsNullOrEmpty(list.DataTextField) Then list.DataTextField = dset.Columns(1).ColumnName
             For i As Integer = 0 To dset.Rows.Count - 1
-                Dim key As String = ""
-                Dim value As String = ""
-                If _keyField <> "" And _valueField <> "" Then
-                    key = GearsSqlExecutor.getDataSetValue(_keyField, dset, i)
-                    value = GearsSqlExecutor.getDataSetValue(_valueField, dset, i)
-                    If i = 0 Then
-                        list.DataValueField = _keyField
-                        list.DataTextField = _valueField
-                    End If
-                Else
-                    key = GearsSqlExecutor.getDataSetValue(0, dset, i)
-                    value = GearsSqlExecutor.getDataSetValue(1, dset, i)
-                    If i = 0 Then
-                        list.DataValueField = dset.Columns(0).ColumnName
-                        list.DataTextField = dset.Columns(1).ColumnName
-                    End If
 
-                End If
-
+                Dim key As String = GearsSqlExecutor.getDataSetValue(list.DataValueField, dset, i).ToString
+                Dim value As String = GearsSqlExecutor.getDataSetValue(list.DataTextField, dset, i).ToString
                 list.Items.Add(New ListItem(value, key))
+
             Next
             For Each item As ListItem In defEnd
                 list.Items.Add(item)
@@ -133,6 +130,13 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' GridViewなどの複合データソースに対するバインド処理
+        ''' </summary>
+        ''' <param name="dbound"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Protected Overridable Function compositBind(ByRef dbound As CompositeDataBoundControl, ByRef dset As System.Data.DataTable) As Boolean
             Dim result As Boolean = True
             Try
@@ -146,6 +150,13 @@ Namespace Gears
             Return result
         End Function
 
+        ''' <summary>
+        ''' コントロールに値を設定する処理
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function dataAttach(ByRef con As Control, ByRef dset As System.Data.DataTable) As Boolean Implements IDataBinder.dataAttach
             Dim result As Boolean = True
             Try
@@ -158,7 +169,7 @@ Namespace Gears
                         Next
                     Else
 
-                        Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(con.ID), dset)
+                        Dim value As Object = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(con.ID), dset)
                         If Not value Is Nothing Then 'Nothing = データテーブルに該当項目がない
                             setValue(con, value)
                         End If
@@ -173,22 +184,27 @@ Namespace Gears
             Return result
 
         End Function
+
+        ''' <summary>
+        ''' リストコントロールに値をセットする
+        ''' </summary>
+        ''' <param name="list"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Protected Overridable Function listAttach(ByRef list As ListControl, ByRef dset As System.Data.DataTable) As Boolean
             Dim result As Boolean = True
             For i = dset.Rows.Count - 1 To 0 Step -1
                 'データソースIDに基づきバインドを行う(リストキー項目がデータソース名である保証はない)
-                'Dim value As String = GearsSqlExecutor.getDataSetValue(list.DataValueField, dset, i)
-                Dim value As String = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(list.ID), dset, i)
+                Dim value As Object = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(list.ID), dset, i)
                 If Not value Is Nothing Then
-                    If Not list.Items.FindByValue(value) Is Nothing Then
-                        list.SelectedValue = value
+                    If Not list.Items.FindByValue(value.ToString) Is Nothing Then
+                        list.SelectedValue = value.ToString
                     Else
-                        GearsLogStack.setLog(list.ID + " に値 " + value + " を設定しようとしましたが、リスト内に存在しないため、設定されません")
-
+                        GearsLogStack.setLog(list.ID + " に値 " + value.ToString + " を設定しようとしましたが、リスト内に存在しないため、設定されません")
                     End If
                 Else
                     GearsLogStack.setLog(list.ID + " のデータフィールド " + list.DataValueField + " がありません")
-
                 End If
             Next
 
@@ -196,9 +212,14 @@ Namespace Gears
 
         End Function
 
-
-        Public Function getValue(ByRef con As Control) As String Implements IDataBinder.getValue
-            Dim value As String = ""
+        ''' <summary>
+        ''' コントロールから値を取得する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function getValue(ByRef con As Control) As Object Implements IDataBinder.getValue
+            Dim value As String = "" '文字列型で値を取得
 
             If TypeOf con Is ListControl Then
                 value = GearsControl.serializeValue(CType(con, ListControl))
@@ -233,9 +254,15 @@ Namespace Gears
             Return value
         End Function
 
-        Public Sub setValue(ByRef con As Control, ByVal value As String) Implements IDataBinder.setValue
-            Dim list As ArrayList = GearsControl.deSerializeValue(value)
-            Dim valueStr As String = "" '単一値の場合
+        ''' <summary>
+        ''' コントロールに対して値をセットする
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="value"></param>
+        ''' <remarks></remarks>
+        Public Sub setValue(ByRef con As Control, ByVal value As Object) Implements IDataBinder.setValue
+            Dim valueStr As String = If(value Is Nothing, "", value.ToString) '単一値の場合
+            Dim list As ArrayList = GearsControl.deSerializeValue(valueStr)
 
             If Not list Is Nothing Then
                 valueStr = list.Item(0).ToString

@@ -23,7 +23,7 @@ Namespace Gears
 
         'コンストラクタ
         Public Sub New()
-            MyBase.new()
+            MyBase.New()
         End Sub
         Public Sub New(message As String, ByVal innerException As Exception)
             MyBase.New(message, innerException)

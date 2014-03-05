@@ -1,5 +1,7 @@
 ﻿Imports NUnit.Framework
 Imports Gears
+Imports Gears.Validation
+Imports Gears.DataSource
 
 Namespace GearsTest
 
@@ -78,12 +80,12 @@ Namespace GearsTest
             End Get
         End Property
 
-        Public Overrides Sub setUpValidation(sqlb As Gears.SqlBuilder)
+        Public Overrides Sub setUpValidation(sqlb As SqlBuilder)
             MyBase.setUpValidation(sqlb)
             _orderConfirm.Clear()
         End Sub
 
-        Public Overrides Sub tearDownValidation(sqlb As Gears.SqlBuilder)
+        Public Overrides Sub tearDownValidation(sqlb As SqlBuilder)
             MyBase.tearDownValidation(sqlb)
             _isEndWithTearDown = True
         End Sub
