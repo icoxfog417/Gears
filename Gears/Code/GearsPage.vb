@@ -9,6 +9,7 @@ Imports System.Text
 Imports System.Reflection
 Imports Gears.Validation
 Imports Gears.DataSource
+Imports Gears.Util
 
 Namespace Gears
 
@@ -170,9 +171,9 @@ Namespace Gears
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
-        Public Sub evaluateAutorization(ByRef con As Control)
+        Public Sub evaluateAutorization(ByVal con As Control)
             'ロールベースコントロールについて、指定ロール以外の場合コントロールを非表示/非活性化
-            GPageMediator.fetchControls(con, AddressOf Me.fetchRoleBaseControl, AddressOf Me.isRoleBaseControl)
+            ControlSearcher.fetchControls(con, AddressOf Me.fetchRoleBaseControl, AddressOf Me.isRoleBaseControl)
 
         End Sub
 
@@ -297,7 +298,7 @@ Namespace Gears
 
             'コントロールを管理するGearsMediatorへコントロールを追加する
             '属性情報は、初回ロード以後は初回ロード時のCssClassを使用するため、自動ロードしない
-            GPageMediator.addGControls(Me, isAutoLoadAttr:=False)
+            GPageMediator.addControls(Me, isAutoLoadAttr:=False)
 
             '初回ロード時のCSS
             Dim initialCss As Dictionary(Of String, String) = CType(ViewState(V_VALIDATORS), Dictionary(Of String, String))
@@ -364,7 +365,7 @@ Namespace Gears
 
             'targetが子コントロールを保持している場合、子コントロールについてもバリデーションを行う
             If Not target Is Nothing AndAlso target.HasControls Then
-                GPageMediator.fetchControls(target, AddressOf Me.fetchEachControlValidate, AddressOf GPageMediator.isRegisteredControl)
+                ControlSearcher.fetchControls(target, AddressOf Me.fetchEachControlValidate, AddressOf GPageMediator.isRegisteredControl)
             ElseIf GPageMediator.isRegisteredControl(target) Then
                 fetchEachControlValidate(target, Nothing)
             End If
@@ -394,7 +395,7 @@ Namespace Gears
         ''' <param name="control"></param>
         ''' <param name="dto"></param>
         ''' <remarks></remarks>
-        Private Sub fetchEachControlValidate(ByRef control As Control, ByRef dto As GearsDTO)
+        Private Sub fetchEachControlValidate(ByVal control As Control, ByRef dto As GearsDTO)
             If Not GPageMediator.GControl(control.ID) Is Nothing Then
                 Dim gcon As GearsControl = GPageMediator.GControl(control.ID)
                 If Not gcon.isValidateOk() Then
@@ -410,7 +411,7 @@ Namespace Gears
         ''' <param name="atype"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function executeBehavior(ByRef fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
+        Public Function executeBehavior(ByVal fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
             Dim dto As GearsDTO = New GearsDTO(atype)
             Return executeBehavior(fromControl, Nothing, dto)
         End Function
@@ -424,7 +425,7 @@ Namespace Gears
         ''' <param name="atype"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function executeBehavior(ByRef fromControl As Control, ByRef toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
+        Public Function executeBehavior(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
             Dim dto As GearsDTO = New GearsDTO(atype)
             Return executeBehavior(fromControl, toControl, dto)
         End Function
@@ -437,7 +438,7 @@ Namespace Gears
         ''' <param name="isGatherInfo">配下のコントロール情報を収集するか否か</param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function executeBehavior(ByRef fromControl As Control, ByRef dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
+        Public Function executeBehavior(ByVal fromControl As Control, ByVal dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
             Return executeBehavior(fromControl, Nothing, dto, isGatherInfo)
         End Function
 
@@ -450,7 +451,7 @@ Namespace Gears
         ''' <param name="isGatherInfo"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function executeBehavior(ByRef fromControl As Control, ByRef toControl As Control, ByRef dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
+        Public Overridable Function executeBehavior(ByVal fromControl As Control, ByVal toControl As Control, ByVal dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
             Dim result As Boolean = True
             Log.Clear()
             If Not dto Is Nothing AndAlso _
@@ -477,12 +478,12 @@ Namespace Gears
 
             'メイン処理実行
             Dim sender As GearsDTO = Nothing
-
-            If isGatherInfo Then 'fromControl配下のコントロールの情報を収集
-                sender = GPageMediator.makeSendMessage(fromControl, toControl, dto)
-                sender.addLockItems(reloadLockValue(fromControl)) '楽観的ロックのチェックを追加
-            Else
+            If Not isGatherInfo Then
                 sender = dto
+                GPageMediator.lockDtoWhenSend(sender) '与えられたDTOをそのまま使用する
+            Else
+                sender = New GearsDTO(dto)
+                sender.addLockItems(reloadLockValue(fromControl)) '楽観的ロックのチェックを追加
             End If
 
             '警告無視フラグがある場合、その設定を行う処理
@@ -492,7 +493,8 @@ Namespace Gears
 
             GearsLogStack.setLog(fromControl.ID + " の送信情報を収集しました(DTO作成)。", sender.toString())
 
-            result = GPageMediator.executeBehavior(fromControl, toControl, sender, False) '自身で作っているためここではFalse
+            'TODO 切り分け
+            result = GPageMediator.send(fromControl, toControl, sender)
 
             '実行結果チェック
             If result Then
@@ -502,7 +504,7 @@ Namespace Gears
 
             Else
 
-                For Each logitem As KeyValuePair(Of String, GearsException) In GPageMediator.getLog()
+                For Each logitem As KeyValuePair(Of String, GearsException) In GPageMediator.Log()
                     If Not Log.ContainsKey(logitem.Key) Then
                         Log.Add(logitem.Key, logitem.Value)
                     Else
@@ -533,7 +535,7 @@ Namespace Gears
         ''' <param name="logs"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Private Function evalModelValidation(ByRef logs As Dictionary(Of String, GearsException)) As Boolean
+        Private Function evalModelValidation(ByVal logs As Dictionary(Of String, GearsException)) As Boolean
             Dim result As Boolean = True
 
             'モデルバリデーションの検証
@@ -551,7 +553,7 @@ Namespace Gears
                     If (Not cs.IsStartupScriptRegistered(Me.GetType, ALERT_PROMPT_SCRIPT_NAME)) Then
                         Dim isAsync As Boolean = isPageAsync()
 
-                        Dim handler As Control = GetSubmitCausedControl()
+                        Dim handler As Control = ControlSearcher.GetSubmitCausedControl(Me)
 
                         Dim alertMsg As String = "警告\n" + mv.Message.Replace(vbCrLf, "\n")
                         Dim scriptTag As New StringBuilder()
@@ -573,7 +575,7 @@ Namespace Gears
                             cs.RegisterHiddenField(ALERT_IS_IGNORE_FLG, "0")
                             cs.RegisterStartupScript(Me.GetType, ALERT_PROMPT_SCRIPT_NAME, Replace(scriptTag.ToString, "%TGT%", ""), False)
                         Else
-                            Dim con As Control = GetAsynchronousPostBackPanel(handler)
+                            Dim con As Control = ControlSearcher.GetAsynchronousPostBackPanel(Me, handler)
                             If Not con Is Nothing Then
                                 ScriptManager.RegisterHiddenField(con, ALERT_IS_IGNORE_FLG, "0")
                                 ScriptManager.RegisterStartupScript(con, con.GetType, ALERT_PROMPT_SCRIPT_NAME, Replace(scriptTag.ToString, "%TGT%", "'" + con.ID + "'"), False)
@@ -614,7 +616,7 @@ Namespace Gears
         ''' <param name="atype"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function makeSendMessage(ByRef fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
+        Public Function makeSendMessage(ByVal fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
             Dim dto As GearsDTO = New GearsDTO(atype)
             Return makeSendMessage(fromControl, Nothing, dto)
         End Function
@@ -626,7 +628,7 @@ Namespace Gears
         ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function makeSendMessage(ByRef fromControl As Control, ByRef dto As GearsDTO) As GearsDTO
+        Public Function makeSendMessage(ByVal fromControl As Control, ByVal dto As GearsDTO) As GearsDTO
             Return makeSendMessage(fromControl, Nothing, dto)
         End Function
 
@@ -638,7 +640,7 @@ Namespace Gears
         ''' <param name="atype"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function makeSendMessage(ByRef fromControl As Control, ByRef toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
+        Public Function makeSendMessage(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
             Return makeSendMessage(fromControl, toControl, New GearsDTO(atype))
         End Function
 
@@ -650,7 +652,7 @@ Namespace Gears
         ''' <param name="fromDto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function makeSendMessage(ByRef fromControl As Control, ByRef toControl As Control, ByRef fromDto As GearsDTO) As GearsDTO
+        Public Overridable Function makeSendMessage(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
             Return GPageMediator.makeSendMessage(fromControl, toControl, fromDto)
 
         End Function
@@ -661,9 +663,9 @@ Namespace Gears
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
         ''' <remarks></remarks>
-        Protected Sub saveLoadedValue(ByRef fromControl As Control, ByRef toControl As Control)
+        Protected Sub saveLoadedValue(ByVal fromControl As Control, ByVal toControl As Control)
 
-            Dim list As List(Of GearsControl) = GPageMediator.extractRelation(fromControl.ID)
+            Dim list As List(Of GearsControl) = GPageMediator.Relation(fromControl.ID)
             If Not list Is Nothing Then
                 For Each gcon As GearsControl In list
                     If Not toControl Is Nothing AndAlso toControl.ID <> gcon.ControlID Then
@@ -672,7 +674,7 @@ Namespace Gears
 
                     If gcon.IsFormAttribute Then '対象項目の場合
                         'ロードした値を格納
-                        GPageMediator.fetchControls(gcon.Control, AddressOf Me.fetchLoadedValue, AddressOf GPageMediator.isRegisteredAsTarget)
+                        ControlSearcher.fetchControls(gcon.Control, AddressOf Me.fetchLoadedValue, AddressOf GPageMediator.isRegisteredAsTarget)
                         'ロック用項目がセットされている場合それも格納
                         saveLockValueIfExist(gcon)
                     End If
@@ -687,7 +689,7 @@ Namespace Gears
         ''' <param name="control"></param>
         ''' <param name="dto"></param>
         ''' <remarks></remarks>
-        Private Sub fetchLoadedValue(ByRef control As Control, ByRef dto As GearsDTO)
+        Private Sub fetchLoadedValue(ByVal control As Control, ByRef dto As GearsDTO)
             saveLoadedValue(control.ID)
         End Sub
 
@@ -715,7 +717,7 @@ Namespace Gears
         ''' </summary>
         ''' <param name="gcon"></param>
         ''' <remarks></remarks>
-        Protected Sub saveLockValueIfExist(ByRef gcon As GearsControl)
+        Protected Sub saveLockValueIfExist(ByVal gcon As GearsControl)
             If Not gcon.DataSource Is Nothing Then
                 Dim lockValue As List(Of SqlFilterItem) = gcon.DataSource.getLockCheckColValue
                 If lockValue.Count > 0 Then
@@ -733,7 +735,7 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Protected Function reloadLockValue(ByRef con As Control) As List(Of SqlFilterItem)
+        Protected Function reloadLockValue(ByVal con As Control) As List(Of SqlFilterItem)
             Dim result As New List(Of SqlFilterItem)
 
             For Each key As String In ViewState.Keys
@@ -758,7 +760,7 @@ Namespace Gears
         ''' <param name="control"></param>
         ''' <param name="dto"></param>
         ''' <remarks></remarks>
-        Private Sub fetchRoleBaseControl(ByRef control As Control, ByRef dto As GearsDTO)
+        Private Sub fetchRoleBaseControl(ByVal control As Control, ByRef dto As GearsDTO)
             'ロールベースコントロールと判定されて来る
             Dim result As Boolean = False
             Dim evalType As String = "ENABLE"
@@ -808,7 +810,7 @@ Namespace Gears
         ''' <param name="control"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Protected Function isRoleBaseControl(ByRef control As Control) As Boolean
+        Protected Function isRoleBaseControl(ByVal control As Control) As Boolean
             Return GearsControl.getControlAttribute(control, ROLE_AUTH_ALLOW)
         End Function
 
@@ -817,7 +819,7 @@ Namespace Gears
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
-        Protected Sub saveListItemAttribute(ByRef con As Control)
+        Protected Sub saveListItemAttribute(ByVal con As Control)
             Dim liscon As ListControl
             If Not TypeOf con Is ListControl Then
                 Exit Sub
@@ -841,7 +843,7 @@ Namespace Gears
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
-        Private Sub loadListItemAttribute(ByRef con As Control)
+        Private Sub loadListItemAttribute(ByVal con As Control)
             Dim liscon As ListControl
             If Not TypeOf con Is ListControl Then
                 Exit Sub
@@ -893,8 +895,8 @@ Namespace Gears
         ''' <param name="isAutoLoadDS"></param>
         ''' <param name="isAutoLoadAttr"></param>
         ''' <remarks></remarks>
-        Public Sub registerMyControl(ByRef con As Control, Optional isAutoLoadDS As Boolean = True, Optional isAutoLoadAttr As Boolean = True)
-            GPageMediator.addGControl(con, isAutoLoadAttr)
+        Public Sub registerMyControl(ByVal con As Control, Optional isAutoLoadDS As Boolean = True, Optional isAutoLoadAttr As Boolean = True)
+            GPageMediator.addControl(con, isAutoLoadAttr)
         End Sub
 
         ''' <summary>
@@ -903,9 +905,9 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <param name="ds"></param>
         ''' <remarks></remarks>
-        Public Sub registerMyControl(ByRef con As Control, ByRef ds As GearsDataSource)
+        Public Sub registerMyControl(ByVal con As Control, ByVal ds As GearsDataSource)
             Dim gcon As GearsControl = New GearsControl(con, ds)
-            GPageMediator.addGControl(gcon)
+            GPageMediator.addControl(gcon)
         End Sub
 
         ''' <summary>
@@ -915,74 +917,7 @@ Namespace Gears
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function GFindControl(ByVal conid As String) As Control
-            Return GPageMediator.GFindControl(Me, conid)
-        End Function
-
-        ''' <summary>
-        ''' Submitイベントを発生させたコントロールを特定する
-        ''' </summary>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function GetSubmitCausedControl() As Control
-            Dim result As Control = Nothing
-            Dim controlName As String = Me.Request.Params("__EVENTTARGET")
-
-            If Not String.IsNullOrEmpty(controlName) Then
-                result = Me.FindControl(controlName)
-
-            Else
-                Dim imageControl As Control = Nothing
-
-                For i As Integer = 0 To Me.Request.Form.Keys.Count - 1
-                    Dim conInForm As Control = Me.FindControl(Me.Request.Form.Keys(i))
-                    If TypeOf conInForm Is Button Then
-                        result = conInForm
-                    End If
-
-                    If Me.Request.Form.Keys(i).EndsWith(".x") Or Me.Request.Form.Keys(i).EndsWith(".y") Then
-                        imageControl = Me.FindControl(Me.Request.Form.Keys(i).Substring(0, Page.Request.Form.Keys(i).Length - 2))
-                    End If
-                Next
-
-                If result Is Nothing Then
-                    result = imageControl
-                End If
-
-            End If
-
-            Return result
-
-        End Function
-
-        ''' <summary>
-        ''' イベントが発生したコントロールから、非同期更新を発生させたUpdatePanelを特定する
-        ''' </summary>
-        ''' <param name="causedControl"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function GetAsynchronousPostBackPanel(ByVal causedControl As Control) As Control
-            If causedControl Is Nothing Then Return Nothing
-
-            Dim con As Control = causedControl
-            While Not con Is Nothing And Not TypeOf con Is UpdatePanel
-                con = con.Parent
-            End While
-            If con Is Nothing Then
-                GPageMediator.fetchControls(Me, Sub(ByRef control As Control, ByRef dto As GearsDTO)
-                                                    For Each trigger As AsyncPostBackTrigger In CType(control, UpdatePanel).Triggers
-                                                        If trigger.ControlID = causedControl.ID Then
-                                                            con = control
-                                                        End If
-                                                    Next
-                                                End Sub,
-                                               Function(ByRef control As Control) As Boolean
-                                                   If TypeOf control Is UpdatePanel Then Return True Else Return False
-                                               End Function)
-
-            End If
-
-            Return con
-
+            Return ControlSearcher.findControl(Me, conid)
         End Function
 
         ''' <summary>
@@ -991,7 +926,7 @@ Namespace Gears
         ''' <param name="conF"></param>
         ''' <param name="conT"></param>
         ''' <remarks></remarks>
-        Public Sub addRelation(ByRef conF As Control, ByRef conT As Control)
+        Public Sub addRelation(ByVal conF As Control, ByVal conT As Control)
             GPageMediator.addRelation(conF, conT)
         End Sub
 
@@ -1003,8 +938,8 @@ Namespace Gears
         ''' <param name="toCon"></param>
         ''' <param name="escapes"></param>
         ''' <remarks></remarks>
-        Public Sub setEscapesWhenSend(ByRef fromCon As Control, ByRef toCon As Control, ByVal ParamArray escapes() As String)
-            GPageMediator.setEscapesWhenSend(fromCon, toCon, escapes)
+        Public Sub setEscapesWhenSend(ByVal fromCon As Control, ByVal toCon As Control, ByVal ParamArray escapes() As String)
+            GPageMediator.addExcept(fromCon, toCon, escapes)
         End Sub
 
         ''' <summary>
@@ -1013,8 +948,8 @@ Namespace Gears
         ''' <param name="fromCon"></param>
         ''' <param name="toCon"></param>
         ''' <remarks></remarks>
-        Public Sub resetEscapesWhenSend(ByRef fromCon As Control, ByRef toCon As Control)
-            GPageMediator.resetEscapesWhenSend(fromCon, toCon)
+        Public Sub resetEscapesWhenSend(ByVal fromCon As Control, ByVal toCon As Control)
+            GPageMediator.clearExcept(fromCon, toCon)
         End Sub
 
         <Obsolete("Log.Countを使用してください")>

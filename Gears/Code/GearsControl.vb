@@ -43,7 +43,7 @@ Namespace Gears
         Public Const GCON_TARGET As String = "GCON"
 
         ''' <summary>IDに含まれることで、登録対象だが送信対象外であることを示す文字列</summary>
-        Public Const GCON_TARGET_BUT_EXCEPT As String = "GCONX"
+        Public Const GCON_DISPLAY_ONLY As String = "GDISP"
 
         ''' <summary>検索時のオペレーターを指定するための属性</summary>
         Public Const KEY_OPERATOR As String = "OPERATOR"
@@ -148,6 +148,15 @@ Namespace Gears
                 Return _isFilterAttribute
             End Get
         End Property
+
+        ''' <summary>
+        ''' 値がセットされるのみで、フォーム等で送信対象から除外されるか否か<br/>
+        ''' ID属性にGDISPが指定されている場合、デフォルトでこの設定となる
+        ''' </summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Property IsDisplayOnly As Boolean
 
         ''' <summary>
         ''' 検索時のオペレーターを示す値(主に検索フォームでのlikeなど)
@@ -315,6 +324,9 @@ Namespace Gears
                     _isFilterAttribute = True
                 End If
 
+                If isIdAttributeExist(GCON_DISPLAY_ONLY) Then
+                    IsDisplayOnly = True
+                End If
             End If
         End Sub
 
@@ -448,7 +460,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 自身のデータソースをロードし、バインドする(
+        ''' 自身のデータソースをロードし、バインドする
         ''' </summary>
         ''' <param name="dto"></param>
         ''' <remarks></remarks>
@@ -464,8 +476,8 @@ Namespace Gears
                         Dim tempDto As GearsDTO = New GearsDTO(ActionType.SEL)
                     End If
 
+                    Dim resultSet As DataTable = DataSource.execute(tmpDto)
                     If DataBinder.isBindable(_control) Then
-                        Dim resultSet As DataTable = DataSource.execute(tmpDto)
                         result = dataBind(resultSet)
                     End If
 

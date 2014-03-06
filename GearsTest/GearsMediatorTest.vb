@@ -2,6 +2,7 @@
 Imports Gears
 Imports GearsTest.ControlBuilder
 Imports Gears.DataSource
+Imports Gears.Util
 
 Namespace GearsTest
 
@@ -120,8 +121,6 @@ Namespace GearsTest
             End Select
         End Sub
 
-
-
         Private Sub makeTitle(ByVal title As String)
 
             Console.WriteLine("-------------------------------------------------------------------")
@@ -135,7 +134,7 @@ Namespace GearsTest
             If ns <> "" Then
                 mediator.DsNameSpace = ns
             End If
-            mediator.addGControls(con)
+            mediator.addControls(con)
         End Sub
 
         <Test(), TestCaseSource("DbServers")>
@@ -170,10 +169,10 @@ Namespace GearsTest
             registerControls(RelationPage, DbServerType.SQLite)
 
             Dim form As New GearsControl(RelationPage.FindControl(FORM_PANEL), New DataSource.EMP(mediator.ConnectionName))
-            mediator.addGControl(form)
+            mediator.addControl(form)
 
             Dim filter As New GearsControl(RelationPage.FindControl(FILTER_PANEL), mediator.ConnectionName)
-            mediator.addGControl(filter)
+            mediator.addControl(filter)
 
 
             'リレーションを登録
@@ -235,9 +234,9 @@ Namespace GearsTest
             Dim filter As New GearsControl(RelationPage.FindControl(FILTER_PANEL), mediator.ConnectionName)
             Dim view As New GearsControl(RelationPage.FindControl(TABLE_VIEW), empTable)
 
-            mediator.addGControl(form)
-            mediator.addGControl(filter)
-            mediator.addGControl(view)
+            mediator.addControl(form)
+            mediator.addControl(filter)
+            mediator.addControl(view)
 
             mediator.addRelation("ddlDEPTNO", "ddlAREA")
             mediator.addRelation("ddlDEPTNO", "ddlGROUPN")
@@ -277,13 +276,13 @@ Namespace GearsTest
             initGControls(mediator)
 
             '処理対象外コントロールの設定（これらのコントロールの値は送信されない）
-            mediator.setEscapesWhenSend(filter.Control, Nothing, "ddlGROUPN__FIL", "ddlUNITS__FIL")
-            '処理対象外コントロールの設定（これらのコントロールの値は受信されない）
-            mediator.setEscapesWhenReceive(view.Control, form.Control, "txtENAME")
+            mediator.addExcept(filter.Control, Nothing, "ddlGROUPN__FIL", "ddlUNITS__FIL")
+            ''処理対象外コントロールの設定（これらのコントロールの値は受信されない）
+            'mediator.setEscapesWhenReceive(view.Control, form.Control, "txtENAME")
 
             '選択から一覧を出力
             mediator.GControl("txtFILTER__FIL").setValue("1")
-            mediator.executeBehavior(mediator.GControl(FILTER_PANEL).Control, Nothing, Nothing)
+            mediator.send(mediator.GControl(FILTER_PANEL).Control, ActionType.SEL)
 
             '一覧をセレクト
             Dim viewControl As GridView = CType(view.Control, GridView)
@@ -303,7 +302,7 @@ Namespace GearsTest
             Assert.AreEqual("", mediator.GControl("txtEMPNO").getValue) 'この時点では当然空白
 
             '一覧からフォームへ
-            mediator.executeBehavior(mediator.GControl(TABLE_VIEW).Control, Nothing, Nothing)
+            mediator.execute(mediator.GControl(TABLE_VIEW).Control)
 
             '反映された値をチェック
             Assert.AreEqual(empNo, mediator.GControl("txtEMPNO").getValue)
@@ -331,7 +330,7 @@ Namespace GearsTest
 
             Dim form As New GearsControl(RelationPage.FindControl(FORM_PANEL), empRow)
 
-            mediator.addGControl(form)
+            mediator.addControl(form)
 
             mediator.addRelation("ddlDEPTNO", "ddlAREA")
             mediator.addRelation("ddlDEPTNO", "ddlGROUPN")
@@ -344,20 +343,20 @@ Namespace GearsTest
             initGControls(mediator)
 
             mediator.GControl("txtEMPNO").setValue(notExistEmp)
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, Nothing, Nothing)
+            mediator.send(mediator.GControl("txtEMPNO").Control)
 
             Assert.AreEqual(notExistEmp, mediator.GControl("txtEMPNO").getValue) '値はロードされず、残る
 
             '項目限定
             mediator.GControl("txtEMPNO").setValue(TestEmps(0))
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, Nothing, Nothing)
+            mediator.send(mediator.GControl("txtEMPNO").Control)
             Dim firstName As String = mediator.GControl("txtEMPNO").getValue
             Dim firstSAL As String = mediator.GControl("txtSAL").getValue
 
             Dim selectDto As New GearsDTO(ActionType.SEL)
             selectDto.addSelection(SqlBuilder.newSelect("ENAME"))
             mediator.GControl("txtEMPNO").setValue(TestEmps(1))
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, Nothing, selectDto)
+            mediator.send(mediator.GControl("txtEMPNO").Control, Nothing, selectDto)
 
             Assert.AreNotEqual(firstName, mediator.GControl("txtENAME").getValue)
             Assert.AreEqual(firstSAL, mediator.GControl("txtSAL").getValue) '取得されていない項目はそのまま
@@ -374,7 +373,7 @@ Namespace GearsTest
             empRow.addLockCheckCol("UPD_HMS", LockType.UTIMESTR)
             Dim form As New GearsControl(RelationPage.FindControl(FORM_PANEL), empRow)
 
-            mediator.addGControl(form)
+            mediator.addControl(form)
 
             mediator.addRelation("ddlDEPTNO", "ddlAREA")
             mediator.addRelation("ddlDEPTNO", "ddlGROUPN")
@@ -389,11 +388,11 @@ Namespace GearsTest
             initGControls(mediator)
 
             '除外対象設定
-            mediator.setEscapesWhenSend(form.Control, form.Control, "pnlDeptInfos")
+            mediator.addExcept(form.Control, form.Control, "pnlDeptInfos")
 
             'データをロード
             mediator.GControl("txtEMPNO").setValue(testEmp)
-            mediator.executeBehavior(mediator.GControl("txtEMPNO").Control, form.Control, New GearsDTO(ActionType.SEL))
+            mediator.send(mediator.GControl("txtEMPNO").Control, form.Control, New GearsDTO(ActionType.SEL))
 
             Assert.IsFalse(String.IsNullOrEmpty(mediator.GControl("txtENAME").getValue))
 
@@ -405,25 +404,25 @@ Namespace GearsTest
             Dim executeDto As New GearsDTO(ActionType.SAVE)
             Dim lockedValue As List(Of SqlFilterItem) = form.DataSource.getLockCheckColValue
             executeDto.addLockItems(lockedValue) 'データロード時のロック値をセット
-            mediator.executeBehavior(form.Control, form.Control, executeDto)
+            mediator.send(form.Control, form.Control, executeDto)
 
             Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.DataSource.gResultSet))
             '元に戻す(ロック考慮なし)
             mediator.GControl("txtENAME").setValue(originalName)
-            mediator.executeBehavior(form.Control, form.Control, New GearsDTO(ActionType.SAVE))
+            mediator.send(form.Control, form.Control, New GearsDTO(ActionType.SAVE))
 
             'ロックエラー発生(上記で更新を行っているため、ロード時のキーではエラーになるはず)
             mediator.GControl("txtENAME").setValue(originalName)
-            mediator.executeBehavior(form.Control, form.Control, executeDto)
+            mediator.send(form.Control, form.Control, executeDto)
 
-            Assert.AreEqual(mediator.getLog.Count, 1)
-            Assert.IsInstanceOf(GetType(GearsOptimisticLockException), mediator.getLog.Values(0))
+            Assert.AreEqual(mediator.Log.Count, 1)
+            Assert.IsInstanceOf(GetType(GearsOptimisticLockException), mediator.Log.Values(0))
 
             '挿入(キーの値だけ変えて更新) -----------------------------------------
             Dim newEmpno As String = "8888"
             mediator.GControl("txtEMPNO").LoadedValue = mediator.GControl("txtEMPNO").getValue '更新前の値を保持
             mediator.GControl("txtEMPNO").setValue(newEmpno)
-            mediator.executeBehavior(form.Control, form.Control, executeDto)
+            mediator.send(form.Control, form.Control, executeDto)
 
             Assert.AreEqual(newEmpno, GearsSqlExecutor.getDataSetValue("EMPNO", form.DataSource.gResultSet))
 
@@ -431,13 +430,13 @@ Namespace GearsTest
             executeDto.IsPermitOtherKeyUpdate = False
             mediator.GControl("txtEMPNO").LoadedValue = testEmp '更新前の値を保持
             mediator.GControl("txtENAME").setValue(changedValue)
-            mediator.executeBehavior(form.Control, form.Control, executeDto)
-            Assert.AreEqual(mediator.getLog.Count, 1)
-            Assert.IsInstanceOf(GetType(GearsSqlException), mediator.getLog.Values(0))
+            mediator.send(form.Control, form.Control, executeDto)
+            Assert.AreEqual(mediator.Log.Count, 1)
+            Assert.IsInstanceOf(GetType(GearsSqlException), mediator.Log.Values(0))
 
             'キー更新OKで実行
             executeDto.IsPermitOtherKeyUpdate = True
-            mediator.executeBehavior(form.Control, form.Control, executeDto)
+            mediator.send(form.Control, form.Control, executeDto)
             Assert.AreEqual(changedValue, GearsSqlExecutor.getDataSetValue("ENAME", form.DataSource.gResultSet))
 
             '削除処理 ------------------------------------------------------------
@@ -446,14 +445,14 @@ Namespace GearsTest
 
             '異なるキー更新はエラー
             deleteDto.IsPermitOtherKeyUpdate = False
-            mediator.executeBehavior(form.Control, form.Control, deleteDto)
-            Assert.AreEqual(mediator.getLog.Count, 1)
-            Assert.IsInstanceOf(GetType(GearsSqlException), mediator.getLog.Values(0))
+            mediator.send(form.Control, form.Control, deleteDto)
+            Assert.AreEqual(mediator.Log.Count, 1)
+            Assert.IsInstanceOf(GetType(GearsSqlException), mediator.Log.Values(0))
 
             deleteDto.IsPermitOtherKeyUpdate = True
             deleteDto.removeLockItem()
             deleteDto.addLockItems(form.DataSource.getLockCheckColValue)
-            mediator.executeBehavior(form.Control, form.Control, deleteDto)
+            mediator.send(form.Control, form.Control, deleteDto)
 
             Dim confirmDto As New GearsDTO(ActionType.SEL)
             confirmDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newEmpno))
@@ -466,7 +465,7 @@ Namespace GearsTest
             registerControls(RelationPage, DbServerType.SQLite, groupNamespace)
 
             Dim form As New GearsControl(RelationPage.FindControl(FORM_PANEL), New DataSource.EMP(mediator.ConnectionName))
-            mediator.addGControl(form)
+            mediator.addControl(form)
 
             Dim grv As New GridView
             grv.ID = "grvList"
@@ -476,7 +475,7 @@ Namespace GearsTest
             grv.Columns.Add(empno)
 
             Dim grvCon As New GearsControl(grv, New DataSource.EMP(mediator.ConnectionName))
-            mediator.addGControl(grvCon)
+            mediator.addControl(grvCon)
 
             Dim dto As GearsDTO = mediator.makeSendMessage(grv, Nothing, Nothing)
 
@@ -509,6 +508,55 @@ Namespace GearsTest
             Return list
 
         End Function
+
+        <Test()>
+        Public Sub makeTreeTest()
+
+            '単一要素
+            Dim tree As New Dictionary(Of String, List(Of String))
+            tree.Add("A", Nothing)
+            tree.Add("B", New List(Of String) From {"B"})
+
+            Dim treeNode As List(Of RelationNode) = RelationNode.makeTree(tree)
+            treeNode.ForEach(Sub(n) Console.WriteLine(n))
+
+            Console.WriteLine("--------------------------")
+
+            '階層要素
+            tree.Clear()
+            tree.Add("A", New List(Of String) From {"B", "C"})
+            tree.Add("B", New List(Of String) From {"D"})
+
+            treeNode = RelationNode.makeTree(tree)
+            treeNode.ForEach(Sub(n) Console.WriteLine(n))
+
+            Console.WriteLine("--------------------------")
+
+            '複数階層
+            tree.Clear()
+            tree.Add("A", New List(Of String) From {"B", "C"})
+            tree.Add("B", New List(Of String) From {"D"})
+            tree.Add("D", New List(Of String) From {"E", "F"})
+            tree.Add("G", New List(Of String) From {"A"})
+
+            tree.Add("H", New List(Of String) From {"I"})
+            tree.Add("J", New List(Of String) From {"K"})
+            tree.Add("K", New List(Of String) From {"L", "M", "N"})
+
+            treeNode = RelationNode.makeTree(tree)
+            treeNode.ForEach(Sub(n) Console.WriteLine(n))
+
+            Console.WriteLine("--------------------------")
+
+            'ループ
+            tree.Clear()
+            tree.Add("A", New List(Of String) From {"B"})
+            tree.Add("B", New List(Of String) From {"A"})
+
+            treeNode = RelationNode.makeTree(tree)
+            treeNode.ForEach(Sub(n) Console.WriteLine(n))
+
+        End Sub
 
     End Class
 

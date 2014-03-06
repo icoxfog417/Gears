@@ -80,6 +80,7 @@
     <Compile Include="Code\DataSource\GearsSqlException.vb" />
     <Compile Include="Code\Binder\GearsDataAttachException.vb" />
     <Compile Include="Code\Binder\GearsDataBindException.vb" />
+    <Compile Include="Code\Util\ControlSearcher.vb" />
     <Compile Include="Code\Validation\GearsDataValidationException.vb" />
     <Compile Include="Code\DataSource\GearsOptimisticLockException.vb" />
     <Compile Include="Code\Validation\GearsModelValidationException.vb" />
@@ -136,6 +137,7 @@
     <Compile Include="Code\Validation\Validator\GStartWith.vb" />
     <Compile Include="Code\Validation\Marker\IAttributeMarker.vb" />
     <Compile Include="Code\Validation\Marker\MarkerNumeric.vb" />
+    <Compile Include="Code\Util\RelationNode.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
