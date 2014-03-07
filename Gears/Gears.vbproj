@@ -80,6 +80,7 @@
     <Compile Include="Code\DataSource\GearsSqlException.vb" />
     <Compile Include="Code\Binder\GearsDataAttachException.vb" />
     <Compile Include="Code\Binder\GearsDataBindException.vb" />
+    <Compile Include="Code\GearsExpressions.vb" />
     <Compile Include="Code\Util\ControlSearcher.vb" />
     <Compile Include="Code\Validation\GearsDataValidationException.vb" />
     <Compile Include="Code\DataSource\GearsOptimisticLockException.vb" />

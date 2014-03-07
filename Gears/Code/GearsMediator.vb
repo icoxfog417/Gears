@@ -192,10 +192,17 @@ Namespace Gears
                 _gcontrols.Add(gcon.ControlID, gcon)
                 Return True
             Else
-                GearsLogStack.setLog(gcon.ControlID + " はすでにGearsControlとして追加されています")
+                GearsLogStack.setLog(gcon.ControlID + " は既に追加されています。入れ替えたい場合はreplaceControlを使用してください")
                 Return False
             End If
         End Function
+
+        Public Sub replaceControl(ByVal gcon As GearsControl)
+            If _gcontrols.ContainsKey(gcon.ControlID) Then
+                _gcontrols(gcon.ControlID) = gcon
+            End If
+        End Sub
+
 
         ''' <summary>
         ''' 自身の持つデフォルトの接続文字列/名称空間を使用しGearsControlを作成する

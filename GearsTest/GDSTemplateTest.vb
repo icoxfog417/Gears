@@ -25,7 +25,7 @@ Namespace GearsTest
 
             '条件付
             Dim whereDto As New GearsDTO(ActionType.SEL)
-            whereDto.addFilter(SqlBuilder.newFilter("JOB").eq("MANAGER"))
+            whereDto.addFilter(SqlBuilder.F("JOB").eq("MANAGER"))
             dbData = SimpleDBA.executeSql(mainConnection, "SELECT * FROM EMP WHERE JOB = :manager ", SimpleDBA.makeParameters("manager", "MANAGER"))
             DsData = ds.execute(whereDto)
 
@@ -50,10 +50,10 @@ Namespace GearsTest
 
             'マッパーをセットしたSELECT
             Dim sql As SqlBuilder = ds.makeSqlBuilder(New GearsDTO(ActionType.SEL))
-            sql.addFilter(SqlBuilder.newFilter("BUMON").eq(dname))
-            sql.addFilter(SqlBuilder.newFilter("SHIGOTO").eq(job))
-            sql.addFilter(SqlBuilder.newFilter("EMPNO").gt(0))
-            sql.addSelection(SqlBuilder.newSelect("EMPNO").ASC.asNoSelect)
+            sql.addFilter(SqlBuilder.F("BUMON").eq(dname))
+            sql.addFilter(SqlBuilder.F("SHIGOTO").eq(job))
+            sql.addFilter(SqlBuilder.F("EMPNO").gt(0))
+            sql.addSelection(SqlBuilder.S("EMPNO").ASC.asNoSelect)
             sql.ItemColExchanger = mapper
 
             Dim DsData As DataTable = ds.gSelect(sql)
@@ -76,7 +76,7 @@ Namespace GearsTest
             Dim start As Integer = 5
             Dim count As Integer = 3
             selectDto.setPaging(5, 3)
-            selectDto.addSelection(SqlBuilder.newSelect("EMPNO").ASC.asNoSelect)
+            selectDto.addSelection(SqlBuilder.S("EMPNO").ASC.asNoSelect)
             dbData = SimpleDBA.executeSql(mainConnection, "SELECT * FROM EMP ORDER BY EMPNO LIMIT + " + count.ToString + " OFFSET " + start.ToString)
             DsData = ds.execute(selectDto)
 
@@ -98,7 +98,7 @@ Namespace GearsTest
             Dim answerCount As DataTable = Nothing
 
             'ページング
-            selectDto.addSelection(SqlBuilder.newSelect("EMPNO").ASC)
+            selectDto.addSelection(SqlBuilder.S("EMPNO").ASC)
             answerCount = SimpleDBA.executeSql(mainConnection, "SELECT COUNT(*) AS CNT FROM EMP ")
 
             Dim count As Integer = ds.gSelectCount(selectDto)
@@ -144,9 +144,9 @@ Namespace GearsTest
 
             'INSERT
             Dim insertDto As New GearsDTO(ActionType.INS)
-            insertDto.addSelection(SqlBuilder.newSelect("EMPNO").setValue(newKey).asKey())
-            insertDto.addSelection(SqlBuilder.newSelect("ENAME").setValue("ランディージョンソン"))
-            insertDto.addSelection(SqlBuilder.newSelect("JOB").setValue("FREE"))
+            insertDto.addSelection(SqlBuilder.S("EMPNO").setValue(newKey).asKey())
+            insertDto.addSelection(SqlBuilder.S("ENAME").setValue("ランディージョンソン"))
+            insertDto.addSelection(SqlBuilder.S("JOB").setValue("FREE"))
 
             Try '存在しないキーをUPDATEしようとした場合、エラーになるはず
                 insertDto.Action = ActionType.UPD
@@ -170,9 +170,9 @@ Namespace GearsTest
 
             'UPDATE
             Dim updateDto As New GearsDTO(ActionType.UPD)
-            updateDto.addSelection(SqlBuilder.newSelect("SAL").setValue("9999"))
-            updateDto.addSelection(SqlBuilder.newSelect("HIREDATE").setValue("9000-01-01")) 'DBごとに書式を設定する必要あり(SQLiteだとハイフンつなぎ)
-            updateDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).asKey())
+            updateDto.addSelection(SqlBuilder.S("SAL").setValue("9999"))
+            updateDto.addSelection(SqlBuilder.S("HIREDATE").setValue("9000-01-01")) 'DBごとに書式を設定する必要あり(SQLiteだとハイフンつなぎ)
+            updateDto.addFilter(SqlBuilder.F("EMPNO").eq(newKey).asKey())
             ds.execute(updateDto)
 
             Assert.AreEqual(1, ds.gResultSet.Rows.Count)
@@ -194,9 +194,9 @@ Namespace GearsTest
 
             Dim saveDto As New GearsDTO(ActionType.SAVE)
 
-            saveDto.addSelection(SqlBuilder.newSelect("EMPNO").setValue(newKey).asKey)
-            saveDto.addSelection(SqlBuilder.newSelect("ENAME").setValue("山手五郎"))
-            saveDto.addSelection(SqlBuilder.newSelect("JOB").setValue("TRAIN"))
+            saveDto.addSelection(SqlBuilder.S("EMPNO").setValue(newKey).asKey)
+            saveDto.addSelection(SqlBuilder.S("ENAME").setValue("山手五郎"))
+            saveDto.addSelection(SqlBuilder.S("JOB").setValue("TRAIN"))
 
             'SAVE
             saveDto.Action = ActionType.SAVE 'INSERT判断
@@ -209,7 +209,7 @@ Namespace GearsTest
             Dim savedLock As List(Of SqlFilterItem) = ds.getLockCheckColValue
             saveDto.addLockItems(savedLock)
 
-            saveDto.addSelection(SqlBuilder.newSelect("COMM").setValue("アップ"))
+            saveDto.addSelection(SqlBuilder.S("COMM").setValue("アップ"))
             ds.execute(saveDto) 'UPDATE判断
 
             Assert.AreEqual(1, ds.gResultSet.Rows.Count)
@@ -225,7 +225,7 @@ Namespace GearsTest
             End Try
 
             'キー変更更新
-            saveDto.addFilter(SqlBuilder.newFilter("EMPNO").eq("9999")) 'キー9999をnewKey(1000)に変更して更新、という状況をエミュレート
+            saveDto.addFilter(SqlBuilder.F("EMPNO").eq("9999")) 'キー9999をnewKey(1000)に変更して更新、という状況をエミュレート
             saveDto.IsPermitOtherKeyUpdate = False
             Try
                 ds.execute(saveDto)
@@ -234,7 +234,7 @@ Namespace GearsTest
             End Try
 
             saveDto.IsPermitOtherKeyUpdate = True
-            saveDto.addSelection(SqlBuilder.newSelect("SAL").setValue("10"))
+            saveDto.addSelection(SqlBuilder.S("SAL").setValue("10"))
             saveDto.removeLockItem()
             saveDto.addLockItems(ds.getLockCheckColValue)
 
@@ -245,7 +245,7 @@ Namespace GearsTest
 
             '削除しておく
             Dim clearDto As New GearsDTO(ActionType.DEL)
-            clearDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newKey).asKey())
+            clearDto.addFilter(SqlBuilder.F("EMPNO").eq(newKey).asKey())
             ds.execute(clearDto)
 
         End Sub

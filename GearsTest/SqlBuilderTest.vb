@@ -33,12 +33,12 @@ Namespace GearsTest
                     answer = " SELECT t.[COL1] AS [COL1_IS_COLUMN1], t.[COL2],count(*) AS [件数] FROM SCHEMA.[TAB] t WHERE t.[COL1] = @p1 GROUP BY t.[COL1],t.[COL2] ORDER BY t.[COL1] ASC "
             End Select
 
-            sqlbd.addSelection(SqlBuilder.newSelect("COL1", "t").asName("COL1_IS_COLUMN1").inGroup.ASC)
-            sqlbd.addSelection(SqlBuilder.newSelect("COL2", "t").inGroup)
-            sqlbd.addSelection(SqlBuilder.newFunction("count(*)").asName("件数"))
-            sqlbd.DataSource = (SqlBuilder.newDataSource("TAB", "t").inSchema("SCHEMA"))
+            sqlbd.addSelection(SqlBuilder.S("COL1", "t").asName("COL1_IS_COLUMN1").inGroup.ASC)
+            sqlbd.addSelection(SqlBuilder.S("COL2", "t").inGroup)
+            sqlbd.addSelection(SqlBuilder.C("count(*)").asName("件数"))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB", "t").inSchema("SCHEMA"))
 
-            Dim filter As SqlFilterItem = SqlBuilder.newFilter("COL1", "t").eq("xxx")
+            Dim filter As SqlFilterItem = SqlBuilder.F("COL1", "t").eq("xxx")
             filter.ParamName = "p1"
             sqlbd.addFilter(filter)
 
@@ -53,9 +53,9 @@ Namespace GearsTest
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB WHERE COL1 IS NULL AND COL2 = :F1V0 "
 
-            sqlbd.addFilter(SqlBuilder.newFilter("COL1").eq(Nothing))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL2").eq("1"))
-            sqlbd.DataSource = (SqlBuilder.newDataSource("TAB"))
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq(Nothing))
+            sqlbd.addFilter(SqlBuilder.F("COL2").eq("1"))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB"))
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
             Assert.AreEqual(trimAll(answer), trimAll(sql))
@@ -68,11 +68,11 @@ Namespace GearsTest
             Dim answer As String = "SELECT * FROM TAB WHERE NOT COL1 IS NULL AND NOT COL2 = :F1V0 AND ( NOT COL3 = :F2V0 OR COL4 = :F3V0 ) "
 
             Dim group As New SqlFilterGroup("A")
-            sqlbd.addFilter(SqlBuilder.newFilter("COL1").eq(Nothing).nots)
-            sqlbd.addFilter(SqlBuilder.newFilter("COL2").eq("1").nots)
-            sqlbd.addFilter(SqlBuilder.newFilter("COL3").eq("1").inGroup(group).nots)
-            sqlbd.addFilter(SqlBuilder.newFilter("COL4").eq("1").inGroup(group))
-            sqlbd.DataSource = (SqlBuilder.newDataSource("TAB"))
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq(Nothing).nots)
+            sqlbd.addFilter(SqlBuilder.F("COL2").eq("1").nots)
+            sqlbd.addFilter(SqlBuilder.F("COL3").eq("1").inGroup(group).nots)
+            sqlbd.addFilter(SqlBuilder.F("COL4").eq("1").inGroup(group))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB"))
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
 
@@ -89,17 +89,17 @@ Namespace GearsTest
             Dim sql As String = ""
 
             'INNER JOIN
-            Dim ds1 As SqlDataSource = SqlBuilder.newDataSource("TAB_A", "t1").innerJoin("TAB_B", "t2", SqlBuilder.newJoinFilter("JCOL1", "JCOL2"), _
-                                                                                         SqlBuilder.newJoinFilter("JCOL3", "JCOL4"))
+            Dim ds1 As SqlDataSource = SqlBuilder.DS("TAB_A", "t1").innerJoin("TAB_B", "t2", SqlBuilder.J("JCOL1", "JCOL2"), _
+                                                                                         SqlBuilder.J("JCOL3", "JCOL4"))
             sqlbd.DataSource = (ds1)
             sql = sqlbd.confirmSql(ActionType.SEL, True)
 
             Assert.AreEqual(trimAll(answer1), trimAll(sql))
 
             'LEFT OUTER JOIN
-            Dim ds2 As SqlDataSource = SqlBuilder.newDataSource("TAB_A", "t1").leftOuterJoin( _
-                "TAB_B", "t2", SqlBuilder.newJoinFilter("JCOL1", "JCOL1")).leftOuterJoin( _
-                "TAB_C", "t3", SqlBuilder.newJoinFilter("JCOL2", "JCOL1"))
+            Dim ds2 As SqlDataSource = SqlBuilder.DS("TAB_A", "t1").leftOuterJoin( _
+                "TAB_B", "t2", SqlBuilder.J("JCOL1", "JCOL1")).leftOuterJoin( _
+                "TAB_C", "t3", SqlBuilder.J("JCOL2", "JCOL1"))
 
             sqlbd.DataSource = (ds2)
             sql = sqlbd.confirmSql(ActionType.SEL, True)
@@ -121,13 +121,13 @@ Namespace GearsTest
 
             Dim groupA As New SqlFilterGroup("A", False)
             Dim groupB As New SqlFilterGroup("B")
-            sqlbd.DataSource = (SqlBuilder.newDataSource("TAB_A"))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL1").eq("1").inGroup(groupA))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL2").eq("2").inGroup(groupA))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL3").eq("3").inGroup(groupB))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL4").eq("4").inGroup(groupB))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL5").eq("5-1" + sqlbd.ValueSeparator + "5-2"))
-            sqlbd.addFilter(SqlBuilder.newFilter("COL6").eq("6"))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB_A"))
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq("1").inGroup(groupA))
+            sqlbd.addFilter(SqlBuilder.F("COL2").eq("2").inGroup(groupA))
+            sqlbd.addFilter(SqlBuilder.F("COL3").eq("3").inGroup(groupB))
+            sqlbd.addFilter(SqlBuilder.F("COL4").eq("4").inGroup(groupB))
+            sqlbd.addFilter(SqlBuilder.F("COL5").eq("5-1" + sqlbd.ValueSeparator + "5-2"))
+            sqlbd.addFilter(SqlBuilder.F("COL6").eq("6"))
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
 
             Assert.AreEqual(trimAll(answer), trimAll(sql))

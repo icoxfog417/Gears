@@ -425,7 +425,7 @@ Namespace Gears.DataSource
             For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
                 '元々設定されていた場合はそちらを優先する
                 If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
-                    sqlb.addSelection(SqlBuilder.newSelect(item.Key).setValue(getLockTypeValue(item.Value)))
+                    sqlb.addSelection(SqlBuilder.S(item.Key).setValue(getLockTypeValue(item.Value)))
                 End If
             Next
         End Sub

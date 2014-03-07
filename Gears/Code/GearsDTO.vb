@@ -114,21 +114,21 @@ Namespace Gears
 
                     If ginfo.IsFormAttribute Then
                         If ginfo.IsKey Then
-                            sqlb.addSelection(SqlBuilder.newSelect(ginfo.DataSourceID).setValue(ginfo.Value).asKey())
+                            sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value).asKey())
                             If ginfo.PastValue <> "" Then
-                                sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.PastValue).asKey()) '前回ロード時の値をフィルタ値として設定
+                                sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.PastValue).asKey()) '前回ロード時の値をフィルタ値として設定
                             Else
-                                sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey()) '前回ロード時の値がない場合、現在値をフィルタ値として設定
+                                sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey()) '前回ロード時の値がない場合、現在値をフィルタ値として設定
                             End If
                         Else
-                            sqlb.addSelection(SqlBuilder.newSelect(ginfo.DataSourceID).setValue(ginfo.Value))
+                            sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value))
                         End If
 
                     Else 'フィルタパネル、もしくは何も設定がない場合はフィルタ値として判断する
                         If ginfo.IsKey Then
-                            sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())
+                            sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())
                         Else
-                            sqlb.addFilter(SqlBuilder.newFilter(ginfo.DataSourceID).filterAs(opr, ginfo.Value))
+                            sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value))
                         End If
                     End If
 
@@ -157,7 +157,7 @@ Namespace Gears
         Public Overrides Function toString() As String
             Dim str As String = ""
             Dim sql As SqlBuilder = generateSqlBuilder()
-            sql.DataSource = SqlBuilder.newDataSource("dummy")
+            sql.DataSource = SqlBuilder.DS("dummy")
             str += "更新タイプ：" + ActionToString(Action) + vbCrLf
             If Action = ActionType.SAVE Then
                 'この時点ではInsertになるかUpdateになるか判別がつかないため、両方表示
@@ -181,7 +181,7 @@ Namespace Gears
             Dim sql As SqlBuilder = generateSqlBuilder()
 
             If ds Is Nothing Then
-                sql.DataSource = SqlBuilder.newDataSource("dummy")
+                sql.DataSource = SqlBuilder.DS("dummy")
             Else
                 sql.DataSource = ds
             End If

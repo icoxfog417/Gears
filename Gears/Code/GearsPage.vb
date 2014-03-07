@@ -99,7 +99,7 @@ Namespace Gears
         ''' <summary>コントロール間の関連を管理するクラス</summary>
         Protected GPageMediator As GearsMediator = Nothing
 
-        ''' <summary>ログ</summary>
+        ''' <summary>ログ</summary>GPageMediator
         Protected Log As New Dictionary(Of String, GearsException)
 
         ''' <summary>
@@ -276,7 +276,8 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function isPageAsync() As Boolean
 
-            'TODO ToolkitScriptManagerの考慮が必要
+            'TODO ToolkitScriptManagerの考慮が必要->ToolkitScriptManagerが使用されている場合、ScriptManager.GetCurrentでNothingが返る
+            'これを回避するにはAjaxControlToolkit.ToolkitScriptManager.GetCurrent(Me)を使用する必要があるが、必ず使っているとも限らないのでアセンブリから読み込む必要あり
             Dim s As ScriptManager = ScriptManager.GetCurrent(Me)
             If s IsNot Nothing Then
                 Return s.IsInAsyncPostBack()
@@ -354,6 +355,12 @@ Namespace Gears
 
         End Sub
 
+        ''' <summary>
+        ''' 画面のバリデーションを行う
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function isValidateOk(Optional ByVal con As Control = Nothing) As Boolean
             Dim result As Boolean = True
             Dim target As Control = con
@@ -402,69 +409,74 @@ Namespace Gears
                     Log.Add(control.ID, New GearsDataValidationException(gcon.getValidatedMsg))
                 End If
             End If
+
         End Sub
 
-        ''' <summary>
-        ''' fromコントロールの変更を、関連先に通知するメソッド
-        ''' </summary>
-        ''' <param name="fromControl"></param>
-        ''' <param name="atype"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function executeBehavior(ByVal fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
-            Dim dto As GearsDTO = New GearsDTO(atype)
-            Return executeBehavior(fromControl, Nothing, dto)
+        Public Function GSelect(ByVal ParamArray selection As SqlSelectItem()) As gSelectExpression
+            Return GSelect(selection.ToList)
+        End Function
+
+        Public Function GSelect(Optional ByVal selection As List(Of SqlSelectItem) = Nothing) As gSelectExpression
+            Return New gSelectExpression(selection, GPageMediator)
+        End Function
+
+        Public Function GSave(ByVal form As Control) As Boolean
+            Dim dto As New GearsDTO(ActionType.SAVE)
+            Return GSend(form).ToMyself(dto)
+        End Function
+
+        Public Function GUpdate(ByVal form As Control) As Boolean
+            Dim dto As New GearsDTO(ActionType.UPD)
+            Return GSend(form).ToMyself(dto)
+        End Function
+
+        Public Function GInsert(ByVal form As Control) As Boolean
+            Dim dto As New GearsDTO(ActionType.INS)
+            Return GSend(form).ToMyself(dto)
+        End Function
+
+        Public Function GDelete(ByVal form As Control) As Boolean
+            Dim dto As New GearsDTO(ActionType.DEL)
+            Return GSend(form).ToMyself(dto)
+        End Function
+
+        Public Function GExecute(ByVal form As Control, ByVal dto As GearsDTO) As Boolean
+            Return GSend(form).ToMyself(dto)
+        End Function
+
+        Public Function GSend(ByVal fromControl As Control) As gSendExpression
+            Return New gSendExpression(fromControl, Nothing, AddressOf Me.execute)
+        End Function
+
+        Public Function GSend(ByVal dto As GearsDTO) As gSendExpression
+            Return New gSendExpression(Nothing, dto, AddressOf Me.execute)
         End Function
 
         ''' <summary>
         ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
-        ''' toコントロールを明示的に指定する
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
-        ''' <param name="atype"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function executeBehavior(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As Boolean
-            Dim dto As GearsDTO = New GearsDTO(atype)
-            Return executeBehavior(fromControl, toControl, dto)
-        End Function
-
-        ''' <summary>
-        ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
-        ''' </summary>
-        ''' <param name="fromControl"></param>
         ''' <param name="dto"></param>
-        ''' <param name="isGatherInfo">配下のコントロール情報を収集するか否か</param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function executeBehavior(ByVal fromControl As Control, ByVal dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
-            Return executeBehavior(fromControl, Nothing, dto, isGatherInfo)
-        End Function
+        Private Function execute(ByVal fromControl As Control, ByVal toControl As Control, ByVal dto As GearsDTO) As Boolean
 
-        ''' <summary>
-        ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
-        ''' </summary>
-        ''' <param name="fromControl"></param>
-        ''' <param name="toControl"></param>
-        ''' <param name="dto"></param>
-        ''' <param name="isGatherInfo"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Overridable Function executeBehavior(ByVal fromControl As Control, ByVal toControl As Control, ByVal dto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
             Dim result As Boolean = True
             Log.Clear()
+
+            '更新系処理の場合、リロードによる二重ポストを検知
             If Not dto Is Nothing AndAlso _
                   (dto.Action <> ActionType.SEL And dto.Action <> ActionType.NONE) Then
                 If IsReload Then
-                    Log.Add(fromControl.ID, New GearsException("画面のリフレッシュのみ行いました。更新処理は実行されていません。"))
+                    Log.Add(If(fromControl IsNot Nothing, fromControl.ID, "(Send Dto)"), New GearsException("画面のリフレッシュのため、更新処理は実行されません"))
                     dto.Action = ActionType.SEL
                 End If
             End If
 
             'コントロールの登録チェック
-            If Not GPageMediator.isRegisteredControl(fromControl) Then
-                GearsLogStack.setLog(fromControl.ID + " はまだMyControlとして登録されていません。registerMyControlで登録する必要があります。")
+            If fromControl IsNot Nothing AndAlso Not GPageMediator.isRegisteredControl(fromControl) Then
+                GearsLogStack.setLog(fromControl.ID + " はまだ登録されていません。Registerで登録する必要があります。")
                 Return False
             End If
 
@@ -477,12 +489,10 @@ Namespace Gears
             End If
 
             'メイン処理実行
-            Dim sender As GearsDTO = Nothing
-            If Not isGatherInfo Then
-                sender = dto
-                GPageMediator.lockDtoWhenSend(sender) '与えられたDTOをそのまま使用する
+            Dim sender As GearsDTO = New GearsDTO(dto)
+            If fromControl Is Nothing Then
+                GPageMediator.lockDtoWhenSend(sender)
             Else
-                sender = New GearsDTO(dto)
                 sender.addLockItems(reloadLockValue(fromControl)) '楽観的ロックのチェックを追加
             End If
 
@@ -494,7 +504,15 @@ Namespace Gears
             GearsLogStack.setLog(fromControl.ID + " の送信情報を収集しました(DTO作成)。", sender.toString())
 
             'TODO 切り分け
-            result = GPageMediator.send(fromControl, toControl, sender)
+            If fromControl IsNot Nothing Then
+                If fromControl.ID = toControl.ID Then
+                    result = GPageMediator.execute(fromControl, sender)
+                Else
+                    result = GPageMediator.send(fromControl, toControl, sender)
+                End If
+            Else
+                result = GPageMediator.execute(toControl, sender)
+            End If
 
             '実行結果チェック
             If result Then
@@ -815,7 +833,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' ListItemのAttributeが消える対策(保管)
+        ''' ListItemのAttributeが消える対策(save)
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
@@ -839,7 +857,7 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' ListItemのAttributeが消える対策(リストア)
+        ''' ListItemのAttributeが消える対策(load)
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
@@ -865,12 +883,11 @@ Namespace Gears
 
         ''' <summary>
         ''' 登録済みのコントロールを取得する(id指定)
-        ''' TODO メソッド名変更
         ''' </summary>
         ''' <param name="id"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function getMyControl(ByVal id As String) As GearsControl
+        Public Function GGet(ByVal id As String) As GearsControl
             Return GPageMediator.GControl(id)
         End Function
 
@@ -880,7 +897,7 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function getMyControl(ByRef con As Control) As GearsControl
+        Public Function GGet(ByRef con As Control) As GearsControl
             If Not con Is Nothing Then
                 Return GPageMediator.GControl(con.ID)
             Else
@@ -892,12 +909,12 @@ Namespace Gears
         ''' 自動で登録されないコントロールを手動で登録する
         ''' </summary>
         ''' <param name="con"></param>
-        ''' <param name="isAutoLoadDS"></param>
         ''' <param name="isAutoLoadAttr"></param>
         ''' <remarks></remarks>
-        Public Sub registerMyControl(ByVal con As Control, Optional isAutoLoadDS As Boolean = True, Optional isAutoLoadAttr As Boolean = True)
+        Public Function GAdd(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As gRuleExpression
             GPageMediator.addControl(con, isAutoLoadAttr)
-        End Sub
+            Return New gRuleExpression(con, GPageMediator)
+        End Function
 
         ''' <summary>
         ''' 自動で登録されないコントロールを手動で登録する
@@ -905,10 +922,11 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <param name="ds"></param>
         ''' <remarks></remarks>
-        Public Sub registerMyControl(ByVal con As Control, ByVal ds As GearsDataSource)
+        Public Function GAdd(ByVal con As Control, ByVal ds As GearsDataSource) As gRuleExpression
             Dim gcon As GearsControl = New GearsControl(con, ds)
             GPageMediator.addControl(gcon)
-        End Sub
+            Return New gRuleExpression(con, GPageMediator)
+        End Function
 
         ''' <summary>
         ''' 指定されたIDのコントロールを取得する
@@ -920,55 +938,8 @@ Namespace Gears
             Return ControlSearcher.findControl(Me, conid)
         End Function
 
-        ''' <summary>
-        ''' 関連を登録する
-        ''' </summary>
-        ''' <param name="conF"></param>
-        ''' <param name="conT"></param>
-        ''' <remarks></remarks>
-        Public Sub addRelation(ByVal conF As Control, ByVal conT As Control)
-            GPageMediator.addRelation(conF, conT)
-        End Sub
-
-        ''' <summary>
-        ''' executeBehaviorを行う際、除外対象とするコントロールを設定する
-        ''' TODO:メソッド名変更Escapeはない。また、IDから推定できるようにすべき
-        ''' </summary>
-        ''' <param name="fromCon"></param>
-        ''' <param name="toCon"></param>
-        ''' <param name="escapes"></param>
-        ''' <remarks></remarks>
-        Public Sub setEscapesWhenSend(ByVal fromCon As Control, ByVal toCon As Control, ByVal ParamArray escapes() As String)
-            GPageMediator.addExcept(fromCon, toCon, escapes)
-        End Sub
-
-        ''' <summary>
-        ''' executeBehaviorを行う際、除外対象としていたコントロールの設定をリセットする
-        ''' </summary>
-        ''' <param name="fromCon"></param>
-        ''' <param name="toCon"></param>
-        ''' <remarks></remarks>
-        Public Sub resetEscapesWhenSend(ByVal fromCon As Control, ByVal toCon As Control)
-            GPageMediator.clearExcept(fromCon, toCon)
-        End Sub
-
-        <Obsolete("Log.Countを使用してください")>
-        Public Function getLogCount() As Integer
-            Return Log.Count
-        End Function
-
-        ''' <summary>
-        ''' 最初のエラーを取得する
-        ''' TODO メソッド名変更
-        ''' </summary>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function getLogMsgFirst() As GearsException
-            If Log.Count > 0 Then
-                Return Log.First.Value
-            Else
-                Return Nothing
-            End If
+        Public Function GMakeRule(ByVal fromCon As Control) As gRuleExpression
+            Return New gRuleExpression(fromCon, GPageMediator)
         End Function
 
         ''' <summary>
@@ -977,8 +948,8 @@ Namespace Gears
         ''' <param name="result"></param>
         ''' <param name="label"></param>
         ''' <remarks></remarks>
-        Public Sub getLogMsgDescription(ByVal result As Boolean, ByRef label As Label)
-            Dim desc As KeyValuePair(Of String, String) = getLogMsgDescription(result)
+        Public Sub LogToLabel(ByVal result As Boolean, ByRef label As Label)
+            Dim desc As KeyValuePair(Of String, String) = LogToLabel(result)
             label.CssClass = desc.Key
             label.Text = desc.Value
 
@@ -990,15 +961,15 @@ Namespace Gears
         ''' <param name="result"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function getLogMsgDescription(ByVal result As Boolean) As KeyValuePair(Of String, String)
+        Protected Overridable Function LogToLabel(ByVal result As Boolean) As KeyValuePair(Of String, String)
             Dim desc As KeyValuePair(Of String, String) = Nothing
             Dim msg As String
             If Log.Count > 0 Then
-                msg = getLogMsgFirst.Message
-                If Not getLogMsgFirst.InnerException Is Nothing Then
-                    msg += "　詳細：" + getLogMsgFirst.InnerException.Message
-                ElseIf Not String.IsNullOrEmpty(getLogMsgFirst.getMsgDebug()) Then
-                    msg += "　詳細：" + getLogMsgFirst.getMsgDebug()
+                msg = Log.FirstLog.Message
+                If Not Log.FirstLog.InnerException Is Nothing Then
+                    msg += "　詳細：" + Log.FirstLog.InnerException.Message
+                ElseIf Not String.IsNullOrEmpty(Log.FirstLog.getMsgDebug()) Then
+                    msg += "　詳細：" + Log.FirstLog.getMsgDebug()
                 End If
 
                 If result Then
@@ -1092,5 +1063,18 @@ Namespace Gears
         End Function
 
     End Class
+
+    Module GearsPageExtendModule
+        <Runtime.CompilerServices.Extension()> _
+        Public Function FirstLog(ByVal log As Dictionary(Of String, GearsException)) As GearsException
+            If log IsNot Nothing AndAlso log.Count > 0 Then
+                Return log.First.Value
+            Else
+                Return Nothing
+            End If
+        End Function
+
+    End Module
+
 
 End Namespace

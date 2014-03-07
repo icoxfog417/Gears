@@ -249,12 +249,12 @@ Namespace GearsTest
 
             '理論値の算出
             Dim empsDto As New GearsDTO(ActionType.SEL)
-            empsDto.addFilter(SqlBuilder.newFilter("FILTER").eq("1"))
+            empsDto.addFilter(SqlBuilder.F("FILTER").eq("1"))
             Dim empsCount As Integer = empTable.gSelectCount(empsDto)
 
             Dim empNo As String = testEmp
             Dim empDto As New GearsDTO(ActionType.SEL)
-            empDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(empNo))
+            empDto.addFilter(SqlBuilder.F("EMPNO").eq(empNo))
             Dim empData As DataTable = empRow.gSelect(empDto)
 
             Dim empName As String = GearsSqlExecutor.getDataSetValue("ENAME", empData)
@@ -262,14 +262,14 @@ Namespace GearsTest
             Dim areaValue As String = GearsSqlExecutor.getDataSetValue("AREA", empData)
 
             Dim deptDto As New GearsDTO(ActionType.SEL)
-            deptDto.addFilter(SqlBuilder.newFilter("DEPTNO").eq(deptnoValue))
+            deptDto.addFilter(SqlBuilder.F("DEPTNO").eq(deptnoValue))
             Dim deptnoCount As Integer = mediator.GControl("ddlDEPTNO").DataSource.gSelectCount(New GearsDTO(ActionType.SEL))
             Dim areaCount As Integer = mediator.GControl("ddlAREA").DataSource.gSelectCount(deptDto)
             Dim groupnCount As Integer = mediator.GControl("ddlGROUPN").DataSource.gSelectCount(deptDto)
 
             Dim groupnTopValue As String = GearsSqlExecutor.getDataSetValue("GROUPN", mediator.GControl("ddlGROUPN").DataSource.gSelect(deptDto))
             Dim groupnDto As New GearsDTO(ActionType.SEL)
-            groupnDto.addFilter(SqlBuilder.newFilter("GROUPN").eq(groupnTopValue))
+            groupnDto.addFilter(SqlBuilder.F("GROUPN").eq(groupnTopValue))
             Dim unitCount As Integer = mediator.GControl("ddlUNITS").DataSource.gSelectCount(groupnDto)
 
             '初期化(GPageの処理に相当)
@@ -354,7 +354,7 @@ Namespace GearsTest
             Dim firstSAL As String = mediator.GControl("txtSAL").getValue
 
             Dim selectDto As New GearsDTO(ActionType.SEL)
-            selectDto.addSelection(SqlBuilder.newSelect("ENAME"))
+            selectDto.addSelection(SqlBuilder.S("ENAME"))
             mediator.GControl("txtEMPNO").setValue(TestEmps(1))
             mediator.send(mediator.GControl("txtEMPNO").Control, Nothing, selectDto)
 
@@ -455,7 +455,7 @@ Namespace GearsTest
             mediator.send(form.Control, form.Control, deleteDto)
 
             Dim confirmDto As New GearsDTO(ActionType.SEL)
-            confirmDto.addFilter(SqlBuilder.newFilter("EMPNO").eq(newEmpno))
+            confirmDto.addFilter(SqlBuilder.F("EMPNO").eq(newEmpno))
             Assert.AreEqual(0, empRow.gSelectCount(confirmDto))
 
         End Sub

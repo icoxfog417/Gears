@@ -7,9 +7,9 @@ Namespace DataSource.Groups
         Inherits GDSTemplate
 
         Public Sub New(ByVal conStr As String)
-            MyBase.New(conStr, SqlBuilder.newDataSource("AREA"))
+            MyBase.New(conStr, SqlBuilder.DS("AREA"))
             If GExecutor.getDbServerType = DbServerType.OLEDB Then
-                setViewAndTarget(SqlBuilder.newDataSource("[AREA$]"))
+                setViewAndTarget(SqlBuilder.DS("[AREA$]"))
             End If
 
         End Sub
@@ -17,8 +17,8 @@ Namespace DataSource.Groups
         Public Overrides Function makeSqlBuilder(ByRef data As Gears.GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = MyBase.makeSqlBuilder(data)
 
-            sqlb.addSelection(SqlBuilder.newSelect("AREA").ASC)
-            sqlb.addSelection(SqlBuilder.newSelect("AREANAME"))
+            sqlb.addSelection(SqlBuilder.S("AREA").ASC)
+            sqlb.addSelection(SqlBuilder.S("AREANAME"))
 
             Return sqlb
 

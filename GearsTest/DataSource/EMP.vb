@@ -8,9 +8,9 @@ Namespace DataSource
         Inherits GDSTemplate
 
         Public Sub New(ByVal conStr As String)
-            MyBase.New(conStr, SqlBuilder.newDataSource("V_EMP"), SqlBuilder.newDataSource("EMP"))
+            MyBase.New(conStr, SqlBuilder.DS("V_EMP"), SqlBuilder.DS("EMP"))
             If GExecutor.getDbServerType = DbServerType.OLEDB Then
-                setViewAndTarget(SqlBuilder.newDataSource("[EMP$]"))
+                setViewAndTarget(SqlBuilder.DS("[EMP$]"))
             End If
         End Sub
 

@@ -158,12 +158,21 @@ Namespace Gears.DataSource
             End If
         End Sub
 
+        Public Sub ImportSqlItem(ByRef sb As SqlBuilder)
+            For Each sl As SqlSelectItem In sb.Selection
+                Me.addSelection(sl)
+            Next
+            For Each fl As SqlFilterItem In sb.Filter
+                Me.addFilter(fl)
+            Next
+        End Sub
+
         ''' <summary>選択/更新項目(SqlSelectItem)を作成するためのユーティリティ</summary>
         ''' <param name="col"></param>
         ''' <param name="pf"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function newSelect(ByVal col As String, Optional ByVal pf As String = "") As SqlSelectItem
+        Public Shared Function S(ByVal col As String, Optional ByVal pf As String = "") As SqlSelectItem
             Return New SqlSelectItem(col, pf)
         End Function
 
@@ -171,10 +180,10 @@ Namespace Gears.DataSource
         ''' <param name="col"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function newFunction(ByVal col As String) As SqlSelectItem
-            Dim s As New SqlSelectItem(col)
-            s.IsFunction = True
-            Return s
+        Public Shared Function C(ByVal col As String) As SqlSelectItem
+            Dim sl As New SqlSelectItem(col)
+            sl.IsFunction = True
+            Return sl
         End Function
 
         ''' <summary>条件(SqlFilterItem)を作成するためのユーティリティ</summary>
@@ -182,7 +191,7 @@ Namespace Gears.DataSource
         ''' <param name="pf"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function newFilter(ByVal col As String, Optional ByVal pf As String = "") As SqlFilterItem
+        Public Shared Function F(ByVal col As String, Optional ByVal pf As String = "") As SqlFilterItem
             Return New SqlFilterItem(col, pf)
         End Function
 
@@ -191,24 +200,24 @@ Namespace Gears.DataSource
         ''' <param name="col2"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function newJoinFilter(ByVal col As String, ByVal col2 As String) As SqlFilterItem
-            Dim f As New SqlFilterItem(col)
-            f.joinOn(newFilter(col2))
-            Return f
+        Public Shared Function J(ByVal col As String, ByVal col2 As String) As SqlFilterItem
+            Dim fl As New SqlFilterItem(col)
+            fl.joinOn(F(col2))
+            Return fl
         End Function
 
         ''' <summary>Table/View(SqlDataSource)を作成するためのユーティリティ</summary>
-        ''' <param name="ds"></param>
+        ''' <param name="dsource"></param>
         ''' <param name="sf"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function newDataSource(ByVal ds As String, Optional ByVal sf As String = "") As SqlDataSource
-            Return New SqlDataSource(ds, sf)
+        Public Shared Function DS(ByVal dsource As String, Optional ByVal sf As String = "") As SqlDataSource
+            Return New SqlDataSource(dsource, sf)
         End Function
 
-        <Obsolete("Selection.Where(Function(s) Not s.NoSelect).Count を使用してください(メソッドで提供しない)")>
+        <Obsolete("Selection.Where(Function(sl) Not sl.NoSelect).Count を使用してください(メソッドで提供しない)")>
         Public Function getSelectionCount() As Integer
-            Return Selection.Where(Function(s) Not s.IsNoSelect).Count
+            Return Selection.Where(Function(sl) Not sl.IsNoSelect).Count
         End Function
 
         ''' <summary>
@@ -492,10 +501,10 @@ Namespace Gears.DataSource
         Private Function makeSelection() As String
             Dim selectStr As String = ""
 
-            Dim selects = From s As SqlSelectItem In Selection()
-                          Where Not s.IsNoSelect
-                          Let sel As String = formatColumn(s, True)
-                          Select s
+            Dim selects = From sl As SqlSelectItem In Selection()
+                          Where Not sl.IsNoSelect
+                          Let sel As String = formatColumn(sl, True)
+                          Select sl
 
             selectStr = String.Join(",", selects)
 
@@ -511,7 +520,7 @@ Namespace Gears.DataSource
         Private Function makeGroupBy() As String
             Dim grpStr As String = ""
 
-            Dim groups = Selection().Where(Function(s) s.IsGroupBy).Select(Function(s) formatColumn(s))
+            Dim groups = Selection().Where(Function(sl) sl.IsGroupBy).Select(Function(sl) formatColumn(sl))
             grpStr = String.Join(",", groups)
 
             Return grpStr
@@ -526,9 +535,9 @@ Namespace Gears.DataSource
         Public Function makeOrderBy() As String
             Dim orderStr As String = ""
 
-            Dim orders = From s As SqlSelectItem In Selection()
-                         Where s.OrderBy <> OrderKind.NON
-                         Select formatColumn(s) + If(s.OrderBy = OrderKind.ASC, " ASC", " DESC")
+            Dim orders = From sl As SqlSelectItem In Selection()
+                         Where sl.OrderBy <> OrderKind.NON
+                         Select formatColumn(sl) + If(sl.OrderBy = OrderKind.ASC, " ASC", " DESC")
 
             Return String.Join(",", orders)
 
@@ -608,9 +617,9 @@ Namespace Gears.DataSource
         Private Function makeWhere(ByRef fs As List(Of SqlFilterItem), ByRef params As Dictionary(Of String, Object)) As String
 
             '指定されたグループ別に集計する(指定がない場合、グループ名は空白)
-            Dim groups = From f In fs.Select(Function(item, index) New With {index, item})
-                         Order By f.index
-                         Group By Name = If(f.item.Group Is Nothing, "", f.item.Group.Name) Into filters = Group
+            Dim groups = From fl In fs.Select(Function(item, index) New With {index, item})
+                         Order By fl.index
+                         Group By Name = If(fl.item.Group Is Nothing, "", fl.item.Group.Name) Into filters = Group
 
             Dim gList As New List(Of String)
             Dim fList As New List(Of String)
@@ -630,23 +639,23 @@ Namespace Gears.DataSource
 
                 'グループ内のフィルタ条件を評価
                 For mIdx As Integer = 0 To groups(gIdx).filters.Count - 1
-                    Dim f As SqlFilterItem = groups(gIdx).filters(mIdx).item
-                    Dim fName As String = If(String.IsNullOrEmpty(f.ParamName), "G" + gIdx.ToString + "F" + f.toString, f.ParamName)
+                    Dim fl As SqlFilterItem = groups(gIdx).filters(mIdx).item
+                    Dim fName As String = If(String.IsNullOrEmpty(fl.ParamName), "G" + gIdx.ToString + "F" + fl.toString, fl.ParamName)
                     Dim fPart As String = ""
 
-                    If f.hasValue AndAlso (TypeOf f.Value Is String AndAlso f.Value.ToString.Contains(ValueSeparator)) Then
+                    If fl.hasValue AndAlso (TypeOf fl.Value Is String AndAlso fl.Value.ToString.Contains(ValueSeparator)) Then
                         'Separatorによる複数指定の場合、これをSplitしてOR条件で結合する
-                        Dim values As List(Of String) = f.Value.ToString.Split(ValueSeparator).ToList
+                        Dim values As List(Of String) = fl.Value.ToString.Split(ValueSeparator).ToList
                         Dim vList As New List(Of String)
                         For vIdx As Integer = 0 To values.Count - 1
                             Dim vName As String = fName + "V" + vIdx.ToString
-                            vList.Add(makefPart(f, vName))
+                            vList.Add(makefPart(fl, vName))
                             params.Add(vName, values(vIdx))
                         Next
                         fList.Add("( " + String.Join(" OR ", vList) + " )") '複数値を指定場合、ORでつなぐ
                     Else
-                        params.Add(fName, f.Value)
-                        fList.Add(makefPart(f, fName))
+                        params.Add(fName, fl.Value)
+                        fList.Add(makefPart(fl, fName))
                     End If
                 Next
 

@@ -12,7 +12,7 @@ Namespace GearsTest
         Public Sub testAlert()
             Dim validator As New ModelValidator
             Dim sqlb As New SqlBuilder(ActionType.SEL)
-            sqlb.addSelection(SqlBuilder.newSelect("VALUE").setValue("1"))
+            sqlb.addSelection(SqlBuilder.S("VALUE").setValue("1"))
 
             Assert.IsTrue(validator.Validate(sqlb).IsValidIgnoreAlert)
 
@@ -25,7 +25,7 @@ Namespace GearsTest
             Assert.AreEqual("ABCDEF", validator.ErrorMessage.Replace(vbCrLf, ""))
             Assert.AreEqual("FOURTH1", validator.ErrorSource)
 
-            sqlb.addSelection(SqlBuilder.newSelect("HOGE").setValue("X"))
+            sqlb.addSelection(SqlBuilder.S("HOGE").setValue("X"))
             Assert.IsTrue(validator.Validate(sqlb).IsValidIgnoreAlert)
 
             Dim secondCount As Integer = (From v As Integer In validator.OrderConfirm
@@ -41,7 +41,7 @@ Namespace GearsTest
 
             Dim validator As New ModelValidator
             Dim sqlb As New SqlBuilder(ActionType.SEL)
-            sqlb.addSelection(SqlBuilder.newSelect("VALUE").setValue("0"))
+            sqlb.addSelection(SqlBuilder.S("VALUE").setValue("0"))
 
             Assert.IsFalse(validator.Validate(sqlb).IsValid)
             Assert.IsFalse(validator.Validate(sqlb).IsValidIgnoreAlert)
