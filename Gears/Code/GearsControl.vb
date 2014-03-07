@@ -7,43 +7,19 @@ Imports System.Reflection
 
 Namespace Gears
 
-    ''' <summary>
-    ''' System.Web.UI.WebControlをラップするControl<br/>
-    ''' 特定のネーミングルールに基づいたControl IDから、データソースクラスを判定し値をロードします→
-    ''' <a href="http://gearssite.apphb.com/GearsSampleControl.aspx" target="_blank">詳細:名称規約について</a><br/>
-    ''' 
-    ''' </summary>
-    ''' <remarks></remarks>
     Public Class GearsControl
         Implements IAttributeHolder
 
-        ''' <summary>IDに含まれることで、更新用フォームであることを示す文字列</summary>
         Public Const FORM_ATTRIBUTE As String = "GFORM"
-
-        ''' <summary>IDに含まれることで、検索フォームであることを示す文字列</summary>
         Public Const FILTER_ATTRIBUTE As String = "GFILTER"
-
-        ''' <summary>IDに含まれることで、更新キーであることを示す文字列</summary>
         Public Const KEY_ATTRIBUTE As String = "KEY"
-
-        ''' <summary>検索時のオペレーター指定</summary>
         Public Const KEY_OPERATOR As String = "OPERATOR"
-
-        ''' <summary>Serializeを行うための区切り文字</summary>
         Public Const VALUE_SEPARATOR As String = vbVerticalTab
 
-        ''' <summary>ID内をSplitするためのSeparator</summary>
         Private Const ID_SEPARATOR As String = "__"
-
-        ''' <summary>
-        ''' データソースクラスが格納されているアセンブリ名
-        ''' </summary>
-        Private Shared DataSourceAssembleyName As String = ""
+        Private Shared DataSourceAssembleyName As String = "" 'データソースが色々なアセンブリに拡散していることはないという前提
 
         Private control As Control = Nothing
-        ''' <summary>
-        ''' 基となるコントロール
-        ''' </summary>
         Public ReadOnly Property ControlID() As String
             Get
                 Return control.ID
@@ -51,9 +27,6 @@ Namespace Gears
         End Property
 
         Private _connectionName As String
-        ''' <summary>
-        ''' DBにアクセスするための接続文字列
-        ''' </summary>
         Public Property ConnectionName() As String
             Get
                 Return _connectionName
@@ -64,9 +37,6 @@ Namespace Gears
         End Property
 
         Private _dsNameSpace As String
-        ''' <summary>
-        ''' データソースクラスの名称空間
-        ''' </summary>
         Public Property DsNameSpace() As String
             Get
                 Return _dsNameSpace
@@ -76,23 +46,7 @@ Namespace Gears
             End Set
         End Property
 
-        Private _dataSourceID As String = ""
-        ''' <summary>
-        ''' データロード元となるデータソースクラスの名称(基本的にIDから判断される)
-        ''' </summary>
-        ''' <value></value>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public ReadOnly Property DataSourceID() As String
-            Get
-                Return _dataSourceID
-            End Get
-        End Property
-
         Private _operatorAttribute As String = ""
-        ''' <summary>
-        ''' 検索時のオペレーターを示す値(主に検索フォームでのlikeなど)
-        ''' </summary>
         Public Property OperatorAttribute() As String
             Get
                 Return _operatorAttribute
@@ -102,35 +56,8 @@ Namespace Gears
             End Set
         End Property
 
-        Private _controlType As String = ""
-        ''' <summary>
-        ''' コントロール種別を表す文字列
-        ''' </summary>
-        Public ReadOnly Property ControlType() As String
-            Get
-                Return _controlType
-            End Get
-        End Property
-
-        Private _isKey As Boolean = False
-        ''' <summary>
-        ''' コントロールがキーか否か
-        ''' </summary>
-        Public ReadOnly Property IsKey As Boolean
-            Get
-                Return _isKey
-            End Get
-        End Property
-
-        <Obsolete("IsKeyプロパティを使用してください")>
-        Public Sub setAskey()
-            _isKey = True
-        End Sub
 
         Private _isFormAttribute As Boolean = False
-        ''' <summary>
-        ''' コントロールが更新フォームか否か
-        ''' </summary>
         Public ReadOnly Property IsFormAttribute() As Boolean
             Get
                 Return _isFormAttribute
@@ -138,20 +65,29 @@ Namespace Gears
         End Property
 
         Private _isFilterAttribute As Boolean = False
-        ''' <summary>
-        ''' コントロールが検索フォームか否か
-        ''' </summary>
         Public ReadOnly Property IsFilterAttribute() As Boolean
             Get
                 Return _isFilterAttribute
             End Get
         End Property
 
-        ''' <summary>コントロールに設定されたIDをID_SEPARATORでSplitしたもの</summary>
-        Private idAttributes As ArrayList = New ArrayList()
+        Private _dataSourceID As String = ""
+        Public ReadOnly Property DataSourceID() As String
+            Get
+                Return _dataSourceID
+            End Get
+        End Property
 
-        ''' <summary>前回ロードされた値</summary>
+        Private _controlType As String = ""
+        Public ReadOnly Property ControlType() As String
+            Get
+                Return _controlType
+            End Get
+        End Property
+
+        Private idAttributes As ArrayList = New ArrayList()
         Private loadedValue As String = ""
+        Private isKey As Boolean = False
 
         Private dataBinder As IDataBinder = New GBinderTemplate
         Private dataSource As GearsDataSource = Nothing
@@ -224,7 +160,7 @@ Namespace Gears
 
                 'キー値設定
                 If isIdAttributeExist(KEY_ATTRIBUTE) Then
-                    _isKey = True
+                    isKey = True
                 End If
 
                 'コントロールの種別設定
@@ -358,7 +294,15 @@ Namespace Gears
             Return result
 
         End Function
-
+        Public Function key() As Boolean
+            Return isKey
+        End Function
+        Public Sub setAskey()
+            isKey = True
+        End Sub
+        Public Sub setAsNotkey()
+            isKey = False
+        End Sub
         Public Sub setLoadedValue(ByVal val As String)
             loadedValue = val
         End Sub
