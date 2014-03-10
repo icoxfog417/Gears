@@ -15,7 +15,7 @@ Namespace Gears.Validation
         End Sub
         Public Sub New(message As String, ByVal ParamArray detail() As String)
             MyBase.New(message)
-            addMsgDebug(detail)
+            addDetail(detail)
 
         End Sub
     End Class

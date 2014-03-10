@@ -23,19 +23,19 @@ Namespace Gears.DataSource
         End Sub
         Public Sub New(atype As ActionType, message As String, ByVal ParamArray detail() As String)
             MyBase.New(message)
-            addMsgDebug(detail)
+            addDetail(detail)
             setActionType(atype)
         End Sub
 
         'メソッド
         Public Function getActionType() As String
-            Return getMsg(MSG_ATYPE)
+            Return Detail(MSG_ATYPE)
         End Function
         Public Sub clearActionType()
-            clearMsg(MSG_ATYPE)
+            clearDetail(MSG_ATYPE)
         End Sub
         Public Sub setActionType(ByVal a As ActionType)
-            setMsg(MSG_ATYPE, GearsDTO.ActionToString(a))
+            addDetail(MSG_ATYPE, GearsDTO.ActionToString(a))
         End Sub
 
     End Class

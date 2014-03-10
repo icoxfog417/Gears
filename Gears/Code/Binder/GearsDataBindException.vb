@@ -24,13 +24,13 @@ Namespace Gears.Binder
 
         'メソッド
         Public Function getSourceControl() As String
-            Return getMsg(MSG_CONTROL)
+            Return Detail(MSG_CONTROL)
         End Function
         Public Sub clearSourceControl()
-            clearMsg(MSG_CONTROL)
+            clearDetail(MSG_CONTROL)
         End Sub
         Public Sub setSourceControl(ByVal con As String)
-            setMsg(MSG_CONTROL, con)
+            addDetail(MSG_CONTROL, con)
         End Sub
 
 

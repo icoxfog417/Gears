@@ -7,6 +7,7 @@ Imports System.Reflection
 Imports Gears.DataSource
 Imports Gears.Validation
 Imports Gears.Binder
+Imports System.Data
 
 Namespace Gears
 
@@ -121,10 +122,6 @@ Namespace Gears
         ''' </summary>
         Public Property IsKey As Boolean
 
-        <Obsolete("asKeyかIsKeyプロパティを使用してください")>
-        Public Sub setAskey()
-            _IsKey = True
-        End Sub
         Public Sub asKey()
             _IsKey = True
         End Sub
@@ -194,15 +191,6 @@ Namespace Gears
         ''' データベースからデータを抽出するGearsDataSource
         ''' </summary>
         Public Property DataSource As GearsDataSource = Nothing
-
-        <Obsolete("DataSourceプロパティを使用してください")>
-        Public Sub setDataSource(ByRef ds As GearsDataSource)
-            _DataSource = ds
-        End Sub
-        <Obsolete("DataSourceプロパティを使用してください")>
-        Public Function getDataSource() As GearsDataSource
-            Return _DataSource
-        End Function
 
         ''' <summary>
         ''' データソースの値をコントロールにバインドするIDataBinder

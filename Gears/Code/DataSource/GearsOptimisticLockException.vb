@@ -11,7 +11,7 @@ Namespace Gears.DataSource
 
         Public Sub New(ByVal ParamArray detail() As String)
             Me.New()
-            addMsgDebug(detail)
+            addDetail(detail)
         End Sub
 
     End Class

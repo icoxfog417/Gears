@@ -1,35 +1,45 @@
 ﻿Imports Gears.DataSource
+Imports System.Data
 
 Namespace Gears
 
     Public Class gRuleExpression
         Private _mediator As GearsMediator = Nothing
         Private _control As Control = Nothing
+        Private _toControl As List(Of Control) = Nothing
 
         Public Sub New(ByVal con As Control, ByVal mediator As GearsMediator)
             _mediator = mediator
             _control = con
         End Sub
 
-        Public Sub RelateTo(ParamArray cons As Control())
-            RelateTo(cons)
-        End Sub
+        Public Function Relate(ParamArray cons As Control()) As gRuleExpression
+            Return Relate(cons)
+        End Function
 
-        Public Sub RelateTo(ByVal cons As List(Of Control))
+        Public Function Relate(ByVal cons As List(Of Control)) As gRuleExpression
             For Each con As Control In cons
                 If _mediator.GControl(con.ID) Is Nothing Then '登録されていない場合、自動登録
                     _mediator.addControl(con)
                 End If
-                _mediator.addRelation(_control, con)
+                _mediator.GMakeRule(_control, con)
             Next
-        End Sub
+            _toControl = cons
+            Return Me
+        End Function
 
         Public Sub Except(ByVal toControl As Control, ParamArray excepts As String())
             _mediator.addExcept(_control, toControl, excepts)
         End Sub
 
         Public Sub Except(ParamArray excepts As String())
-            _mediator.addExcept(_control, _control, excepts)
+            If _toControl Is Nothing Then
+                _mediator.addExcept(_control, _control, excepts)
+            Else
+                For Each tocon As Control In _toControl
+                    _mediator.addExcept(_control, tocon, excepts)
+                Next
+            End If
         End Sub
 
     End Class

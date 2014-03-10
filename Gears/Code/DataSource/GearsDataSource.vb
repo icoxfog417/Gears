@@ -114,7 +114,7 @@ Namespace Gears.DataSource
         Public Overridable Function makeSqlBuilder(ByRef data As GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = Nothing
             If Not data Is Nothing Then
-                sqlb = data.generateSqlBuilder()
+                sqlb = data.toSqlBuilder()
                 sqlb.DbServer = GExecutor.getDbServerType()
             Else
                 sqlb = New SqlBuilder(GExecutor.getDbServerType(), ActionType.SEL)

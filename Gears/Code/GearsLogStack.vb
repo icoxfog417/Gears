@@ -156,7 +156,7 @@ Namespace Gears
 
                     'Detail
                     tempStr += "<td>"
-                    tempStr += item.getMsgDebug.Replace(vbCrLf, "<br/>") '改行コード変換
+                    tempStr += item.MessageDetail.Replace(vbCrLf, "<br/>") '改行コード変換
                     tempStr += "<br/>"
 
                     tempStr += "</td></tr>"

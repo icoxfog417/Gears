@@ -6,7 +6,7 @@ Namespace Gears.DataSource
     ''' 項目変換を行うためのクラス
     ''' </summary>
     ''' <remarks></remarks>
-    Public Class NameExchangerTemplete
+    Public Class NameExchangerTemplate
         Implements INameExchanger
 
         Private colToItem As New Dictionary(Of String, String)  'テーブル項目->項目名への変換

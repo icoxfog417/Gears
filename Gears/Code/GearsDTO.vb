@@ -101,7 +101,7 @@ Namespace Gears
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function generateSqlBuilder() As SqlBuilder
+        Public Function toSqlBuilder() As SqlBuilder
             Dim sqlb As SqlBuilder = New SqlBuilder(Me)
 
             'セレクタ/フィルタの設定
@@ -156,7 +156,7 @@ Namespace Gears
 
         Public Overrides Function toString() As String
             Dim str As String = ""
-            Dim sql As SqlBuilder = generateSqlBuilder()
+            Dim sql As SqlBuilder = toSqlBuilder()
             sql.DataSource = SqlBuilder.DS("dummy")
             str += "更新タイプ：" + ActionToString(Action) + vbCrLf
             If Action = ActionType.SAVE Then
@@ -178,7 +178,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function confirmSql(Optional ByVal ds As SqlDataSource = Nothing) As String
             Dim str As String = ""
-            Dim sql As SqlBuilder = generateSqlBuilder()
+            Dim sql As SqlBuilder = toSqlBuilder()
 
             If ds Is Nothing Then
                 sql.DataSource = SqlBuilder.DS("dummy")

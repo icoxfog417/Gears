@@ -299,7 +299,7 @@ Namespace Gears.DataSource
                 formatResultSet(sql.ItemColExchanger)
             Catch ex As Exception
                 gex = New GearsSqlException(ActionType.SEL, "データベースの読み込みに失敗しました " + toStringCommand(ActionType.SEL), ex)
-                gex.addMsgDebug(ex.Message, toStringCommand(ActionType.SEL))
+                gex.addDetail(ex.Message, toStringCommand(ActionType.SEL))
                 clearDataTable(resultSet)
             Finally
                 If Not SQL_CON Is Nothing Then
@@ -326,7 +326,7 @@ Namespace Gears.DataSource
 
             Catch ex As Exception
                 gex = New GearsSqlException(ActionType.SEL, "データベースの読み込み(件数カウント)に失敗しました " + toStringCommand(ActionType.SEL), ex)
-                gex.addMsgDebug(ex.Message, SQL_ADAPTER.SelectCommand.CommandText)
+                gex.addDetail(ex.Message, SQL_ADAPTER.SelectCommand.CommandText)
                 Throw gex
             Finally
                 If Not SQL_CON Is Nothing Then
@@ -359,7 +359,7 @@ Namespace Gears.DataSource
                     formatResultSet(sql.ItemColExchanger)
                 Catch ex As Exception
                     gex = New GearsSqlException(executeType, "データベースの更新に失敗しました ", ex)
-                    gex.addMsgDebug(ex.Message, toStringCommand(executeType))
+                    gex.addDetail(ex.Message, toStringCommand(executeType))
                     clearDataTable(resultSet)
                 Finally
                     If Not SQL_CON Is Nothing Then
@@ -404,12 +404,12 @@ Namespace Gears.DataSource
                     transaction.Rollback()
                 Catch exWhenRollback As Exception
                     gex = New GearsSqlException(actionNow, "トランザクションのロールバックに失敗しました ", exWhenRollback)
-                    gex.addMsgDebug(ex.Message, toStringCommand(actionNow))
+                    gex.addDetail(ex.Message, toStringCommand(actionNow))
                     clearDataTable(resultSet)
                 End Try
 
                 gex = New GearsSqlException(actionNow, "トランザクション処理に失敗しました ", ex)
-                gex.addMsgDebug(ex.Message, toStringCommand(actionNow))
+                gex.addDetail(ex.Message, toStringCommand(actionNow))
                 clearDataTable(resultSet)
 
             Finally
@@ -425,7 +425,7 @@ Namespace Gears.DataSource
                     End If
                 Catch ex As Exception
                     gex = New GearsSqlException(ActionType.SEL, "更新後データの読み込み、コネクションのクローズに失敗しました " + toStringCommand(ActionType.SEL), ex)
-                    gex.addMsgDebug(ex.Message, toStringCommand(ActionType.SEL))
+                    gex.addDetail(ex.Message, toStringCommand(ActionType.SEL))
                     clearDataTable(resultSet)
                 End Try
 

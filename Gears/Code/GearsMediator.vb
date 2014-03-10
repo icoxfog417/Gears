@@ -82,14 +82,14 @@ Namespace Gears
         Private Const LOCK_WHEN_SEND_KEY As String = "+LOCK_WHEN_SEND+"
 
         ''' <summary>
-        ''' makeSendMessageで使用する<br/>
+        ''' makeDTOで使用する<br/>
         ''' Delegateで引数として渡すdto内にこのキーで送信元/送信先のコントロールを格納することで、除外対象として指定されたコントロールを特定する
         ''' </summary>
         ''' <remarks></remarks>
         Private Const RELATION_STORE_KEY As String = "+RELATION_STORE_KEY+"
 
         ''' <summary>
-        ''' makeSendMessageで使用する<br/>
+        ''' makeDTOで使用する<br/>
         ''' 除外対象を指定する際、fromとtoのコントロールIDを区切るためのセパレータ
         ''' </summary>
         ''' <remarks></remarks>
@@ -240,10 +240,10 @@ Namespace Gears
         ''' <param name="conF"></param>
         ''' <param name="conT"></param>
         ''' <remarks></remarks>
-        Public Sub addRelation(ByVal conF As String, ByVal conT As String)
+        Public Sub GMakeRule(ByVal conF As String, ByVal conT As String)
 
             If Not GControl(conF) Is Nothing And Not GControl(conT) Is Nothing Then
-                addRelation(GControl(conF).Control, GControl(conT).Control)
+                GMakeRule(GControl(conF).Control, GControl(conT).Control)
             End If
 
         End Sub
@@ -254,9 +254,9 @@ Namespace Gears
         ''' <param name="conF"></param>
         ''' <param name="conT"></param>
         ''' <remarks></remarks>
-        Public Sub addRelation(ByVal conF As Control, ByVal conT As Control)
+        Public Sub GMakeRule(ByVal conF As Control, ByVal conT As Control)
 
-            Dim templateString As String = "{0} はまだフレームワークに登録されていません。addRelationを行う前に、registerMyControlを使用し、コントロールの登録を行ってください"
+            Dim templateString As String = "{0} はまだフレームワークに登録されていません。GMakeRuleを行う前に、GAddを使用し、コントロールの登録を行ってください"
             If GControl(conF.ID) Is Nothing Then
                 Throw New GearsException(String.Format(templateString, conF.ID))
             ElseIf GControl(conT.ID) Is Nothing Then
@@ -303,7 +303,7 @@ Namespace Gears
         ''' <param name="fromDto">Nothing可。予め用意したDTOに追加したい場合に指定</param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function makeSendMessage(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
+        Public Function makeDTO(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
 
             If isRegisteredControl(fromControl) Then
                 Dim fromToKey As String = makeFromToKey(fromControl, toControl)
@@ -393,7 +393,7 @@ Namespace Gears
             If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
                 sender = New GearsDTO(dto)
             Else
-                sender = makeSendMessage(control, control, dto)
+                sender = makeDTO(control, control, dto)
             End If
 
             _log = bindAndAttach(gcon, sender)
@@ -432,7 +432,7 @@ Namespace Gears
                 If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
                     sender = New GearsDTO(dto)
                 Else
-                    sender = makeSendMessage(fromControl, toControl, dto)
+                    sender = makeDTO(fromControl, toControl, dto)
                 End If
 
                 Dim log As Dictionary(Of String, GearsException) = bindAndAttach(con, sender)
@@ -491,7 +491,7 @@ Namespace Gears
                             node.visitChildren(Function(nv As RelationNode) As String
                                                    Dim p As GearsControl = GControl(nv.Parent.Value) '子をたどっているため、親がないのはありえない
                                                    Dim c As GearsControl = GControl(nv.Value)
-                                                   Dim ptoc As GearsDTO = makeSendMessage(p.Control, Nothing, Nothing)
+                                                   Dim ptoc As GearsDTO = makeDTO(p.Control, Nothing, Nothing)
                                                    c.dataBind(ptoc) '親の値を子に通知
                                                    c.dataAttach(gcon.DataSource) '大元のデータソースの値を設定
                                                    Return nv.Value

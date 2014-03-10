@@ -18,7 +18,7 @@ Namespace Gears
     Public Class GearsException
         Inherits System.Exception
 
-        Protected Const MSG_DEBUG As String = "MSG_DEBUG"
+        Protected Const MSG_DETAIL As String = "__MSG_DETAIL__"
         Private localSource As String = ""
 
         'コンストラクタ
@@ -31,19 +31,10 @@ Namespace Gears
         End Sub
         Public Sub New(message As String, ByVal ParamArray detail() As String)
             MyBase.New(message)
-            addMsgDebug(detail)
+            addDetail(detail)
 
         End Sub
 
-        'メソッド
-        <Obsolete("Messageプロパティを使用してください")> _
-        Public Function getMsg() As String
-            Return Message
-        End Function
-        <Obsolete("メソッドgetMsgDebugを使用してください")> _
-        Public Function getMsgDetailFirst() As String
-            Return getMsgDebug()
-        End Function
         Public Function getLocalSource() As String
             Return localSource
         End Function
@@ -55,21 +46,21 @@ Namespace Gears
 
             localSource = className + "@" + methodName
         End Sub
-        Public Function getMsgDebug() As String
-            Return getMsg(MSG_DEBUG)
+        Public Function MessageDetail() As String
+            Return Detail(MSG_DETAIL)
         End Function
-        Public Sub clearMsgDebug()
-            clearMsg(MSG_DEBUG)
+        Public Sub clearDetail()
+            clearDetail(MSG_DETAIL)
         End Sub
-        Public Sub addMsgDebug(ByVal ParamArray msg() As String)
-            addMsg(MSG_DEBUG, msg)
+        Public Sub addDetail(ByVal ParamArray msg() As String)
+            addDetail(MSG_DETAIL, msg)
         End Sub
 
         Public Overrides Function toString() As String
-            Return Message + vbCrLf + getMsgDebug()
+            Return Message + vbCrLf + MessageDetail()
         End Function
 
-        Protected Function getMsg(ByVal kind As String) As String
+        Protected Function Detail(ByVal kind As String) As String
             Dim result As String = ""
             If Not Data(kind) Is Nothing Then
                 If TypeOf Data(kind) Is List(Of String) Then
@@ -84,7 +75,7 @@ Namespace Gears
 
             Return result
         End Function
-        Protected Sub addMsg(ByVal kind As String, ByVal ParamArray msg() As String)
+        Protected Sub addDetail(ByVal kind As String, ByVal ParamArray msg() As String)
             If Data(kind) Is Nothing Then
                 Data(kind) = New List(Of String)
             End If
@@ -92,15 +83,7 @@ Namespace Gears
                 Data(kind).add(msg(i))
             Next
         End Sub
-        Protected Sub setMsg(ByVal kind As String, ByVal msg As String)
-            If Not TypeOf Data(kind) Is List(Of String) Then
-                Data(kind) = msg
-            Else
-                clearMsg(kind)
-                addMsg(msg)
-            End If
-        End Sub
-        Protected Sub clearMsg(ByVal kind As String)
+        Protected Sub clearDetail(ByVal kind As String)
             If Not Data(kind) Is Nothing Then
                 If TypeOf Data(kind) Is List(Of String) Then
                     CType(Data(kind), List(Of String)).Clear()
