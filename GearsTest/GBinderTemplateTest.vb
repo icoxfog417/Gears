@@ -15,8 +15,8 @@ Namespace GearsTest
 
         <Test()>
         Public Sub TextBoxSet()
-            Dim textEmp As TextBox = ControlBuilder.createControl(ControlBuilder.ControlType.TXT, "txtEMPNO")
-            Dim textBox As TextBox = ControlBuilder.createControl(ControlBuilder.ControlType.TXT, "txtHOGE")
+            Dim textEmp As TextBox = ControlBuilder.createControl("txtEMPNO")
+            Dim textBox As TextBox = ControlBuilder.createControl("txtHOGE")
             Dim empData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
 
             Assert.IsFalse(empData Is Nothing)
@@ -42,7 +42,7 @@ Namespace GearsTest
 
         <Test()>
         Public Sub DropDownListSet()
-            Dim dropDown As DropDownList = ControlBuilder.createControl(ControlBuilder.ControlType.DDL, "ddlDEPTNO")
+            Dim dropDown As DropDownList = ControlBuilder.createControl("ddlDEPTNO")
             Dim empData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
             Dim deptData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM DEPT ")
 
@@ -76,15 +76,15 @@ Namespace GearsTest
         Public Sub GridViewSet()
 
             '通常
-            Dim grvView As GridView = ControlBuilder.createView("grvEMP", "EMPNO")
+            Dim grvView As GridView = ControlBuilder.createControl(Of GridView)("grvEMP").addKeys("EMPNO")
             Dim empData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP")
             Dim empRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
 
             'キーなし
-            Dim grvViewNoKey As GridView = ControlBuilder.createView("grvEMP")
+            Dim grvViewNoKey As GridView = ControlBuilder.createControl("grvEMP")
 
             '複数キー
-            Dim grvArea As GridView = ControlBuilder.createView("grvAREA", "AREA", "DEPTNO")
+            Dim grvArea As GridView = ControlBuilder.createControl(Of GridView)("grvAREA").addKeys("AREA", "DEPTNO")
             Dim areaData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM AREA")
             Dim areaRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM AREA WHERE AREA = :pArea ", SimpleDBA.makeParameters("pArea", Split(defaultArea, GearsControl.VALUE_SEPARATOR)(0)))
 
@@ -127,8 +127,8 @@ Namespace GearsTest
         <Test()>
         Public Sub RadioButtonAndCheckBoxSet()
 
-            Dim radio As RadioButton = ControlBuilder.createControl(ControlBuilder.ControlType.RBT, "rbtFILTER")
-            Dim check As CheckBox = ControlBuilder.createControl(ControlBuilder.ControlType.CHB, "chbFILTER")
+            Dim radio As RadioButton = ControlBuilder.createControl("rbtFILTER")
+            Dim check As CheckBox = ControlBuilder.createControl("chbFILTER")
 
             Dim empRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
             Dim outEmpRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", outOfFilterEmp))
@@ -152,8 +152,8 @@ Namespace GearsTest
         <Test()>
         Public Sub RadioAndCheckBoxListSet()
             Dim empRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
-            Dim radio As RadioButtonList = ControlBuilder.createControl(ControlBuilder.ControlType.RBL, "rbtDEPTNO")
-            Dim check As CheckBoxList = ControlBuilder.createControl(ControlBuilder.ControlType.CBL, "chlAREA")
+            Dim radio As RadioButtonList = ControlBuilder.createControl("rbtDEPTNO")
+            Dim check As CheckBoxList = ControlBuilder.createControl("chlAREA")
 
             Dim dept As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM DEPT")
             Dim area As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM AREA")
@@ -178,7 +178,7 @@ Namespace GearsTest
 
         <Test()>
         Public Sub SharedBindTest()
-            Dim list As DropDownList = ControlBuilder.createControl(ControlBuilder.ControlType.DDL, "ddlDEPT")
+            Dim list As DropDownList = ControlBuilder.createControl("ddlDEPT")
             Dim depts As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM DEPT")
 
             GBinderTemplate.dataBind(list, New DataSource.DEPTNO(mainConnection))

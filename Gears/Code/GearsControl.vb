@@ -442,7 +442,9 @@ Namespace Gears
             If TypeOf con Is WebControl Then
                 Dim wControl = CType(con, WebControl)
                 'コントロールにアトリビュートが保持されているかどうか判定する
-                result = wControl.Attributes(attr).ToString
+                If wControl.Attributes(attr) IsNot Nothing Then
+                    result = wControl.Attributes(attr).ToString
+                End If
             End If
             Return result
         End Function

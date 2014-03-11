@@ -73,7 +73,8 @@ Namespace Gears
         End Function
 
         Private _log As New Dictionary(Of String, GearsException)
-        Public ReadOnly Property Log As Dictionary(Of String, GearsException)
+        ''' <summary>処理結果ログ</summary>
+        Public ReadOnly Property GLog As Dictionary(Of String, GearsException)
             Get
                 Return _log
             End Get
@@ -96,44 +97,6 @@ Namespace Gears
         Private Const CONTROL_ID_SEPARATOR As String = "/"
 
         Private _excepts As New Dictionary(Of String, List(Of String))
-
-        ''' <summary>
-        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する
-        ''' </summary>
-        ''' <param name="fromControl"></param>
-        ''' <param name="toControl"></param>
-        ''' <param name="escapes"></param>
-        ''' <remarks></remarks>
-        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal escapes As List(Of String))
-            Dim key As String = makeFromToKey(fromControl, toControl)
-            If Not _excepts.ContainsKey(key) Then
-                _excepts.Add(key, escapes)
-            Else
-                _excepts(key).AddRange(escapes)
-            End If
-        End Sub
-
-        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ParamArray escapes As String())
-            addExcept(fromControl, toControl, escapes.ToList)
-        End Sub
-
-        ''' <summary>
-        ''' 除外指定を解除する
-        ''' </summary>
-        ''' <param name="fromControl"></param>
-        ''' <param name="toControl"></param>
-        ''' <remarks></remarks>
-        Public Sub clearExcept(Optional ByVal fromControl As Control = Nothing, Optional ByVal toControl As Control = Nothing)
-            If fromControl Is Nothing And toControl Is Nothing Then
-                _excepts.Clear()
-            ElseIf fromControl IsNot Nothing Then
-                Dim key As String = makeFromToKey(fromControl, toControl)
-                If _excepts.ContainsKey(key) Then
-                    _excepts.Remove(key)
-                End If
-            End If
-
-        End Sub
 
         ''' <summary>
         ''' デフォルトの接続文字列/名称空間を受け取りインスタンスを作成する
@@ -162,7 +125,7 @@ Namespace Gears
                                 Dim added As Boolean = addControl(control, isAutoLoadAttr)
                                 If Not added Then result = added
                             End Sub,
-                        AddressOf Me.isTargetControl)
+                        AddressOf Me.isFormControl)
 
             Return result
 
@@ -197,42 +160,16 @@ Namespace Gears
             End If
         End Function
 
+        ''' <summary>
+        ''' 登録済みのコントロールを交換する
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <remarks></remarks>
         Public Sub replaceControl(ByVal gcon As GearsControl)
             If _gcontrols.ContainsKey(gcon.ControlID) Then
                 _gcontrols(gcon.ControlID) = gcon
             End If
         End Sub
-
-
-        ''' <summary>
-        ''' 自身の持つデフォルトの接続文字列/名称空間を使用しGearsControlを作成する
-        ''' </summary>
-        ''' <param name="con"></param>
-        ''' <param name="isAutoLoadAttr"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Private Function createGControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
-
-            Dim cn = ConnectionName
-            Dim ds = DsNameSpace
-            Dim addedControl As New List(Of String)
-
-            If TypeOf con Is WebControl Then 'コントロールに名称空間/データソース接続の直接指定があればそちらを優先
-                Dim conset As String = GearsControl.getControlAttribute(con, GearsControl.DS_CONNECTION_NAME)
-                Dim dnsset As String = GearsControl.getControlAttribute(con, GearsControl.DS_NAMESPACE)
-                If Not String.IsNullOrEmpty(conset) Then
-                    cn = conset
-                End If
-                If Not String.IsNullOrEmpty(dnsset) Then
-                    ds = dnsset
-                End If
-            End If
-
-            Dim gcon As GearsControl = New GearsControl(con, cn, ds, isAutoLoadAttr)
-
-            Return gcon
-
-        End Function
 
         ''' <summary>
         ''' コントロール同士の関連を登録する(文字列でIDを指定)
@@ -270,6 +207,81 @@ Namespace Gears
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="escapes"></param>
+        ''' <remarks></remarks>
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal escapes As List(Of String))
+            Dim key As String = makeFromToKey(fromControl, toControl)
+            If Not _excepts.ContainsKey(key) Then
+                _excepts.Add(key, escapes)
+            Else
+                _excepts(key).AddRange(escapes)
+            End If
+        End Sub
+
+        ''' <summary>
+        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する(ParamArray渡し用)
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="escapes"></param>
+        ''' <remarks></remarks>
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ParamArray escapes As String())
+            addExcept(fromControl, toControl, escapes.ToList)
+        End Sub
+
+        ''' <summary>
+        ''' 除外指定を解除する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <remarks></remarks>
+        Public Sub clearExcept(Optional ByVal fromControl As Control = Nothing, Optional ByVal toControl As Control = Nothing)
+            If fromControl Is Nothing And toControl Is Nothing Then
+                _excepts.Clear()
+            ElseIf fromControl IsNot Nothing Then
+                Dim key As String = makeFromToKey(fromControl, toControl)
+                If _excepts.ContainsKey(key) Then
+                    _excepts.Remove(key)
+                End If
+            End If
+
+        End Sub
+
+        ''' <summary>
+        ''' 自身の持つデフォルトの接続文字列/名称空間を使用しGearsControlを作成する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function createGControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
+
+            Dim cn = ConnectionName
+            Dim ds = DsNameSpace
+            Dim addedControl As New List(Of String)
+
+            If TypeOf con Is WebControl Then 'コントロールに名称空間/データソース接続の直接指定があればそちらを優先
+                Dim conset As String = GearsControl.getControlAttribute(con, GearsControl.DS_CONNECTION_NAME)
+                Dim dnsset As String = GearsControl.getControlAttribute(con, GearsControl.DS_NAMESPACE)
+                If Not String.IsNullOrEmpty(conset) Then
+                    cn = conset
+                End If
+                If Not String.IsNullOrEmpty(dnsset) Then
+                    ds = dnsset
+                End If
+            End If
+
+            Dim gcon As GearsControl = New GearsControl(con, cn, ds, isAutoLoadAttr)
+
+            Return gcon
+
+        End Function
 
         ''' <summary>
         ''' 指定されたコントロール内にあり、かつ登録済みのコントロールをリスト化し返却する
@@ -382,10 +394,26 @@ Namespace Gears
 
         End Sub
 
+        ''' <summary>
+        ''' executeの引数省略版
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="aType"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function execute(ByVal control As Control, Optional ByVal aType As ActionType = ActionType.SAVE) As Boolean
             Return execute(control, New GearsDTO(aType))
         End Function
 
+        ''' <summary>
+        ''' 与えられたコントロールに対して、指定されたアクションを実行する<br/>
+        ''' この処理では、DTOは自分で作成し、自分自身のデータソースに適用する。
+        ''' フォーム等で更新を行う場合はこのような処理となる
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function execute(ByVal control As Control, ByVal dto As GearsDTO) As Boolean
             _log.Clear()
             Dim gcon As GearsControl = GControl(control.ID)
@@ -402,18 +430,48 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 関連する全てのコントロールに対し、自身の値で更新を行う
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="aType"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function send(ByVal fromControl As Control, Optional ByVal aType As ActionType = ActionType.SEL) As Boolean
             Return send(fromControl, Nothing, New GearsDTO(aType))
         End Function
 
-        Public Function send(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal aType As ActionType = ActionType.SEL) As Boolean
-            Return send(fromControl, toControl, New GearsDTO(aType))
-        End Function
-
+        ''' <summary>
+        ''' 関連する全てのコントロールに対し、自身の値で更新を行う
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function send(ByVal fromControl As Control, ByVal dto As GearsDTO) As Boolean
             Return send(fromControl, Nothing, dto)
         End Function
 
+        ''' <summary>
+        ''' 関連する指定コントロールに対し、自身の値で更新を行う
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="aType"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function send(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal aType As ActionType = ActionType.SEL) As Boolean
+            Return send(fromControl, toControl, New GearsDTO(aType))
+        End Function
+
+        ''' <summary>
+        ''' 関連するコントロールに対し、自身の値で更新をかける
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function send(ByVal fromControl As Control, ByVal toControl As Control, ByVal dto As GearsDTO) As Boolean
             _log.Clear()
 
@@ -514,7 +572,7 @@ Namespace Gears
 
         End Function
 
-        Public Function isTargetControl(ByVal control As Control) As Boolean
+        Public Function isFormControl(ByVal control As Control) As Boolean
             Dim result As Boolean = False
 
             If Not control.ID Is Nothing Then
@@ -543,6 +601,7 @@ Namespace Gears
             Return result
 
         End Function
+
         Public Function isRegisteredControl(ByVal control As Control) As Boolean
             If Not control Is Nothing AndAlso _gcontrols.ContainsKey(control.ID) Then
                 Return True
@@ -550,9 +609,10 @@ Namespace Gears
                 Return False
             End If
         End Function
+
         Public Function isRegisteredAsTarget(ByVal control As Control) As Boolean
             If isRegisteredControl(control) Then
-                If isTargetControl(GControl(control.ID).Control) Then
+                If isFormControl(GControl(control.ID).Control) Then
                     Return True
                 Else
                     Return False

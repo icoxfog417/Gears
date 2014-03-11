@@ -34,7 +34,9 @@ Namespace Gears.Util
 
         Public Sub New(ByVal value As String, ByVal children As List(Of RelationNode))
             Me.Value = value
-            Me.Children = children
+            If children IsNot Nothing Then
+                Me.Children = children
+            End If
         End Sub
 
         Public Function findNode(ByVal value As String) As RelationNode
@@ -99,18 +101,17 @@ Namespace Gears.Util
         End Function
 
         Public Function getBranches(ByVal nodes As List(Of String)) As List(Of RelationNode)
-            Dim paths As New Dictionary(Of String, List(Of RelationNode))
+            Dim paths As New Dictionary(Of String, RelationNode)
 
             For Each node As String In nodes
                 Dim n As RelationNode = findNode(node)
                 If n IsNot Nothing Then
-                    Dim parents As List(Of String) = n.visitParents(Function(p As RelationNode) p.Value)
-                    Dim parentTxt As String = String.Join("/", parents)
+                    Dim elements As List(Of String) = n.visitParents(Function(p As RelationNode) p.Value)
+                    elements.Add(n.Value)
+                    Dim parentTxt As String = String.Join("/", elements)
 
                     If Not paths.ContainsKey(parentTxt) Then
-                        paths.Add(parentTxt, New List(Of RelationNode) From {n})
-                    Else
-                        paths(parentTxt).Add(n)
+                        paths.Add(parentTxt, n)
                     End If
                 End If
             Next
@@ -122,6 +123,9 @@ Namespace Gears.Util
 
             Dim keyNow As String = ""
             For Each key In keys
+                '初回、もしくは新規のルートであるパスの場合追加を行う
+                '事前にソートをしているため、A,A/B.A/B/C,Dのようにルートに近い順に並び替えが行われている。
+                '要素が含まれなくなったら、別のルートのブランチとなったと判断し追加を行う。
                 If String.IsNullOrEmpty(keyNow) Or Not key.Contains(keyNow) Then
                     branchKeys.Add(key)
                     keyNow = key
@@ -130,7 +134,7 @@ Namespace Gears.Util
 
             Dim result As New List(Of RelationNode)
             For Each bkey As String In branchKeys
-                result.AddRange(paths(bkey))
+                result.Add(paths(bkey))
             Next
 
             Return result
@@ -185,12 +189,15 @@ Namespace Gears.Util
                 For Each c As RelationNode In lastChildren
                     '末端ノードと一致するリレーションがあり、まだ追加されていない
                     Dim childKey As String = nodeChecker.Keys.Where(Function(k) k = c.Value And Not nodeChecker(k)).FirstOrDefault
-                    If Not String.IsNullOrEmpty(childKey) Then '発見された場合、子要素を追加
-                        For Each ans As String In relations(childKey)
-                            Dim n As New RelationNode(ans)
-                            c.addChild(n)
-                            children.Add(n)
-                        Next
+
+                    If Not String.IsNullOrEmpty(childKey) Then
+                        If relations(childKey) IsNot Nothing Then '発見された場合で、子要素を持つ場合追加を行う
+                            For Each ans As String In relations(childKey)
+                                Dim n As New RelationNode(ans)
+                                c.addChild(n)
+                                children.Add(n)
+                            Next
+                        End If
                         nodeChecker(childKey) = True '発見されたためフラグを更新する
                     End If
                 Next
@@ -240,7 +247,7 @@ Namespace Gears.Util
             '親を探索
             Dim parentTxt As List(Of String) = visitParents(parentStr)
 
-            Return String.Join("", parentTxt) + Value + String.Join("", childTxt)
+            Return String.Join("", parentTxt) + "[" + Value + "]" + String.Join("", childTxt)
 
         End Function
 

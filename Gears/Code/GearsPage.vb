@@ -588,7 +588,7 @@ Namespace Gears
 
             Else
 
-                For Each logitem As KeyValuePair(Of String, GearsException) In GMediator.Log()
+                For Each logitem As KeyValuePair(Of String, GearsException) In GMediator.GLog()
                     If Not GLog.ContainsKey(logitem.Key) Then
                         GLog.Add(logitem.Key, logitem.Value)
                     Else
@@ -963,7 +963,7 @@ Namespace Gears
         ''' <returns></returns>
         ''' <remarks></remarks>
         Private Function isRoleBaseControl(ByVal control As Control) As Boolean
-            Return GearsControl.getControlAttribute(control, A_ROLE_AUTH_ALLOW)
+            Return Not String.IsNullOrEmpty(GearsControl.getControlAttribute(control, A_ROLE_AUTH_ALLOW))
         End Function
 
         ''' <summary>

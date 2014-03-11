@@ -1,141 +1,103 @@
-﻿Namespace GearsTest
+﻿Imports Gears.Util
+Imports System.Runtime.CompilerServices
 
-    'テスト用のコントロールを組み立てるためのクラス
+Namespace GearsTest
+
+    ''' <summary>
+    ''' テスト用コントロールを組み立てるためのクラス
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class ControlBuilder
-        Public Enum MoveDirection
-            UPPER
-            STAY
-            UNDER
-        End Enum
-        Public Enum ControlType
-            TXT
-            DDL
-            CHB
-            CBL
-            RBL
-            RBT
-            LBL
-            LIT
-            HDN
-            PNL
-        End Enum
 
-
-        Private root As Control = Nothing
-        Private nodeNow As Control = Nothing
-
-        Public Sub New(ByRef webcon As Control)
-            initRoot(webcon)
+        Private Sub New()
         End Sub
 
-        Public Function initRoot(ByVal webcon As Control) As ControlBuilder
-            root = webcon
-            nodeNow = root
-            Return Me
-        End Function
+        Public Shared Function makeControl(ByVal nodes As List(Of RelationNode)) As Control
+            Dim root As Control = createControl("pnlROOT")
 
-        Public Function getNodeNow() As Control
-            Return nodeNow
-        End Function
+            '子要素をコントロールとして追加していく
+            For Each node As RelationNode In nodes
+                root.Controls.Add(createControl(node.Value))
+                If node.Children.Count > 0 Then
+                    node.visitChildren(Function(n As RelationNode) As String
+                                           Dim parent As Control = ControlSearcher.findControl(root, n.Parent.Value)
+                                           If parent IsNot Nothing Then
+                                               parent.Controls.Add(createControl(n.Value))
+                                           Else
+                                               root.Controls.Add(createControl(n.Value))
+                                           End If
+                                           Return n.Value
+                                       End Function)
+                End If
+            Next
 
-        Public Function addNode(ByVal webcon As Control, Optional ByVal mv As MoveDirection = MoveDirection.STAY) As ControlBuilder
-            nodeNow.Controls.Add(webcon)
-
-            Select Case mv
-                Case MoveDirection.UPPER
-                    nodeNow = nodeNow.Parent
-                    If nodeNow Is Nothing Then
-                        nodeNow = root
-                    End If
-                Case MoveDirection.UNDER
-                    nodeNow = webcon
-            End Select
-
-            Return Me
+            Return root
 
         End Function
 
-        Public Function moveNode(ByVal mv As MoveDirection, Optional ByVal childIndex As Integer = 0) As ControlBuilder
-            Select Case mv
-                Case MoveDirection.UPPER
-                    nodeNow = nodeNow.Parent
-                    If nodeNow Is Nothing Then
-                        nodeNow = root
-                    End If
-                Case MoveDirection.UNDER
-                    If nodeNow.HasControls Then
-                        nodeNow = nodeNow.Controls(childIndex)
-                    End If
-            End Select
-
-            Return Me
+        Public Shared Function createControl(Of T As Control)(ByVal id As String) As T
+            Return CType(createControl(id), T)
         End Function
 
-        Public Shared Function createControl(ByVal conType As ControlType, ByVal id As String, Optional ByRef attributes As Hashtable = Nothing) As Control
+        Public Shared Function createControl(ByVal id As String) As Control
+            Dim prefix As String = id.Substring(0, 3).ToUpper
             Dim con As Control = Nothing
 
-            Select Case conType
-                Case ControlType.TXT
+            Select Case prefix
+                Case "TXT"
                     con = New TextBox
-                Case ControlType.DDL
+                Case "DDL"
                     con = New DropDownList
-                Case ControlType.CHB
+                Case "CHB"
                     con = New CheckBox
-                Case ControlType.CBL
+                Case "CBL"
                     con = New CheckBoxList
-                Case ControlType.RBL
+                Case "RBL"
                     con = New RadioButtonList
-                Case ControlType.RBT
+                Case "RBT"
                     con = New RadioButton
-                Case ControlType.LBL
+                Case "LBL"
                     con = New Label
-                Case ControlType.LIT
+                Case "LIT"
                     con = New Literal
-                Case ControlType.HDN
+                Case "HDN"
                     con = New HiddenField
-                Case ControlType.PNL
+                Case "PNL"
                     con = New Panel
+                Case "GRV"
+                    con = New GridView
             End Select
 
             con.ID = id
-
-            If Not attributes Is Nothing Then
-
-                For Each key As String In attributes.Keys
-                    If TypeOf con Is WebControl Then
-                        CType(con, WebControl).Attributes.Add(key, attributes(key))
-                    End If
-                Next
-
-            End If
 
             Return con
 
         End Function
 
-        Public Shared Function createView(ByVal id As String, ByVal ParamArray keys As String())
-            Dim v As New GridView
-            v.ID = id
+    End Class
+
+    Public Module ControlExtension
+
+        <Extension()>
+        Public Function addKeys(ByVal v As GridView, ByVal ParamArray keys As String()) As GridView
             If Not keys Is Nothing AndAlso keys.Length > 0 Then
                 v.DataKeyNames = keys
             End If
             Return v
         End Function
 
-        Public Shared Function makeAttribute(ByVal ParamArray keyValues As String()) As Hashtable
+        <Extension()>
+        Public Function addAttributes(ByVal wcon As WebControl, ByVal ParamArray attributes As String()) As WebControl
             Dim result As New Hashtable
-
-            If Not keyValues Is Nothing AndAlso keyValues.Length > 0 Then
-                For i As Integer = 0 To keyValues.Length - 1 Step 2
-                    result(keyValues(i)) = keyValues(i + 1)
+            If Not attributes Is Nothing AndAlso attributes.Length > 0 Then
+                For Each attr As String In attributes
+                    Dim kv As String() = attr.Split(":")
+                    wcon.Attributes.Add(kv(0), kv(1))
                 Next
             End If
-
-            Return result
-
+            Return wcon
         End Function
 
-    End Class
-
+    End Module
 
 End Namespace

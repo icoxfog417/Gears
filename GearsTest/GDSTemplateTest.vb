@@ -40,7 +40,7 @@ Namespace GearsTest
             Dim job As String = "SALESMAN"
 
             '項目変換マッパー
-            Dim mapper As New NameExchangerTemplete()
+            Dim mapper As New NameExchangerTemplate()
             mapper.addRule("BUMON", "DNAME") '双方変換
             mapper.addRuleWhenToCol("SHIGOTO", "JOB") '送信時のみ
             mapper.addRuleWhenToItem("SHAIN_NO", "EMPNO") '読取時のみ
