@@ -240,10 +240,10 @@ Namespace Gears
         ''' <param name="conF"></param>
         ''' <param name="conT"></param>
         ''' <remarks></remarks>
-        Public Sub GMakeRule(ByVal conF As String, ByVal conT As String)
+        Public Sub addRelation(ByVal conF As String, ByVal conT As String)
 
             If Not GControl(conF) Is Nothing And Not GControl(conT) Is Nothing Then
-                GMakeRule(GControl(conF).Control, GControl(conT).Control)
+                addRelation(GControl(conF).Control, GControl(conT).Control)
             End If
 
         End Sub
@@ -254,7 +254,7 @@ Namespace Gears
         ''' <param name="conF"></param>
         ''' <param name="conT"></param>
         ''' <remarks></remarks>
-        Public Sub GMakeRule(ByVal conF As Control, ByVal conT As Control)
+        Public Sub addRelation(ByVal conF As Control, ByVal conT As Control)
 
             Dim templateString As String = "{0} はまだフレームワークに登録されていません。GMakeRuleを行う前に、GAddを使用し、コントロールの登録を行ってください"
             If GControl(conF.ID) Is Nothing Then

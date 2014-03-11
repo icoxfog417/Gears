@@ -22,7 +22,7 @@ Namespace Gears
                 If _mediator.GControl(con.ID) Is Nothing Then '登録されていない場合、自動登録
                     _mediator.addControl(con)
                 End If
-                _mediator.GMakeRule(_control, con)
+                _mediator.addRelation(_control, con)
             Next
             _toControl = cons
             Return Me
