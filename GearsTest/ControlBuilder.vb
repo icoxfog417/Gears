@@ -1,5 +1,6 @@
 ﻿Imports Gears.Util
 Imports System.Runtime.CompilerServices
+Imports Gears
 
 Namespace GearsTest
 
@@ -12,7 +13,7 @@ Namespace GearsTest
         Private Sub New()
         End Sub
 
-        Public Shared Function makeControl(ByVal nodes As List(Of RelationNode)) As Control
+        Public Shared Function Build(ByVal nodes As List(Of RelationNode)) As Control
             Dim root As Control = createControl("pnlROOT")
 
             '子要素をコントロールとして追加していく
@@ -34,6 +35,31 @@ Namespace GearsTest
             Return root
 
         End Function
+
+        Public Shared Sub LoadControls(ByVal root As Control, ByVal mediator As GearsMediator)
+            Dim binder As New Gears.Binder.GBinderTemplate
+            ControlSearcher.fetchControls(root,
+                                          Sub(control As Control, ByRef dto As GearsDTO)
+                                              mediator.addControl(control).dataBind()
+                                          End Sub,
+                                           Function(control As Control) As Boolean
+                                               Return True
+                                           End Function)
+
+        End Sub
+
+
+        Public Shared Sub SetValues(ByVal root As Control, ByVal keyValue As Dictionary(Of String, Object))
+            Dim binder As New Gears.Binder.GBinderTemplate
+            ControlSearcher.fetchControls(root,
+                                          Sub(control As Control, ByRef dto As GearsDTO)
+                                              binder.setValue(control, keyValue(control.ID))
+                                          End Sub,
+                                           Function(control As Control) As Boolean
+                                               Return control IsNot Nothing AndAlso Not String.IsNullOrEmpty(control.ID) AndAlso keyValue.ContainsKey(control.ID)
+                                           End Function)
+
+        End Sub
 
         Public Shared Function createControl(Of T As Control)(ByVal id As String) As T
             Return CType(createControl(id), T)
@@ -66,6 +92,8 @@ Namespace GearsTest
                     con = New Panel
                 Case "GRV"
                     con = New GridView
+                Case "BTN"
+                    con = New Button
             End Select
 
             con.ID = id

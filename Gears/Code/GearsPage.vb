@@ -630,7 +630,7 @@ Namespace Gears
 
                     If gcon.IsFormAttribute Then '対象項目の場合
                         'ロードした値を格納
-                        ControlSearcher.fetchControls(gcon.Control, AddressOf Me.fetchLoadedValue, AddressOf GMediator.isRegisteredAsTarget)
+                        ControlSearcher.fetchControls(gcon.Control, AddressOf Me.fetchLoadedValue, AddressOf GMediator.isRegisteredAsInput)
                         'ロック用項目がセットされている場合それも格納
                         saveLockValueIfExist(gcon)
                     End If

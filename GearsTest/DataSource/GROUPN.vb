@@ -2,7 +2,7 @@
 Imports Gears
 Imports Gears.DataSource
 
-Namespace DataSource.Groups
+Namespace DataSource
     Public Class GROUPN
         Inherits GDSTemplate
 

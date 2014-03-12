@@ -116,16 +116,16 @@ Namespace Gears
         ''' <param name="isAutoLoadAttr"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function addControls(ByVal parent As Control, Optional isAutoLoadAttr As Boolean = True) As Boolean
-            Dim result As Boolean = True
+        Public Function addControls(ByVal parent As Control, Optional isAutoLoadAttr As Boolean = True) As List(Of GearsControl)
+            Dim result As New List(Of GearsControl)
 
             '親コントロールを探索し、配下のコントロールのうち対象であるものを登録する
             ControlSearcher.fetchControls(parent, _
                             Sub(control As Control, ByRef dto As GearsDTO)
-                                Dim added As Boolean = addControl(control, isAutoLoadAttr)
-                                If Not added Then result = added
+                                Dim added As GearsControl = addControl(control, isAutoLoadAttr)
+                                If added IsNot Nothing Then result.Add(added)
                             End Sub,
-                        AddressOf Me.isFormControl)
+                        AddressOf Me.isInputControl)
 
             Return result
 
@@ -138,7 +138,7 @@ Namespace Gears
         ''' <param name="isAutoLoadAttr"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function addControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As Boolean
+        Public Function addControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
 
             Return addControl(createGControl(con, isAutoLoadAttr))
 
@@ -150,13 +150,13 @@ Namespace Gears
         ''' <param name="gcon"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function addControl(ByVal gcon As GearsControl) As Boolean
+        Public Function addControl(ByVal gcon As GearsControl) As GearsControl
             If Not _gcontrols.ContainsKey(gcon.ControlID) Then
                 _gcontrols.Add(gcon.ControlID, gcon)
-                Return True
+                Return gcon
             Else
                 GearsLogStack.setLog(gcon.ControlID + " は既に追加されています。入れ替えたい場合はreplaceControlを使用してください")
-                Return False
+                Return Nothing
             End If
         End Function
 
@@ -317,7 +317,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function makeDTO(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
 
-            If isRegisteredControl(fromControl) Then
+            If fromControl IsNot Nothing AndAlso Not String.IsNullOrEmpty(fromControl.ID) Then
                 Dim fromToKey As String = makeFromToKey(fromControl, toControl)
 
                 Dim message As GearsDTO = New GearsDTO(fromDto)
@@ -326,28 +326,28 @@ Namespace Gears
                 If TypeOf fromControl Is GridView Then 'サポート対象の特殊コントロール
                     fetchControlInfo(fromControl, message)
                 ElseIf fromControl.HasControls Then 'その他複合コントロール
-                    ControlSearcher.fetchControls(fromControl, AddressOf Me.fetchControlInfo, AddressOf Me.isRegisteredAsTarget, message)
-                ElseIf isRegisteredAsTarget(fromControl) Then
+                    ControlSearcher.fetchControls(fromControl, AddressOf Me.fetchControlInfo, AddressOf Me.isRegisteredAsInput, message)
+                ElseIf isRegisteredAsInput(fromControl) Then
                     fetchControlInfo(fromControl, message)
                 End If
 
                 '開放
                 message.removeAttrInfo(RELATION_STORE_KEY)
 
-                'フォーム/フィルタ属性を付与
+                'フォームコントロールの場合、フォーム属性を付与
                 For Each info As KeyValuePair(Of String, List(Of GearsControlInfo)) In message.ControlInfo
                     For Each conInfo As GearsControlInfo In info.Value
-                        If GControl(fromControl.ID).IsFormAttribute Then
+                        If (GControl(fromControl.ID) IsNot Nothing AndAlso GControl(fromControl.ID).IsFormAttribute) Then '登録されているコントロール
                             conInfo.IsFormAttribute = True
-                        ElseIf GControl(fromControl.ID).IsFilterAttribute Then
-                            conInfo.IsFilterAttribute = True
+                        ElseIf GearsControl.isIdAttributeExist(fromControl.ID, GearsControl.FORM_ATTRIBUTE) Then
+                            conInfo.IsFormAttribute = True
                         End If
                     Next
                 Next
 
                 Return message
             Else
-                Return Nothing
+                Throw New GearsException("指定されたコントロールがNothingか、IDが設定されていません")
             End If
         End Function
 
@@ -572,7 +572,7 @@ Namespace Gears
 
         End Function
 
-        Public Function isFormControl(ByVal control As Control) As Boolean
+        Public Function isInputControl(ByVal control As Control) As Boolean
             Dim result As Boolean = False
 
             If Not control.ID Is Nothing Then
@@ -610,9 +610,9 @@ Namespace Gears
             End If
         End Function
 
-        Public Function isRegisteredAsTarget(ByVal control As Control) As Boolean
+        Public Function isRegisteredAsInput(ByVal control As Control) As Boolean
             If isRegisteredControl(control) Then
-                If isFormControl(GControl(control.ID).Control) Then
+                If isInputControl(GControl(control.ID).Control) Then
                     Return True
                 Else
                     Return False

@@ -66,10 +66,10 @@ Namespace Gears.Binder
             Dim result As Boolean = True
             Try
                 If isBindable(con) Then
-                    Select Case con.GetType
-                        Case GetType(ListControl)
+                    Select Case TypeOf con Is Control
+                        Case TypeOf con Is ListControl
                             result = listBind(CType(con, ListControl), dset)
-                        Case GetType(CompositeDataBoundControl)
+                        Case TypeOf con Is CompositeDataBoundControl
                             result = compositBind(CType(con, CompositeDataBoundControl), dset)
                     End Select
                 End If

@@ -463,7 +463,7 @@ Namespace Gears
                 Try
                     Dim tmpDto As GearsDTO = dto
                     If dto Is Nothing Then
-                        Dim tempDto As GearsDTO = New GearsDTO(ActionType.SEL)
+                        tmpDto = New GearsDTO(ActionType.SEL)
                     End If
 
                     Dim resultSet As DataTable = DataSource.execute(tmpDto)
