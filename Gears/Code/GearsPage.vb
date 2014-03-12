@@ -312,8 +312,10 @@ Namespace Gears
 
                 'データロード
                 If Not IsPostBack Then
-                    '初回であれば、設定されたデータソースから値をロードする。
-                    item.Value.dataBind()
+                    '初回、かつ入力用のコントロールについては事前にデータソースから値をロードする。
+                    If GMediator.isInputControl(item.Value.Control) Then
+                        item.Value.dataBind()
+                    End If
 
                     'CSSからアトリビュートをロード
                     If TypeOf item.Value.Control Is WebControl Then

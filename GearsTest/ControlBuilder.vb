@@ -43,7 +43,7 @@ Namespace GearsTest
                                               mediator.addControl(control).dataBind()
                                           End Sub,
                                            Function(control As Control) As Boolean
-                                               Return True
+                                               Return mediator.isInputControl(control)
                                            End Function)
 
         End Sub

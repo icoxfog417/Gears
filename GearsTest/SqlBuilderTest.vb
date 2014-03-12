@@ -217,7 +217,11 @@ Namespace GearsTest
 
         End Sub
 
-        Private Function trimAll(ByVal str As String) As String
+        Public Shared Function compareWithoutSpace(ByVal left As String, ByVal right As String) As Boolean
+            Return trimAll(left) = trimAll(right)
+        End Function
+
+        Private Shared Function trimAll(ByVal str As String) As String
             Return str.Replace(" ", "")
 
         End Function

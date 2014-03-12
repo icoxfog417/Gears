@@ -101,7 +101,7 @@ Namespace Gears
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function toSqlBuilder() As SqlBuilder
+        Public Function toSqlBuilder(Optional ByVal ds As SqlDataSource = Nothing) As SqlBuilder
             Dim sqlb As SqlBuilder = New SqlBuilder(Me)
 
             'セレクタ/フィルタの設定
@@ -150,6 +150,8 @@ Namespace Gears
                 sqlb.addFilter(New SqlFilterItem(item))
             Next
 
+            If ds IsNot Nothing Then sqlb.DataSource = ds
+
             Return sqlb
 
         End Function
@@ -178,12 +180,10 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function confirmSql(Optional ByVal ds As SqlDataSource = Nothing) As String
             Dim str As String = ""
-            Dim sql As SqlBuilder = toSqlBuilder()
+            Dim sql As SqlBuilder = toSqlBuilder(ds)
 
             If ds Is Nothing Then
                 sql.DataSource = SqlBuilder.DS("dummy")
-            Else
-                sql.DataSource = ds
             End If
 
             Return sql.confirmSql(Action)

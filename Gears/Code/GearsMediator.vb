@@ -122,10 +122,27 @@ Namespace Gears
             '親コントロールを探索し、配下のコントロールのうち対象であるものを登録する
             ControlSearcher.fetchControls(parent, _
                             Sub(control As Control, ByRef dto As GearsDTO)
-                                Dim added As GearsControl = addControl(control, isAutoLoadAttr)
-                                If added IsNot Nothing Then result.Add(added)
+                                Dim gcon As GearsControl = createGControl(control, isAutoLoadAttr)
+
+                                If Not isOtherTarget(control) Then
+                                    addControl(gcon)
+                                Else
+                                    Select Case TypeOf control Is Control
+                                        Case TypeOf control Is Panel
+                                            If gcon.IsFormAttribute Or gcon.IsFilterAttribute Then
+                                                addControl(gcon)
+                                            End If
+                                        Case TypeOf control Is CompositeDataBoundControl
+                                            If gcon.DataSource IsNot Nothing Then
+                                                addControl(gcon)
+                                            End If
+                                    End Select
+                                End If
                             End Sub,
-                        AddressOf Me.isInputControl)
+                            Function(control As Control) As Boolean
+                                Return isInputControl(control) Or isOtherTarget(control)
+                            End Function
+                        )
 
             Return result
 
@@ -267,8 +284,8 @@ Namespace Gears
             Dim addedControl As New List(Of String)
 
             If TypeOf con Is WebControl Then 'コントロールに名称空間/データソース接続の直接指定があればそちらを優先
-                Dim conset As String = GearsControl.getControlAttribute(con, GearsControl.DS_CONNECTION_NAME)
-                Dim dnsset As String = GearsControl.getControlAttribute(con, GearsControl.DS_NAMESPACE)
+                Dim conset As String = GearsControl.getControlAttribute(con, GearsControl.ATTR_DS_CONNECTION_NAME)
+                Dim dnsset As String = GearsControl.getControlAttribute(con, GearsControl.ATTR_DS_NAMESPACE)
                 If Not String.IsNullOrEmpty(conset) Then
                     cn = conset
                 End If
@@ -339,7 +356,7 @@ Namespace Gears
                     For Each conInfo As GearsControlInfo In info.Value
                         If (GControl(fromControl.ID) IsNot Nothing AndAlso GControl(fromControl.ID).IsFormAttribute) Then '登録されているコントロール
                             conInfo.IsFormAttribute = True
-                        ElseIf GearsControl.isIdAttributeExist(fromControl.ID, GearsControl.FORM_ATTRIBUTE) Then
+                        ElseIf GearsControl.isIdAttributeExist(fromControl.ID, GearsControl.ID_ATTR_FORM) Then
                             conInfo.IsFormAttribute = True
                         End If
                     Next
@@ -362,10 +379,10 @@ Namespace Gears
             '除外対象のものは収集しない
             Dim isExcept As Boolean = False
 
-            '表示専用のコントロールは除外する
-            If GControl(control.ID) IsNot Nothing AndAlso GControl(control.ID).IsDisplayOnly Then isExcept = True
+            '表示専用のコントロールは、SELECT以外の場合除外する
+            If GControl(control.ID) IsNot Nothing AndAlso (GControl(control.ID).IsDisplayOnly And dto.Action <> ActionType.SEL) Then isExcept = True
 
-            '除外対象の判定
+            '除外対象である場合は、どんな場合でも除外する
             If Not isExcept AndAlso _excepts.ContainsKey(dto.AttrInfo(RELATION_STORE_KEY)) Then
                 Dim excepts As List(Of String) = _excepts(dto.AttrInfo(RELATION_STORE_KEY))
 
@@ -479,26 +496,32 @@ Namespace Gears
             Dim tcons As List(Of GearsControl) = Nothing
 
             If toControl Is Nothing Then
-                tcons = New List(Of GearsControl) From {GControl(toControl.ID)} 'relationとして登録していなくてもOKにする
+                'Relationとして登録していなくてもOKにする(ただし、fromControlのみ指定による自動配信を行う場合Relationが必要)
+                tcons = New List(Of GearsControl) From {GControl(toControl.ID)}
             Else
                 _relations(fromControl.ID).ForEach(Sub(r) tcons.Add(GControl(r)))
             End If
 
-            For Each con As GearsControl In tcons
+            If tcons IsNot Nothing Then
+                For Each con As GearsControl In tcons
 
-                Dim sender As GearsDTO = Nothing
-                If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
-                    sender = New GearsDTO(dto)
-                Else
-                    sender = makeDTO(fromControl, toControl, dto)
-                End If
+                    Dim sender As GearsDTO = Nothing
+                    If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
+                        sender = New GearsDTO(dto)
+                    Else
+                        sender = makeDTO(fromControl, toControl, dto)
+                    End If
 
-                Dim log As Dictionary(Of String, GearsException) = bindAndAttach(con, sender)
-                For Each lg As KeyValuePair(Of String, GearsException) In log
-                    _log.Add(lg.Key, lg.Value)
+                    Dim log As Dictionary(Of String, GearsException) = bindAndAttach(con, sender)
+                    For Each lg As KeyValuePair(Of String, GearsException) In log
+                        _log.Add(lg.Key, lg.Value)
+                    Next
                 Next
 
-            Next
+            Else
+                GearsLogStack.setLog(fromControl.ID + "の関連先がないため、send処理は行われません")
+            End If
+
 
             Return _log.Count = 0 'ログが何もなければ成功
 
@@ -575,26 +598,51 @@ Namespace Gears
         Public Function isInputControl(ByVal control As Control) As Boolean
             Dim result As Boolean = False
 
-            If Not control.ID Is Nothing Then
-                If control.ID.Length >= 4 Then
-                    Dim prefix As String = control.ID.Substring(0, 4)
-                    '小文字3文字+大文字～で始まるかチェック(例：txtHOGEなど)
-                    If System.Text.RegularExpressions.Regex.IsMatch(prefix, "^[a-z]{3}[A-Z]") Then
-                        Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GearsControl.GCON_TARGET)
-                        If Not isGconDeclare Then GearsControl.isIdAttributeExist(control.ID, GearsControl.GCON_DISPLAY_ONLY)
-                        If _
-                            TypeOf control Is ListControl Or _
-                            (TypeOf control Is RadioButton And Not TypeOf control.Parent Is RadioButtonList) Or _
-                            (TypeOf control Is CheckBox And Not TypeOf control.Parent Is CheckBoxList) Or _
-                            TypeOf control Is TextBox Or _
-                            TypeOf control Is HiddenField Or _
-                            (TypeOf control Is Label And isGconDeclare) Or _
-                            (TypeOf control Is Literal And isGconDeclare) Then
-                            result = True
+            If isIdNamingMatch(control.ID) Then
+                Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GCON)
+                If Not isGconDeclare Then GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GDISP)
 
-                        End If
+                If _
+                    TypeOf control Is ListControl Or _
+                    (TypeOf control Is RadioButton And Not TypeOf control.Parent Is RadioButtonList) Or _
+                    (TypeOf control Is CheckBox And Not TypeOf control.Parent Is CheckBoxList) Or _
+                    TypeOf control Is TextBox Or _
+                    TypeOf control Is HiddenField Or _
+                    (TypeOf control Is Label And isGconDeclare) Or _
+                    (TypeOf control Is Literal And isGconDeclare) Then
+                    result = True
 
-                    End If
+                End If
+
+            End If
+
+            Return result
+
+        End Function
+
+        Private Function isOtherTarget(ByVal control As Control) As Boolean
+            Dim result As Boolean = False
+
+            If isIdNamingMatch(control.ID) Then
+                If TypeOf control Is Panel Then
+                    result = True
+                ElseIf TypeOf control Is CompositeDataBoundControl Then
+                    result = True
+                End If
+            End If
+
+            Return result
+
+        End Function
+
+        Private Shared Function isIdNamingMatch(ByVal id As String) As Boolean
+            Dim result As Boolean = False
+
+            If Not String.IsNullOrEmpty(id) Then
+                Dim prefix As String = id.Substring(0, 4)
+                '小文字3文字+大文字～で始まるかチェック(例：txtHOGEなど)
+                If System.Text.RegularExpressions.Regex.IsMatch(prefix, "^[a-z]{3}[A-Z]") Then
+                    result = True
                 End If
             End If
 

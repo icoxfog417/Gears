@@ -32,28 +32,28 @@ Namespace Gears
         Implements IAttributeHolder
 
         ''' <summary>IDに含まれることで、更新用フォームであることを示す文字列</summary>
-        Public Const FORM_ATTRIBUTE As String = "GFORM"
+        Public Const ID_ATTR_FORM As String = "GFORM"
 
         ''' <summary>IDに含まれることで、検索フォームであることを示す文字列</summary>
-        Public Const FILTER_ATTRIBUTE As String = "GFILTER"
+        Public Const ID_ATTR_FILTER As String = "GFILTER"
 
         ''' <summary>IDに含まれることで、更新キーであることを示す文字列</summary>
-        Public Const KEY_ATTRIBUTE As String = "KEY"
+        Public Const ID_ATTR_KEY As String = "KEY"
 
         ''' <summary>IDに含まれることで、登録対象コントロールであることを示す文字列</summary>
-        Public Const GCON_TARGET As String = "GCON"
+        Public Const ID_ATTR_GCON As String = "GCON"
 
         ''' <summary>IDに含まれることで、登録対象だが送信対象外であることを示す文字列</summary>
-        Public Const GCON_DISPLAY_ONLY As String = "GDISP"
+        Public Const ID_ATTR_GDISP As String = "GDISP"
 
         ''' <summary>検索時のオペレーターを指定するための属性</summary>
-        Public Const KEY_OPERATOR As String = "OPERATOR"
+        Public Const ATTR_OPERATOR As String = "OPERATOR"
 
         ''' <summary>名称空間を指定するための属性</summary>
-        Public Const DS_NAMESPACE As String = "DSNAMESPACE"
+        Public Const ATTR_DS_NAMESPACE As String = "DSNAMESPACE"
 
         ''' <summary>接続文字列を指定するための属性</summary>
-        Public Const DS_CONNECTION_NAME As String = "DSCONNECTIONNAME"
+        Public Const ATTR_DS_CONNECTION_NAME As String = "DSCONNECTIONNAME"
 
         ''' <summary>Serializeを行うための区切り文字</summary>
         Public Const VALUE_SEPARATOR As String = vbVerticalTab
@@ -269,8 +269,8 @@ Namespace Gears
             'WHEREを作成する際のオペレーターの設定
             If TypeOf con Is WebControl Then
                 Dim wcon As WebControl = CType(con, WebControl)
-                If Not wcon.Attributes(KEY_OPERATOR) Is Nothing Then
-                    _OperatorAttribute = wcon.Attributes(KEY_OPERATOR)
+                If Not wcon.Attributes(ATTR_OPERATOR) Is Nothing Then
+                    _OperatorAttribute = wcon.Attributes(ATTR_OPERATOR)
                 End If
             End If
 
@@ -301,18 +301,18 @@ Namespace Gears
                 End If
 
                 'キー値設定
-                If isIdAttributeExist(KEY_ATTRIBUTE) Then
+                If isIdAttributeExist(ID_ATTR_KEY) Then
                     _IsKey = True
                 End If
 
                 'コントロールの種別設定
-                If DataSourceID.ToUpper = FORM_ATTRIBUTE Or isIdAttributeExist(FORM_ATTRIBUTE) Then
+                If DataSourceID.ToUpper = ID_ATTR_FORM Or isIdAttributeExist(ID_ATTR_FORM) Then
                     _isFormAttribute = True
-                ElseIf DataSourceID.ToUpper = FILTER_ATTRIBUTE Or isIdAttributeExist(FILTER_ATTRIBUTE) Then
+                ElseIf DataSourceID.ToUpper = ID_ATTR_FILTER Or isIdAttributeExist(ID_ATTR_FILTER) Then
                     _isFilterAttribute = True
                 End If
 
-                If isIdAttributeExist(GCON_DISPLAY_ONLY) Then
+                If isIdAttributeExist(ID_ATTR_GDISP) Then
                     IsDisplayOnly = True
                 End If
             End If
