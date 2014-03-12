@@ -11,7 +11,41 @@ Namespace GearsTest
 
         Private Const DefaultConnection As String = "SQLiteConnect"
         Private Const DefaultNamespace As String = "DataSource"
-        Private Const TestDataNumberRange As Integer = 8000
+        Private Const TestDataNumberIndex As String = "8"
+
+        <TestFixtureSetUp()>
+        Public Sub setup()
+            SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO BETWEEN '" + TestDataNumberIndex + "000' AND '" + TestDataNumberIndex + "999' ")
+
+            '8000～8001までのテストデータを作成
+            Dim params As New Dictionary(Of String, String)
+            params.Add("F0", "8000")
+            params.Add("F1", "TEST TARO")
+            params.Add("F2", "ANALYST")
+            params.Add("F3", "7566")
+            params.Add("F4", "2012-07-01")
+            params.Add("F5", "800")
+            params.Add("F6", "GearsMediatorTest")
+            params.Add("F7", "20")
+            params.Add("F8", "A4")
+
+            SimpleDBA.executeSql(DefaultConnection, "INSERT INTO EMP(EMPNO,ENAME,JOB,MGR,HIREDATE,SAL,COMM,DEPTNO,AREA) VALUES (:F0,:F1,:F2,:F3,:F4,:F5,:F6,:F7,:F8)", params)
+
+            params("F0") = "8001"
+            params("F1") = "TEST RYOTA"
+            params("F7") = "30" '異なるDEPTNOを割り当てる
+            params("F8") = "A9"
+
+            SimpleDBA.executeSql(DefaultConnection, "INSERT INTO EMP(EMPNO,ENAME,JOB,MGR,HIREDATE,SAL,COMM,DEPTNO,AREA) VALUES (:F0,:F1,:F2,:F3,:F4,:F5,:F6,:F7,:F8)", params)
+
+        End Sub
+
+        <TestFixtureTearDown()>
+        Public Sub tearDown()
+
+            SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO BETWEEN '" + TestDataNumberIndex + "000' AND '" + TestDataNumberIndex + "999' ")
+
+        End Sub
 
         <Test()>
         Public Sub updateAndAttach()
@@ -139,7 +173,7 @@ Namespace GearsTest
 
             'コントロールの値を設定
             Dim conValue As New Dictionary(Of String, Object)
-            conValue.Add("hdnEMPNO__KEY", "1000")
+            conValue.Add("hdnEMPNO__KEY", "8000")
             conValue.Add("txtENAME", "MY_NAME")
             conValue.Add("ddlDEPTNO", "20")
             conValue.Add("ddlAREA", "A5")
@@ -168,7 +202,7 @@ Namespace GearsTest
 
             'コントロールの値を設定
             Dim conValue As New Dictionary(Of String, Object)
-            conValue.Add("hdnEMPNO__KEY", "1000")
+            conValue.Add("hdnEMPNO__KEY", "8000")
             conValue.Add("txtENAME", "MY_NAME")
             conValue.Add("ddlDEPTNO", "20")
             conValue.Add("ddlAREA", "A5")

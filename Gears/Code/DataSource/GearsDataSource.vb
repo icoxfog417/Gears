@@ -379,7 +379,7 @@ Namespace Gears.DataSource
         ''' <param name="rowIndex"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Private Function Item(ByVal index As String, Optional ByVal rowIndex As Integer = 0) As Object
+        Public Function Item(ByVal index As String, Optional ByVal rowIndex As Integer = 0) As Object
             Return GExecutor.getDataSetValue(index, rowIndex)
         End Function
 

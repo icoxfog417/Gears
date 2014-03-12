@@ -224,7 +224,7 @@ Namespace Gears.DataSource
                     Dim isKeyUpdateOccur As Boolean = False
                     keyFilter.ForEach(Sub(f)
                                           selSqlb.addFilter(f)
-                                          If Not f.Value = sqlb.Selection(f.Column).Value Then isKeyUpdateOccur = True
+                                          If sqlb.Selection(f.Column) IsNot Nothing AndAlso f.Value <> sqlb.Selection(f.Column).Value Then isKeyUpdateOccur = True
                                       End Sub)
 
                     'キーを更新するUpdateは、許可されている場合のみOK
