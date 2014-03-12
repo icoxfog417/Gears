@@ -164,6 +164,58 @@ Namespace GearsTest
 
         End Sub
 
+        <Test()>
+        Public Sub sqlUpdate()
+            Dim sqlb = New SqlBuilder(DbServerType.Oracle)
+            sqlb.DataSource = (SqlBuilder.DS("TARGET"))
+
+            Dim answer As String = "UPDATE TARGET SET COL1 = :U0 , COL2 = :U1 WHERE COL1 = :F0 AND COL2 = :F1 "
+
+            sqlb.Add(SqlBuilder.S("COL1").setValue("V1"))
+            sqlb.Add(SqlBuilder.S("COL2").setValue("V2"))
+            sqlb.Add(SqlBuilder.F("COL1").eq("K1"))
+            sqlb.Add(SqlBuilder.F("COL2").eq("K2"))
+
+            Dim sql As String = sqlb.confirmSql(ActionType.UPD, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
+
+        <Test()>
+        Public Sub sqlInsert()
+            Dim sqlb = New SqlBuilder(DbServerType.Oracle)
+            sqlb.DataSource = (SqlBuilder.DS("TARGET"))
+
+            Dim answer As String = "INSERT INTO TARGET(COL1,COL2) VALUES(:N0,:N1) "
+
+            sqlb.Add(SqlBuilder.S("COL1").setValue("V1"))
+            sqlb.Add(SqlBuilder.S("COL2").setValue("V2"))
+            sqlb.Add(SqlBuilder.F("COL1").eq("K1")) 'フィルタの設定はINSERTに影響を与えない
+            sqlb.Add(SqlBuilder.F("COL2").eq("K2"))
+
+            Dim sql As String = sqlb.confirmSql(ActionType.INS, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
+
+        <Test()>
+        Public Sub sqlDelete()
+            Dim sqlb = New SqlBuilder(DbServerType.Oracle)
+            sqlb.DataSource = (SqlBuilder.DS("TARGET"))
+
+            Dim answer As String = "DELETE FROM TARGET WHERE ( COL1 = :F0V0 OR COL1 = :F0V1 ) AND COL2 = :F1 "
+
+            sqlb.ValueSeparator = ","
+            sqlb.Add(SqlBuilder.F("COL1").eq("K1,K2"))
+            sqlb.Add(SqlBuilder.F("COL2").eq("K3"))
+
+            Dim sql As String = sqlb.confirmSql(ActionType.DEL, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
 
         Private Function trimAll(ByVal str As String) As String
             Return str.Replace(" ", "")

@@ -20,6 +20,9 @@ Namespace Gears.DataSource
         Public Function Selection(ByVal column As String) As SqlSelectItem
             Return _selection.Where(Function(x) x.Column = column).FirstOrDefault
         End Function
+        Public Function Selection(ByVal index As Integer) As SqlSelectItem
+            Return _selection(index)
+        End Function
 
         ''' <summary>SQLの条件項目</summary>
         Private _filter As New List(Of SqlFilterItem)
@@ -28,6 +31,9 @@ Namespace Gears.DataSource
         End Function
         Public Function Filter(ByVal column As String) As SqlFilterItem
             Return _filter.Where(Function(x) x.Column = column).FirstOrDefault
+        End Function
+        Public Function Filter(ByVal index As Integer) As SqlFilterItem
+            Return _filter(index)
         End Function
 
         ''' <summary>楽観ロック情報</summary>
@@ -106,29 +112,6 @@ Namespace Gears.DataSource
 
         End Sub
 
-        ''' <summary>ActionTypeの取得</summary>
-        <Obsolete("Actionプロパティを使用してください")>
-        Public Function getAtype() As ActionType
-            Return Action
-        End Function
-
-        ''' <summary>ActionTypeの設定</summary>
-        <Obsolete("Actionプロパティを使用してください")>
-        Public Sub setAtype(ByVal atype As ActionType)
-            Me.Action = atype
-        End Sub
-
-        <Obsolete("Actionプロパティを使用してください")>
-        Public Sub setAction(ByVal atype As ActionType)
-            Action = atype
-        End Sub
-
-        <Obsolete("Actionプロパティを使用してください")>
-        Public Function getAction() As ActionType
-            Return Action
-        End Function
-
-
         ''' <summary>その他属性情報の追加</summary>
         Public Sub addAttrInfo(ByVal id As String, ByVal value As String)
             If _attrInfo.ContainsKey(id) Then
@@ -142,6 +125,14 @@ Namespace Gears.DataSource
         Public Sub removeAttrInfo(ByVal id As String)
             If _attrInfo.ContainsKey(id) Then
                 _attrInfo.Remove(id)
+            End If
+        End Sub
+
+        Public Sub Add(ByVal item As SqlItem)
+            If TypeOf item Is SqlSelectItem Then
+                addSelection(item)
+            ElseIf TypeOf item Is SqlFilterItem Then
+                addFilter(item)
             End If
         End Sub
 

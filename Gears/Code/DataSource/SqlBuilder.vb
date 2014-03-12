@@ -423,7 +423,7 @@ Namespace Gears.DataSource
 
             For i As Integer = 0 To Selection.Count - 1
                 Dim item As SqlSelectItem = Selection(i)
-                Dim name As String = If(String.IsNullOrEmpty(item.ParamName), "u" + i.ToString, item.ParamName)
+                Dim name As String = If(String.IsNullOrEmpty(item.ParamName), "U" + i.ToString, item.ParamName)
 
                 If Not item.IsNoSelect Then
                     If item.hasValue Then
@@ -460,7 +460,7 @@ Namespace Gears.DataSource
 
             For i As Integer = 0 To Selection.Count - 1
                 Dim item As SqlSelectItem = Selection(i)
-                Dim name As String = If(String.IsNullOrEmpty(item.ParamName), "i" + i.ToString, item.ParamName)
+                Dim name As String = If(String.IsNullOrEmpty(item.ParamName), "N" + i.ToString, item.ParamName)
 
                 If item.hasValue Then
                     cols.Add(formatColumn(item))
