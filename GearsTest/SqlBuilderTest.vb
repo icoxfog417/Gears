@@ -43,7 +43,7 @@ Namespace GearsTest
             sqlbd.addFilter(filter)
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
-
+            Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer), trimAll(sql))
 
         End Sub
@@ -51,13 +51,14 @@ Namespace GearsTest
         <Test()>
         Public Sub sqlFilterOfNull()
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
-            Dim answer As String = "SELECT * FROM TAB WHERE COL1 IS NULL AND COL2 = :F1V0 "
+            Dim answer As String = "SELECT * FROM TAB WHERE COL1 IS NULL AND COL2 = :F1 "
 
             sqlbd.addFilter(SqlBuilder.F("COL1").eq(Nothing))
             sqlbd.addFilter(SqlBuilder.F("COL2").eq("1"))
             sqlbd.DataSource = (SqlBuilder.DS("TAB"))
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
+            Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer), trimAll(sql))
 
         End Sub
@@ -65,7 +66,7 @@ Namespace GearsTest
         <Test()>
         Public Sub sqlFilterOfNot()
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
-            Dim answer As String = "SELECT * FROM TAB WHERE NOT COL1 IS NULL AND NOT COL2 = :F1V0 AND ( NOT COL3 = :F2V0 OR COL4 = :F3V0 ) "
+            Dim answer As String = "SELECT * FROM TAB WHERE (NOT COL1 IS NULL AND NOT COL2 = :F1) AND ( NOT COL3 = :G1F0 OR COL4 = :G1F1 ) "
 
             Dim group As New SqlFilterGroup("A")
             sqlbd.addFilter(SqlBuilder.F("COL1").eq(Nothing).nots)
@@ -75,7 +76,7 @@ Namespace GearsTest
             sqlbd.DataSource = (SqlBuilder.DS("TAB"))
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
-
+            Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer), trimAll(sql))
 
         End Sub
@@ -93,7 +94,7 @@ Namespace GearsTest
                                                                                          SqlBuilder.J("JCOL3", "JCOL4"))
             sqlbd.DataSource = (ds1)
             sql = sqlbd.confirmSql(ActionType.SEL, True)
-
+            Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer1), trimAll(sql))
 
             'LEFT OUTER JOIN
@@ -103,6 +104,8 @@ Namespace GearsTest
 
             sqlbd.DataSource = (ds2)
             sql = sqlbd.confirmSql(ActionType.SEL, True)
+
+            Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer2), trimAll(sql))
 
 
@@ -111,7 +114,7 @@ Namespace GearsTest
         <Test(), TestCaseSource("DbServers")>
         Public Sub sqlFilterGrouping(ds As DbServerType)
             Dim sqlbd = New SqlBuilder(ds)
-            Dim answer As String = " SELECT * FROM TAB_A WHERE (COL1 = %p%F0V0 AND COL2 = %p%F1V0) AND (COL3 = %p%F2V0 OR COL4 = %p%F3V0) AND ( COL5 = %p%F4V0 OR COL5 = %p%F4V1 ) AND COL6 = %p%F5V0 "
+            Dim answer As String = " SELECT * FROM TAB_A WHERE (COL1 = %p%G0F0 AND COL2 = %p%G0F1) AND (COL3 = %p%G1F0 OR COL4 = %p%G1F1) AND (( COL5 = %p%F0V0 OR COL5 = %p%F0V1 ) AND COL6 = %p%F1) "
             Select Case ds
                 Case DbServerType.Oracle
                     answer = answer.Replace("%p%", ":")
@@ -130,6 +133,7 @@ Namespace GearsTest
             sqlbd.addFilter(SqlBuilder.F("COL6").eq("6"))
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
 
+            Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer), trimAll(sql))
 
         End Sub

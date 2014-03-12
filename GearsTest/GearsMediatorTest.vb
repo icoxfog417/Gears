@@ -17,7 +17,7 @@ Namespace GearsTest
         ''' </summary>
         ''' <remarks></remarks>
         <Test()>
-        Public Sub makeFormDTO()
+        Public Sub makeDTO()
 
             'コントロールの値を設定
             Dim conValue As New Dictionary(Of String, Object)
@@ -31,11 +31,7 @@ Namespace GearsTest
             Assert.IsTrue(fDto IsNot Nothing)
             Assert.IsTrue(fDto.Action = ActionType.SEL) 'デフォルトは選択になる
 
-            Assert.IsTrue(3, fDto.ControlInfo.Count) 'pnlGFORM内のフォームコントロールは計三個
-
-            For Each cv As KeyValuePair(Of String, Object) In conValue
-                Assert.AreEqual(cv.Value, fDto.ControlInfo(cv.Key).First.Value)
-            Next
+            Assert.IsTrue(3, fDto.ControlInfo.Count) 'pnlGFORM内のフォームコントロールは計3、値は指定したものに等しい
 
         End Sub
 

@@ -42,7 +42,7 @@ Namespace Gears.DataSource
         Inherits SqlItemContainer
 
         ''' <summary>パラメーターの接頭辞。SQL Serverなら@など</summary>
-        Private PARAM_HEAD As String = ""
+        Private PARAM_HEAD As String = ":"
 
         ''' <summary>
         ''' マルチバイトカラムを使用する際のエスケープ文字列<br/>
@@ -371,7 +371,7 @@ Namespace Gears.DataSource
             sql += If(p_groupby <> "", " GROUP BY " + p_groupby, "")
 
             'ORDER BY
-            If Not isNeedOrder Then
+            If isNeedOrder Then
                 Dim p_orderby As String = makeOrderBy()
 
                 If RowsInPage() <= 0 Then 'ページング設定なし
@@ -503,8 +503,8 @@ Namespace Gears.DataSource
 
             Dim selects = From sl As SqlSelectItem In Selection()
                           Where Not sl.IsNoSelect
-                          Let sel As String = formatColumn(sl, True)
-                          Select sl
+                          Let fsl As String = formatColumn(sl, True)
+                          Select fsl
 
             selectStr = String.Join(",", selects)
 
@@ -585,7 +585,7 @@ Namespace Gears.DataSource
 
                         Dim joins = From j As SqlFilterItem In ds.getJoinKey(relation.DataSource)
                                     Select formatColumn(j) + " = " + formatColumn(j.JoinTarget)
-                        relSource = String.Join(" AND ", joins)
+                        relSource += String.Join(" AND ", joins)
                     End If
                     source += relSource
                 Next
@@ -638,10 +638,16 @@ Namespace Gears.DataSource
                 Dim g = groups(gIdx).filters.First.item.Group
 
                 'グループ内のフィルタ条件を評価
-                For mIdx As Integer = 0 To groups(gIdx).filters.Count - 1
-                    Dim fl As SqlFilterItem = groups(gIdx).filters(mIdx).item
-                    Dim fName As String = If(String.IsNullOrEmpty(fl.ParamName), "G" + gIdx.ToString + "F" + fl.toString, fl.ParamName)
+                For fIdx As Integer = 0 To groups(gIdx).filters.Count - 1
+                    Dim fl As SqlFilterItem = groups(gIdx).filters(fIdx).item
+                    Dim fName As String = ""
                     Dim fPart As String = ""
+
+                    If String.IsNullOrEmpty(fl.ParamName) Then
+                        fName = If(g IsNot Nothing, "G" + gIdx.ToString, "") + "F" + fIdx.ToString
+                    Else
+                        fName = fl.ParamName
+                    End If
 
                     If fl.hasValue AndAlso (TypeOf fl.Value Is String AndAlso fl.Value.ToString.Contains(ValueSeparator)) Then
                         'Separatorによる複数指定の場合、これをSplitしてOR条件で結合する
@@ -661,7 +667,7 @@ Namespace Gears.DataSource
 
                 'グループ内の条件をまとめる
                 Dim gPart As String = ""
-                If Not String.IsNullOrEmpty(g.Name) AndAlso g.isOrGroup Then
+                If g IsNot Nothing AndAlso (Not String.IsNullOrEmpty(g.Name) And g.isOrGroup) Then
                     gPart = String.Join(" OR ", fList) 'OR指定グループの場合
                 Else
                     gPart = String.Join(" AND ", fList)
