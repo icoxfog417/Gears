@@ -102,7 +102,7 @@ Namespace Gears
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function toSqlBuilder(Optional ByVal ds As SqlDataSource = Nothing) As SqlBuilder
-            Dim sqlb As SqlBuilder = New SqlBuilder(Me)
+            Dim sqlb As SqlBuilder = New SqlBuilder(Me, False)
 
             'セレクタ/フィルタの設定
             For Each item As KeyValuePair(Of String, List(Of GearsControlInfo)) In _controlInfo

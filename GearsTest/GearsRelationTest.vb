@@ -9,7 +9,7 @@ Namespace GearsTest
     <TestFixture()>
     Public Class GearsRelationTest
 
-        Private Const DefaultConnection As String = "SQLiteConnect"
+        Private Const DefaultConnection As String = "SQLiteConnec"
 
         ''' <summary>
         ''' コントロールのリレーションを見て、ブランチを作成する
@@ -34,7 +34,7 @@ Namespace GearsTest
             mediator.addRelation("txtNAME", "grvDATA") '営業員名->一覧表へフィルタをかけるリレーションを追加
 
             '関連を考慮したリレーションを作成
-            Dim relMap As List(Of RelationNode) = mediator.makeRelationMap(root)
+            Dim relMap As List(Of RelationNode) = mediator.makeRelationMap(root.Controls(0)) 'GFORMを渡す
             relMap.ForEach(Sub(n) Console.WriteLine(n))
 
             'txtNAME->grvDATA,ddlAREA->ddlDEPTNOの2件になる

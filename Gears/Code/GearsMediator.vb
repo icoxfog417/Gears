@@ -202,6 +202,10 @@ Namespace Gears
 
         End Sub
 
+        Public Sub addRelation(ByVal conF As GearsControl, ByVal conT As GearsControl)
+            addRelation(conF.ControlID, conT.ControlID)
+        End Sub
+
         ''' <summary>
         ''' コントロール同士の関連を登録する
         ''' </summary>
@@ -493,13 +497,14 @@ Namespace Gears
             _log.Clear()
 
             Dim fcon As GearsControl = GControl(fromControl.ID)
-            Dim tcons As List(Of GearsControl) = Nothing
+            Dim tcons As New List(Of GearsControl)
 
             If toControl Is Nothing Then
-                'Relationとして登録していなくてもOKにする(ただし、fromControlのみ指定による自動配信を行う場合Relationが必要)
-                tcons = New List(Of GearsControl) From {GControl(toControl.ID)}
-            Else
+                '指定がない場合、リレーションを使用する
                 _relations(fromControl.ID).ForEach(Sub(r) tcons.Add(GControl(r)))
+            Else
+                '具体的な指定がある場合はそれを使用する(リレーションの有無は問わない)
+                tcons = New List(Of GearsControl) From {GControl(toControl.ID)}
             End If
 
             If tcons IsNot Nothing Then

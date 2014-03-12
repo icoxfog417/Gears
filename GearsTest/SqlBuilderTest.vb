@@ -49,6 +49,21 @@ Namespace GearsTest
         End Sub
 
         <Test()>
+        Public Sub sqlSameFilter()
+            Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
+            Dim answer As String = "SELECT * FROM TAB WHERE ( COL1 = :F0 OR COL1 = :F1 )"
+
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq("1"))
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq("2"))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB"))
+
+            Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
+
+        <Test()>
         Public Sub sqlFilterOfNull()
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB WHERE COL1 IS NULL AND COL2 = :F1 "

@@ -182,7 +182,7 @@ Namespace Gears.DataSource
                 result = False
             End If
 
-            If Not result Then
+            If result Then
                 Try
                     adjustedDTO = confirmRecord(dataFrom) 'Saveの場合INS/UPDに調整など
                     sqlb = makeSqlBuilder(adjustedDTO)

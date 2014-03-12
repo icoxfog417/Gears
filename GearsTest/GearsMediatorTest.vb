@@ -11,6 +11,124 @@ Namespace GearsTest
 
         Private Const DefaultConnection As String = "SQLiteConnect"
         Private Const DefaultNamespace As String = "DataSource"
+        Private Const TestDataNumberRange As Integer = 8000
+
+        <Test()>
+        Public Sub updateAndAttach()
+            Dim keyField As String = "hdnEMPNO__KEY"
+            Dim formControl As String = "pnlEMP__GFORM"
+            Dim dataKey As String = "8002"
+
+            '事前にレコードを準備
+            SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO = '" + dataKey + "'")
+            SimpleDBA.executeSql(DefaultConnection, "INSERT INTO EMP(EMPNO) VALUES ('" + dataKey + "')")
+
+            'コントロールの値を設定
+            Dim conValue As New Dictionary(Of String, Object)
+            conValue.Add(keyField, dataKey)
+            conValue.Add("txtENAME", "TM" + DateTime.Now.ToString("YYMMDDHHmmss"))
+            conValue.Add("ddlDEPTNO", "20")
+            conValue.Add("ddlAREA", "A5")
+
+            'フォームを準備
+            Dim mediator As GearsMediator = setUpMediator("pnlEMP__GFORM", conValue)
+
+            'SAVEする ※事前にレコードを用意しているのでUPDATE
+            mediator.execute(mediator.GControl(formControl).Control)
+
+            'SAVE後の値を取得
+            Dim answer As DataTable = SimpleDBA.executeSql(DefaultConnection, "SELECT * FROM V_EMP WHERE EMPNO = " + conValue(keyField).ToString)
+
+            '値を突合せ
+            For Each gcon As KeyValuePair(Of String, GearsControl) In mediator.GControls
+                If mediator.isInputControl(gcon.Value.Control) Then '入力コントロールの場合
+                    '入力値との比較
+                    Assert.AreEqual(conValue(gcon.Value.ControlID), answer.Rows(0)(gcon.Value.DataSourceID).ToString)
+                    'フォームにセットされた値との比較
+                    Assert.AreEqual(answer.Rows(0)(gcon.Value.DataSourceID).ToString, gcon.Value.getValue.ToString)
+                End If
+            Next
+
+        End Sub
+
+        <Test()>
+        Public Sub insertAndAttach()
+            Dim keyField As String = "hdnEMPNO__KEY"
+            Dim formControl As String = "pnlEMP__GFORM"
+            Dim dataKey As String = "8002"
+
+            '事前に削除
+            SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO = '" + dataKey + "'")
+
+            'コントロールの値を設定
+            Dim conValue As New Dictionary(Of String, Object)
+            conValue.Add(keyField, dataKey)
+            conValue.Add("txtENAME", "TM" + DateTime.Now.ToString("YYMMDDHHmmss"))
+            conValue.Add("ddlDEPTNO", "20")
+            conValue.Add("ddlAREA", "A5")
+
+            'フォームを準備
+            Dim mediator As GearsMediator = setUpMediator("pnlEMP__GFORM", conValue)
+
+            'SAVEする ※この時点では、レコードが削除されているはずなのでINSERTされるはず
+            mediator.execute(mediator.GControl(formControl).Control)
+
+            'SAVE後の値を取得
+            Dim answer As DataTable = SimpleDBA.executeSql(DefaultConnection, "SELECT * FROM V_EMP WHERE EMPNO = " + conValue(keyField).ToString)
+
+            '値を突合せ
+            For Each gcon As KeyValuePair(Of String, GearsControl) In mediator.GControls
+                If mediator.isInputControl(gcon.Value.Control) Then '入力コントロールの場合
+                    '入力値との比較
+                    Assert.AreEqual(conValue(gcon.Value.ControlID), answer.Rows(0)(gcon.Value.DataSourceID).ToString)
+                    'フォームにセットされた値との比較
+                    Assert.AreEqual(answer.Rows(0)(gcon.Value.DataSourceID).ToString, gcon.Value.getValue.ToString)
+                End If
+            Next
+
+        End Sub
+
+        <Test()>
+        Public Sub selectAndAttach()
+
+            'コントロールの値を設定
+            Dim keyField As String = "hdnEMPNO__KEY"
+            Dim conValue As New Dictionary(Of String, Object)
+            conValue.Add(keyField, "8000")
+
+            'フォームを準備
+            Dim mediator As GearsMediator = setUpMediator("pnlEMP__GFORM", conValue)
+            mediator.addRelation(keyField, "pnlEMP__GFORM") 'キーからパネルにリレーションを登録
+
+            'ロードされる値の理論値
+            Dim answer As DataTable = SimpleDBA.executeSql(DefaultConnection, "SELECT * FROM V_EMP WHERE EMPNO = " + conValue(keyField).ToString)
+
+            'フォームに値をロードする
+            mediator.send(mediator.GControl(keyField).Control)
+
+            '値を突合せ
+            For Each gcon As KeyValuePair(Of String, GearsControl) In mediator.GControls
+                If mediator.isInputControl(gcon.Value.Control) Then '入力コントロールの場合
+                    Assert.AreEqual(answer.Rows(0)(gcon.Value.DataSourceID).ToString, gcon.Value.getValue.ToString)
+                End If
+            Next
+
+            '再度、DEPTNO/AREAの関係が異なる値をロードする
+            '理論値を更新
+            answer = SimpleDBA.executeSql(DefaultConnection, "SELECT * FROM V_EMP WHERE EMPNO = 8001")
+
+            'フォームに値を再ロードする
+            mediator.GControl(keyField).setValue("8001")
+            mediator.send(mediator.GControl(keyField).Control)
+
+            '値を突合せ
+            For Each gcon As KeyValuePair(Of String, GearsControl) In mediator.GControls
+                If mediator.isInputControl(gcon.Value.Control) Then '入力コントロールの場合
+                    Assert.AreEqual(answer.Rows(0)(gcon.Value.DataSourceID).ToString, gcon.Value.getValue.ToString)
+                End If
+            Next
+
+        End Sub
 
         ''' <summary>
         ''' 検索用(フォーム以外)のDTOの検証
@@ -22,9 +140,9 @@ Namespace GearsTest
             'コントロールの値を設定
             Dim conValue As New Dictionary(Of String, Object)
             conValue.Add("hdnEMPNO__KEY", "1000")
-            conValue.Add("txtNAME", "MY_NAME")
-            conValue.Add("ddlAREA", "A5")
+            conValue.Add("txtENAME", "MY_NAME")
             conValue.Add("ddlDEPTNO", "20")
+            conValue.Add("ddlAREA", "A5")
 
             '検索用パネルを準備
             Dim mediator As GearsMediator = setUpMediator("pnlGFilter", conValue)
@@ -33,7 +151,7 @@ Namespace GearsTest
             Dim pnl As Control = mediator.GControl("pnlGFilter").Control
             Dim dto As GearsDTO = mediator.makeDTO(pnl, mediator.GControl("grvEMP").Control, Nothing)
 
-            Dim sanswer As String = "SELECT * FROM V_EMP WHERE EMPNO =:F0 AND NAME = :F1 AND AREA =:F2 AND DEPTNO = :F3"
+            Dim sanswer As String = "SELECT * FROM V_EMP WHERE EMPNO =:F0 AND ENAME = :F1 AND DEPTNO =:F2 AND AREA = :F3"
             Dim sqlb As SqlBuilder = mediator.GControl("grvEMP").DataSource.makeSqlBuilder(dto)
 
             Console.WriteLine(sqlb.confirmSql(ActionType.SEL))
@@ -51,9 +169,9 @@ Namespace GearsTest
             'コントロールの値を設定
             Dim conValue As New Dictionary(Of String, Object)
             conValue.Add("hdnEMPNO__KEY", "1000")
-            conValue.Add("txtNAME", "MY_NAME")
-            conValue.Add("ddlAREA", "A5")
+            conValue.Add("txtENAME", "MY_NAME")
             conValue.Add("ddlDEPTNO", "20")
+            conValue.Add("ddlAREA", "A5")
 
             '更新フォームを準備
             Dim mediator As GearsMediator = setUpMediator("pnlGFORM", conValue)
@@ -72,9 +190,9 @@ Namespace GearsTest
             '更新SQLの確認
             Dim fSql As SqlBuilder = fDto.toSqlBuilder(SqlBuilder.DS("TARGET"))
 
-            Dim sanswer As String = "SELECT EMPNO,NAME,AREA,DEPTNO FROM TARGET WHERE EMPNO = :F0"
-            Dim uanswer As String = "UPDATE TARGET SET NAME = :U0,DEPTNO = :U1,AREA = :U2 WHERE EMPNO = :F0"
-            Dim ianswer As String = "INSERT INTO TARGET(EMPNO,NAME,DEPTNO,AREA) VALUES (:N0,:N1,:N2,:N3)"
+            Dim sanswer As String = "SELECT EMPNO,ENAME,DEPTNO,AREA FROM TARGET WHERE EMPNO = :F0"
+            Dim uanswer As String = "UPDATE TARGET SET ENAME = :U0,DEPTNO = :U1,AREA = :U2 WHERE EMPNO = :F0"
+            Dim ianswer As String = "INSERT INTO TARGET(EMPNO,ENAME,DEPTNO,AREA) VALUES (:N0,:N1,:N2,:N3)"
             Dim danswer As String = "DELETE FROM TARGET WHERE EMPNO = :F0"
 
             '各SQLの確認
@@ -98,7 +216,7 @@ Namespace GearsTest
             Dim conTree As New Dictionary(Of String, List(Of String))
 
             'フォーム部分
-            conTree.Add(pnlId, New List(Of String) From {"lblNAME", "hdnEMPNO__KEY", "txtNAME", "ddlAREA", "ddlDEPTNO", "btnSave"})
+            conTree.Add(pnlId, New List(Of String) From {"lblENAME", "hdnEMPNO__KEY", "txtENAME", "ddlDEPTNO", "ddlAREA", "btnSave"})
 
             '一覧部分
             conTree.Add("pnlDisplay", New List(Of String) From {"grvEMP"})
@@ -110,10 +228,10 @@ Namespace GearsTest
             ControlBuilder.SetValues(root, controlValues)
 
             'コントロールの登録
-            mediator.addControls(root) 'lblNAME,btnSaveは対象から外れるはず
+            mediator.addControls(root) 'lblENAME,btnSaveは対象から外れるはず
 
             '関連を登録
-            mediator.addRelation("ddlAREA", "ddlDEPTNO")
+            mediator.addRelation("ddlDEPTNO", "ddlAREA")
 
             Return mediator
 

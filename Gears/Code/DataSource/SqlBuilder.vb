@@ -58,31 +58,11 @@ Namespace Gears.DataSource
         ''' <summary>SQLの抽出元。Table/Viewが設定される</summary>
         Public Property DataSource As SqlDataSource = Nothing
 
-        <Obsolete("DataSourceプロパティを使用してください")>
-        Public Sub setDataSource(ByVal sds As SqlDataSource)
-            DataSource = sds
-        End Sub
-
-        <Obsolete("DataSourceプロパティを使用してください")>
-        Public Function getDataSource() As SqlDataSource
-            Return DataSource
-        End Function
-
         ''' <summary>
         ''' データベース上のカラムと画面で使用する項目名が一致しない場合、変換をかけるために使用<br/>
         ''' (既存のテーブルを使用する場合など)
         ''' </summary>
         Public Property ItemColExchanger As INameExchanger = Nothing
-
-        <Obsolete("ItemColExchangerプロパティを使用してください")>
-        Public Sub setdsColConvertor(ByVal ice As INameExchanger)
-            ItemColExchanger = ice
-        End Sub
-
-        <Obsolete("ItemColExchangerプロパティを使用してください")>
-        Public Function getdsColConvertor() As INameExchanger
-            Return ItemColExchanger()
-        End Function
 
         Private _dbServer As DbServerType = DbServerType.Oracle
         ''' <summary>DBサーバーの種別</summary>
@@ -122,8 +102,17 @@ Namespace Gears.DataSource
         ''' </summary>
         Public Property ValueSeparator() As String = GearsControl.VALUE_SEPARATOR
 
-        Public Sub New(ByRef scon As SqlItemContainer)
+        Public Sub New(ByRef scon As SqlItemContainer, Optional ByVal withSelectionAndFilter As Boolean = True)
             MyBase.New(scon)
+
+            If TypeOf scon Is SqlBuilder Then
+                _DataSource = New SqlDataSource(CType(scon, SqlBuilder).DataSource())
+            End If
+            If Not withSelectionAndFilter Then
+                Me.Selection.Clear()
+                Me.Filter.Clear()
+            End If
+
         End Sub
 
         Public Sub New(ByVal conName As String, ByVal dsName As String, Optional ByVal aType As ActionType = ActionType.SEL)
@@ -140,22 +129,6 @@ Namespace Gears.DataSource
         Public Sub New(ByVal db As DbServerType, Optional ByVal aType As ActionType = ActionType.SEL)
             MyBase.New(aType)
             DbServer = db
-        End Sub
-
-        ''' <summary>
-        ''' コピーコンストラクタ<br/>
-        ''' withSelectionAndFilterオプションをFalseにすることで、選択/条件を引き継がないでインスタンスを作成可能
-        ''' </summary>
-        ''' <param name="sb"></param>
-        ''' <param name="withSelectionAndFilter"></param>
-        ''' <remarks></remarks>
-        Public Sub New(ByVal sb As SqlBuilder, Optional ByVal withSelectionAndFilter As Boolean = True)
-            MyBase.New(sb)
-            _DataSource = New SqlDataSource(sb.DataSource())
-            If Not withSelectionAndFilter Then
-                Me.Selection.Clear()
-                Me.Filter.Clear()
-            End If
         End Sub
 
         Public Sub ImportSqlItem(ByRef sb As SqlBuilder)
@@ -213,11 +186,6 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Shared Function DS(ByVal dsource As String, Optional ByVal sf As String = "") As SqlDataSource
             Return New SqlDataSource(dsource, sf)
-        End Function
-
-        <Obsolete("Selection.Where(Function(sl) Not sl.NoSelect).Count を使用してください(メソッドで提供しない)")>
-        Public Function getSelectionCount() As Integer
-            Return Selection.Where(Function(sl) Not sl.IsNoSelect).Count
         End Function
 
         ''' <summary>
@@ -622,7 +590,7 @@ Namespace Gears.DataSource
                          Group By Name = If(fl.item.Group Is Nothing, "", fl.item.Group.Name) Into filters = Group
 
             Dim gList As New List(Of String)
-            Dim fList As New List(Of String)
+            Dim fList As New Dictionary(Of String, List(Of String))
 
             '条件式を作成するマクロ
             Dim makefPart = Function(tf As SqlFilterItem, tp As String)
@@ -658,19 +626,30 @@ Namespace Gears.DataSource
                             vList.Add(makefPart(fl, vName))
                             params.Add(vName, values(vIdx))
                         Next
-                        fList.Add("( " + String.Join(" OR ", vList) + " )") '複数値を指定場合、ORでつなぐ
+                        If fList.ContainsKey(fl.Column) Then fList(fl.Column).AddRange(vList) Else fList.Add(fl.Column, vList)
                     Else
                         params.Add(fName, fl.Value)
-                        fList.Add(makefPart(fl, fName))
+                        Dim fstate As String = makefPart(fl, fName)
+                        If fList.ContainsKey(fl.Column) Then fList(fl.Column).Add(fstate) Else fList.Add(fl.Column, New List(Of String) From {fstate})
+
+                    End If
+                Next
+
+                Dim fListOfEachColumn As New List(Of String)
+                For Each fstate As KeyValuePair(Of String, List(Of String)) In fList
+                    If fstate.Value.Count > 1 Then
+                        fListOfEachColumn.Add("(" + String.Join(" OR ", fstate.Value) + ")") '同一カラムに対する複数の条件はORにして囲う
+                    Else
+                        fListOfEachColumn.Add(fstate.Value.First)
                     End If
                 Next
 
                 'グループ内の条件をまとめる
                 Dim gPart As String = ""
                 If g IsNot Nothing AndAlso (Not String.IsNullOrEmpty(g.Name) And g.isOrGroup) Then
-                    gPart = String.Join(" OR ", fList) 'OR指定グループの場合
+                    gPart = String.Join(" OR ", fListOfEachColumn) 'OR指定グループの場合
                 Else
-                    gPart = String.Join(" AND ", fList)
+                    gPart = String.Join(" AND ", fListOfEachColumn)
                 End If
                 If fList.Count > 1 And groups.Count > 1 Then '条件式が複数あり、グループも複数指定されている場合括弧でくくる
                     gPart = "(" + gPart + ")"

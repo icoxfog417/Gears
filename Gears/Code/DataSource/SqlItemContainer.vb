@@ -93,11 +93,13 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="scon"></param>
         ''' <remarks></remarks>
-        Public Sub New(ByRef scon As SqlItemContainer)
+        Public Sub New(ByRef scon As SqlItemContainer, Optional ByVal withSelectionAndFilter As Boolean = True)
             If Not scon Is Nothing Then
                 _Action = scon.Action
-                _selection = New List(Of SqlSelectItem)(scon.Selection)
-                _filter = New List(Of SqlFilterItem)(scon.Filter)
+                If withSelectionAndFilter Then
+                    _selection = New List(Of SqlSelectItem)(scon.Selection)
+                    _filter = New List(Of SqlFilterItem)(scon.Filter)
+                End If
                 _lockitem = New List(Of SqlFilterItem)(scon.LockItem)
                 IsPermitOtherKeyUpdate = scon.IsPermitOtherKeyUpdate
                 IsIgnoreAlert = scon.IsIgnoreAlert
