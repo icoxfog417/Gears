@@ -195,7 +195,7 @@ Namespace Gears
         ''' <summary>
         ''' データソースの値をコントロールにバインドするIDataBinder
         ''' </summary>
-        Public Property DataBinder As IDataBinder = New GBinderTemplate
+        Public Property DataBinder As IDataBinder = New GearsDataBinder
 
         Private _attributes As GearsAttribute = Nothing
         ''' <summary>
@@ -383,7 +383,7 @@ Namespace Gears
             End If
 
             'CssスタイルからAttributeの取得
-            Dim attrCreator As New GearsAttributeCreator()
+            Dim attrCreator As New GearsAttributeCreator(DsNameSpace)
             attrCreator.createAttributesFromString(attributeStr)
             _gcssClass = attrCreator.getCssClass
             _attributes = attrCreator.pack

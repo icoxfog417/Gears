@@ -75,8 +75,7 @@
     <Compile Include="Code\DataSource\SqlItemContainer.vb" />
     <Compile Include="Code\DataSource\INameExchanger.vb" />
     <Compile Include="Code\DataSource\NameExchangerTemplate.vb" />
-    <Compile Include="Code\Binder\GBinderTemplate.vb" />
-    <Compile Include="Code\DataSource\GDSTemplate.vb" />
+    <Compile Include="Code\Binder\GearsDataBinder.vb" />
     <Compile Include="Code\DataSource\GearsSqlException.vb" />
     <Compile Include="Code\Binder\GearsDataAttachException.vb" />
     <Compile Include="Code\Binder\GearsDataBindException.vb" />

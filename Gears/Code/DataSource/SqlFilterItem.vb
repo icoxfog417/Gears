@@ -119,7 +119,7 @@ Namespace Gears.DataSource
         Public Sub New(ByVal col As String, Optional ByVal px As String = "")
             MyBase.New()
             _column = col
-            _prefix = px
+            Prefix = px
         End Sub
 
         Public Sub New(ByVal sqlf As SqlFilterItem, Optional ByVal val As Object = Nothing)

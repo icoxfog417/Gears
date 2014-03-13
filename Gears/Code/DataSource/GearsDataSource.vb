@@ -10,7 +10,7 @@ Namespace Gears.DataSource
     ''' データソースクラス作成用の抽象クラス
     ''' </summary>
     ''' <remarks></remarks>
-    Public MustInherit Class GearsDataSource
+    Public Class GearsDataSource
         Implements IDataSource
 
         ''' <summary>
@@ -45,12 +45,6 @@ Namespace Gears.DataSource
                 End If
             End Set
         End Property
-
-        ''' <summary>
-        ''' 楽観ロックの定義
-        ''' </summary>
-        ''' <remarks></remarks>
-        Protected LockCheckCol As New Dictionary(Of String, LockType)
 
         Private _isMultiByte As Boolean = False
         ''' <summary>
@@ -93,8 +87,33 @@ Namespace Gears.DataSource
 
         Private _resultSet As New DataTable
 
-        Public Sub New(ByVal conName As String)
+        Protected Sub New(ByVal conName As String)
             _connectionName = conName
+        End Sub
+
+        ''' <summary>
+        ''' 接続文字列と、データソースとなるテーブルを指定しインスタンスを作成する
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <param name="table"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal conName As String, ByVal table As SqlDataSource)
+            Me.New(conName)
+            TargetTable = table
+        End Sub
+
+        ''' <summary>
+        ''' 接続文字列と、データソースとなるテーブル、ビューを指定しインスタンスを作成する<br/>
+        ''' 更新系処理にはテーブル、選択系処理にはビューが使用される
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <param name="view"></param>
+        ''' <param name="table"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal conName As String, ByVal view As SqlDataSource, ByVal table As SqlDataSource)
+            Me.New(conName)
+            SelectView = view
+            TargetTable = table
         End Sub
 
         ''' <summary>
@@ -151,9 +170,11 @@ Namespace Gears.DataSource
             End If
             sqlb.IsMultiByte = _isMultiByte
 
-            If LockCheckCol.Count > 0 And sqlb.Selection.Where(Function(s) Not s.IsNoSelect).Count > 0 Then
-                '楽観ロックチェックの指定がある場合、楽観ロック用のカラムを設定する
-                setLockCheckColValueToSql(sqlb)
+            If SelectView.LockCheckColum.Count > 0 Then
+                '選択の場合で明確な選択項目がない場合(SELECT * の場合)以外は、楽観ロックカラムを指定(選択)する
+                If Not (data.Action = ActionType.SEL And sqlb.Selection.Where(Function(s) Not s.IsNoSelect).Count = 0) Then
+                    addLockValue(sqlb)
+                End If
             End If
 
             'データソースの設定(下位クラスで実装必須)
@@ -164,20 +185,40 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
-        ''' SQLの実行対象を設定するメソッド
+        ''' SqlBuilderのアクションに応じてデータソースを設定する
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected MustOverride Sub setDataSource(ByVal sqlb As SqlBuilder)
+        Protected Overridable Sub setDataSource(ByVal sqlb As SqlBuilder)
+
+            'デフォルトでセレクト用のデータソースを設定
+            If sqlb Is Nothing OrElse sqlb.Action = ActionType.SEL Then
+                sqlb.DataSource = SelectView
+            Else
+                sqlb.DataSource = TargetTable '更新用のデータソースを設定
+            End If
+
+        End Sub
 
         ''' <summary>
         ''' 実行用のSQLを作成するためのメソッド
         ''' </summary>
-        ''' <param name="dataFrom"></param>
+        ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function makeExecute(ByVal dataFrom As GearsDTO) As SqlBuilder
-            Return makeSqlBuilder(dataFrom)
+        Public Overridable Function makeExecute(ByVal dto As GearsDTO) As SqlBuilder
+            Dim sqlb As SqlBuilder = Nothing
+
+            Try
+                Dim action As ActionType = confirmRecord(dto) 'Saveの場合INS/UPDに調整など
+                sqlb = makeSqlBuilder(dto)
+                sqlb.Action = action
+            Catch ex As Exception
+                Throw
+            End Try
+
+            Return sqlb
+
         End Function
 
         ''' <summary>
@@ -192,12 +233,30 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
+        ''' ページサイズを指定したSelectを行う
+        ''' </summary>
+        ''' <param name="maximumRows"></param>
+        ''' <param name="startRowIndex"></param>
+        ''' <param name="data"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByVal data As GearsDTO) As DataTable Implements IDataSource.gSelectPageBy
+            Dim sqlb As SqlBuilder = makeSqlBuilder(data)
+            sqlb.setPaging(startRowIndex, maximumRows)
+            Return gSelect(sqlb)
+
+        End Function
+
+        ''' <summary>
         ''' Selectを実行する
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Overridable Function gSelect(ByVal sqlb As SqlBuilder) As System.Data.DataTable
+
+            GearsLogStack.setLog(GearsDTO.ActionToString(ActionType.SEL) + "処理を実行します", sqlb.confirmSql(ActionType.SEL))
+
             Try
                 Dim executor As New GearsSqlExecutor(ConnectionName)
                 _resultSet = executor.load(sqlb)
@@ -224,21 +283,6 @@ Namespace Gears.DataSource
         End Sub
 
         ''' <summary>
-        ''' ページサイズを指定したSelectを行う
-        ''' </summary>
-        ''' <param name="maximumRows"></param>
-        ''' <param name="startRowIndex"></param>
-        ''' <param name="data"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByVal data As GearsDTO) As DataTable Implements IDataSource.gSelectPageBy
-            Dim sqlb As SqlBuilder = makeSqlBuilder(data)
-            sqlb.setPaging(startRowIndex, maximumRows)
-            Return gSelect(sqlb)
-
-        End Function
-
-        ''' <summary>
         ''' 件数の取得
         ''' </summary>
         ''' <param name="data"></param>
@@ -246,7 +290,10 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Function gSelectCount(ByVal data As GearsDTO) As Integer Implements IDataSource.gSelectCount
             Dim sqlb As SqlBuilder = makeSqlBuilder(data)
+            GearsLogStack.setLog(GearsDTO.ActionToString(ActionType.SEL) + "処理を実行します", sqlb.confirmSql(ActionType.SEL))
+
             Return gSelectCount(sqlb)
+
         End Function
 
         ''' <summary>
@@ -347,7 +394,9 @@ Namespace Gears.DataSource
             ElseIf sqlb.Action = ActionType.UPD Then
                 gUpdate(sqlb)
             Else
-                'TODO INS/UPDの判断が行われていないケースの対処
+                Dim action As ActionType = confirmRecord(sqlb)
+                If action = ActionType.INS Then gInsert(sqlb)
+                If action = ActionType.UPD Then gUpdate(sqlb)
             End If
         End Sub
 
@@ -357,15 +406,19 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
         Protected Sub executeProcess(ByVal sqlb As SqlBuilder)
+
+            GearsLogStack.setLog(sqlb.DataSource.Name + "へ更新前に、チェック処理を行います")
             beforeExecute(sqlb)
 
             Try
                 Dim executor As New GearsSqlExecutor(ConnectionName)
 
+                GearsLogStack.setLog(sqlb.DataSource.Name + "へ" + GearsDTO.ActionToString(sqlb.Action) + "処理を行います")
+
                 'Saveの場合、ActionTypeはINS/UPDのどちらかに編集されていることを前提とする
                 executor.execute(sqlb)
 
-                '実行結果を読み込む
+                '実行結果を読み込む(要否検討)
                 loadExecuted(sqlb)
 
             Catch ex As Exception
@@ -430,6 +483,82 @@ Namespace Gears.DataSource
         Protected Overridable Sub afterExecute(ByVal sqlb As SqlBuilder)
         End Sub
 
+        Public Function confirmRecord(ByVal confirmData As GearsDTO) As ActionType
+            Return confirmRecord(makeSqlBuilder(confirmData))
+        End Function
+
+        ''' <summary>
+        ''' Saveの場合のInsert/Update判定、また楽観ロックのチェックを行う
+        ''' </summary>
+        ''' <param name="sqlb"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Overridable Function confirmRecord(ByVal sqlb As SqlBuilder) As ActionType
+            Dim result As ActionType = sqlb.Action
+
+            '処理用変数
+            Dim keySelection As List(Of SqlSelectItem) = sqlb.Selection.Where(Function(s) s.IsKey And s.hasValue).ToList 'キー項目の列
+            Dim keyFilter As List(Of SqlFilterItem) = sqlb.Filter.Where(Function(f) f.IsKey And f.hasValue).ToList
+
+            'SAVE/Updateの場合、既存レコードの確認を行う
+            If sqlb.Action = ActionType.UPD Or sqlb.Action = ActionType.SAVE Then
+
+                '既存レコードの確認を行うSQLを作成
+                Dim selSqlb As New SqlBuilder(sqlb, False) 'フィルタ/セレクタを削除しコピー
+                selSqlb.DataSource = Me.TargetTable 'ビューではなく、元テーブルに対しSELECTを行う(キー項目は必ず元テーブルに含まれるが、ビューはその限りではない)
+
+                If keyFilter.Count > 0 Then 'キー選択がある場合、フィルタとしてそのまま追加
+                    Dim isKeyUpdateOccur As Boolean = False
+                    keyFilter.ForEach(Sub(f)
+                                          selSqlb.addFilter(f)
+                                          If sqlb.Selection(f.Column) IsNot Nothing AndAlso f.Value <> sqlb.Selection(f.Column).Value Then isKeyUpdateOccur = True
+                                      End Sub)
+
+                    'キーを更新するUpdateは、許可されている場合のみOK
+                    If isKeyUpdateOccur And Not sqlb.IsPermitOtherKeyUpdate Then
+                        Throw New GearsSqlException("キーを更新する処理は許可されていません(PermitOtherKeyUpdate:False)")
+                    End If
+
+                ElseIf keySelection.Count > 0 Then 'キー選択がなく、キーの更新がある場合それをフィルタとして設定
+                    keySelection.ForEach(Sub(s) selSqlb.addFilter(s.toFilter))
+                Else
+                    Throw New GearsSqlException("キー項目が設定されていないか空白です", "更新対象のテーブルのキーを表すGearsControlに対しsetAskey()を行うか、名称に__KEYを含めるかし、キー情報を設定してください")
+                End If
+
+                'SELECTを実行
+                Dim selResult As DataTable = gSelect(selSqlb)
+
+                '既存レコードを確認
+                If selResult.Rows.Count > 0 Then 'select結果が0件以上であれば更新対象データ有り
+                    Dim isLockCheckOk As Boolean = True
+                    If sqlb.Action = ActionType.SAVE Then result = ActionType.UPD
+
+                    'ロックキーが存在する場合、その一致を確認
+                    If sqlb.LockFilter.Count > 0 Then
+                        Dim lockValues As List(Of SqlFilterItem) = getLockValue()
+                        For Each lc As SqlFilterItem In sqlb.LockFilter
+                            If lockValues.Where(Function(f) f.Column = lc.Column And f.Value = lc.Value).Count = 0 Then isLockCheckOk = False
+                        Next
+
+                        If Not isLockCheckOk Then
+                            Dim lockInfo As String = ""
+                            lockValues.ForEach(Sub(f) lockInfo += f.Column + ":" + f.Value.ToString + " ")
+                            Throw New GearsOptimisticLockException("他のユーザーにより更新されています:" + Trim(lockInfo))
+                        End If
+                    Else
+
+                    End If
+                Else
+                    'ActionType=UPDの場合、更新対象がないことになるがエラーにはしない
+                    If sqlb.Action = ActionType.SAVE Then result = ActionType.INS
+                End If
+
+            End If
+
+            Return result
+
+        End Function
+
         ''' <summary>
         ''' 実行後の結果セットを取得する
         ''' </summary>
@@ -467,13 +596,9 @@ Namespace Gears.DataSource
         ''' <param name="colname"></param>
         ''' <param name="ltype"></param>
         ''' <remarks></remarks>
-        Public Sub addLockCheckCol(ByVal colname As String, ByVal ltype As LockType)
-            If LockCheckCol.ContainsKey(colname) Then
-                LockCheckCol(colname) = ltype
-            Else
-                LockCheckCol.Add(colname, ltype)
-
-            End If
+        Public Sub setLockCheckColumn(ByVal colname As String, ByVal ltype As LockType)
+            SelectView.setLockCheckColumn(colname, ltype)
+            TargetTable.setLockCheckColumn(colname, ltype)
         End Sub
 
         ''' <summary>
@@ -481,12 +606,16 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function getLockCheckColValue() As List(Of SqlFilterItem)
+        Public Function getLockValue() As List(Of SqlFilterItem)
             Dim param As New List(Of SqlFilterItem)
             If _resultSet.Rows.Count > 0 Then
-                For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
+                For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColum
                     Dim value As Object = DataSetReader.Item(_resultSet, item.Key)
-                    param.Add(New SqlFilterItem(item.Key).eq(value))
+                    If Not IsDBNull(value) Then
+                        param.Add(New SqlFilterItem(item.Key).eq(value))
+                    Else
+                        param.Add(New SqlFilterItem(item.Key).eq(String.Empty))
+                    End If
                 Next
             End If
 
@@ -499,8 +628,8 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Sub setLockCheckColValueToSql(ByVal sqlb As SqlBuilder)
-            For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
+        Protected Sub addLockValue(ByVal sqlb As SqlBuilder)
+            For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColum
                 '元々設定されていた場合はそちらを優先する
                 If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
                     sqlb.addSelection(SqlBuilder.S(item.Key).setValue(getLockTypeValue(item.Value)))

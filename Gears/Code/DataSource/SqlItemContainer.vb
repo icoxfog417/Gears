@@ -36,12 +36,6 @@ Namespace Gears.DataSource
             Return _filter(index)
         End Function
 
-        ''' <summary>楽観ロック情報</summary>
-        Private _lockitem As List(Of SqlFilterItem) = New List(Of SqlFilterItem)
-        Public Function LockItem() As List(Of SqlFilterItem)
-            Return _lockitem
-        End Function
-
         ''' <summary>Updateでキーの更新を許可するか否か</summary>
         Public Property IsPermitOtherKeyUpdate() As Boolean = True
 
@@ -100,7 +94,6 @@ Namespace Gears.DataSource
                     _selection = New List(Of SqlSelectItem)(scon.Selection)
                     _filter = New List(Of SqlFilterItem)(scon.Filter)
                 End If
-                _lockitem = New List(Of SqlFilterItem)(scon.LockItem)
                 IsPermitOtherKeyUpdate = scon.IsPermitOtherKeyUpdate
                 IsIgnoreAlert = scon.IsIgnoreAlert
                 IsMultiByte = scon.IsMultiByte
@@ -156,21 +149,6 @@ Namespace Gears.DataSource
         ''' <summary>条件情報の削除</summary>
         Public Sub removeFilter(ByVal column As String)
             _filter.RemoveAll(Function(s) s.Column = column)
-        End Sub
-
-        ''' <summary>楽観ロック項目の追加</summary>
-        Public Sub addLockItem(ByVal item As SqlFilterItem)
-            _lockitem.Add(item)
-        End Sub
-
-        ''' <summary>楽観ロック項目の追加(一括)</summary>
-        Public Sub addLockItems(ByRef items As List(Of SqlFilterItem))
-            items.ForEach(Sub(f) _lockitem.Add(f))
-        End Sub
-
-        ''' <summary>楽観ロック項目の削除</summary>
-        Public Sub removeLockItem()
-            _lockitem.Clear()
         End Sub
 
         ''' <summary>ページング用項目が設定されているか否か</summary>

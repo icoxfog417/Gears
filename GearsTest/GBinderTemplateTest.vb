@@ -7,31 +7,26 @@ Imports Gears.Util
 Namespace GearsTest
 
     <TestFixture()>
-    Public Class GBinderTemplateTest
-
-        Dim outOfFilterEmp As String = "9997"
-        Dim defaultEmp As String = "7369"
-        Dim defaultArea As String = "A10" + GearsControl.VALUE_SEPARATOR + "40"
-        Private Const mainConnection As String = "SQLiteConnect"
+    Public Class GearsDataBinderTest
 
         <Test()>
-        Public Sub TextBoxSet()
+        Public Sub TextBox()
+            Dim gbind As New GearsDataBinder
             Dim textEmp As TextBox = ControlBuilder.createControl("txtEMPNO")
             Dim textBox As TextBox = ControlBuilder.createControl("txtHOGE")
-            Dim empData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
 
-            Assert.IsFalse(empData Is Nothing)
+            'テストデータを準備
+            Dim table As New DataTable
+            table.Columns.Add("EMPNO")
+            table.Rows.Add("XXXXX")
 
-            Dim gbind As New GBinderTemplate
-
-            gbind.dataBind(textEmp, empData)    'リストコントロール/GridViewなどのバインドコントロール以外は、DataBindで値は付かないことを確認する
+            gbind.dataBind(textEmp, table)    'リストコントロール/GridViewなどのバインドコントロール以外は、DataBindで値は付かないことを確認する
             Assert.IsTrue(String.IsNullOrEmpty(textEmp.Text))
 
+            gbind.dataAttach(textEmp, table)
+            Assert.AreEqual(table.Rows(0)("EMPNO").ToString, textEmp.Text)
 
-            gbind.dataAttach(textEmp, empData)
-            Assert.IsTrue(defaultEmp, textEmp.Text)
-
-            gbind.dataAttach(textBox, empData) '名称からデータソース名が推定できないものはデータアタッチできない
+            gbind.dataAttach(textBox, table) '名称からデータソース名が推定できないものはデータアタッチできない
             Assert.IsTrue(String.IsNullOrEmpty(textBox.Text))
 
             'setter/getter
@@ -42,107 +37,138 @@ Namespace GearsTest
         End Sub
 
         <Test()>
-        Public Sub DropDownListSet()
+        Public Sub DropDownList()
+            Dim gbind As New GearsDataBinder
             Dim dropDown As DropDownList = ControlBuilder.createControl("ddlDEPTNO")
-            Dim empData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
-            Dim deptData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM DEPT ")
 
-            Assert.IsFalse(deptData Is Nothing)
+            'テストデータを準備
+            Dim table As New DataTable
+            table.Columns.Add("KEY")
+            table.Columns.Add("VALUE")
+            table.Columns.Add("COMMENT")
 
-            Dim gbind As New GBinderTemplate
+            table.Rows.Add("0", "DOMAIN0", "TOKYO")
+            table.Rows.Add("1", "DOMAIN1", "OSAKA")
 
             '列不指定バインド
-            gbind.dataBind(dropDown, deptData)
+            gbind.dataBind(dropDown, table)
             For i As Integer = 0 To dropDown.Items.Count - 1
-                Assert.AreEqual(dropDown.Items(i).Value, DataSetReader.Item(deptData, 0, i))
-                Assert.AreEqual(dropDown.Items(i).Text, DataSetReader.Item(deptData, 1, i))
+                Assert.AreEqual(dropDown.Items(i).Value, DataSetReader.Item(table, 0, i))
+                Assert.AreEqual(dropDown.Items(i).Text, DataSetReader.Item(table, 1, i))
             Next
 
             'アタッチ
-            gbind.dataAttach(dropDown, empData)
+            Dim atTable As New DataTable
+            atTable.Columns.Add("DEPTNO")
+            atTable.Rows.Add("1")
+            gbind.dataAttach(dropDown, atTable)
 
-            Assert.AreEqual(dropDown.SelectedValue, DataSetReader.Item(empData, "DNAME"))
+            Assert.AreEqual(DataSetReader.Item(atTable, "DEPTNO"), dropDown.SelectedValue)
 
             'setter/getter
             dropDown.ClearSelection()
 
-            gbind.setValue(dropDown, DataSetReader.Item(empData, "DNAME"))
-            Assert.AreEqual(dropDown.SelectedValue, DataSetReader.Item(empData, "DNAME"))
+            gbind.setValue(dropDown, "0")
+            Assert.AreEqual(dropDown.SelectedItem.Text, DataSetReader.Item(table, "VALUE"))
             Assert.AreEqual(dropDown.SelectedValue, gbind.getValue(dropDown))
 
 
         End Sub
 
         <Test()>
-        Public Sub GridViewSet()
+        Public Sub GridView()
+            Dim gbind As New GearsDataBinder
 
             '通常
             Dim grvView As GridView = ControlBuilder.createControl(Of GridView)("grvEMP").addKeys("EMPNO")
-            Dim empData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP")
-            Dim empRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
 
-            'キーなし
-            Dim grvViewNoKey As GridView = ControlBuilder.createControl("grvEMP")
+            'テストデータを準備
+            Dim table As New DataTable
+            table.Columns.Add("EMPNO")
+            table.Columns.Add("EMP_TXT")
+            table.Columns.Add("COMMENT")
 
-            '複数キー
-            Dim grvArea As GridView = ControlBuilder.createControl(Of GridView)("grvAREA").addKeys("AREA", "DEPTNO")
-            Dim areaData As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM AREA")
-            Dim areaRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM AREA WHERE AREA = :pArea ", SimpleDBA.makeParameters("pArea", Split(defaultArea, GearsControl.VALUE_SEPARATOR)(0)))
+            table.Rows.Add("0", "TARO", "TOKYO")
+            table.Rows.Add("1", "RYOKO", "OSAKA")
+            table.Rows.Add("2", "MIDORI", "NAGOYA")
 
-            Dim gbind As New GBinderTemplate
 
             '無選択状態でのデータ取得
             Assert.AreEqual("", gbind.getValue(grvView))
 
             'バインド
-            gbind.dataBind(grvViewNoKey, empData)
-            gbind.dataBind(grvView, empData)
-            Assert.AreEqual(empData.Rows.Count, grvView.Rows.Count)
+            gbind.dataBind(grvView, table)
+            Assert.AreEqual(table.Rows.Count, grvView.Rows.Count)
 
-            'アタッチはなし
+            Dim attable As New DataTable
+            attable.Columns.Add("EMPNO")
+            attable.Rows.Add("1")
 
             'セット
-            gbind.setValue(grvView, GearsControl.serializeValue(empRow))
-            Assert.AreEqual(defaultEmp, grvView.SelectedValue.ToString)
-            Assert.AreEqual(defaultEmp, gbind.getValue(grvView))
-
-            gbind.setValue(grvViewNoKey, GearsControl.serializeValue(empRow)) '何も起こらない
-            Assert.IsTrue(String.IsNullOrEmpty(gbind.getValue(grvViewNoKey)))
-
-
-            '複数キーの場合
-            gbind.dataBind(grvArea, areaData)
-            gbind.setValue(grvArea, GearsControl.serializeValue(areaRow))
-            Assert.AreEqual(defaultArea, GearsControl.serializeValue(grvArea.SelectedDataKey))
-            Assert.AreEqual(defaultArea, gbind.getValue(grvArea))
-
-            'キー不完全
-            areaRow = SimpleDBA.executeSql(mainConnection, "SELECT DEPTNO FROM AREA WHERE AREA = :pArea ", SimpleDBA.makeParameters("pArea", Split(defaultArea, GearsControl.VALUE_SEPARATOR)(0)))
-            gbind.setValue(grvArea, GearsControl.serializeValue(areaRow)) '例外は出ないが選択は更新されない
-            Assert.AreEqual(-1, grvArea.SelectedIndex)
-
-
+            gbind.dataAttach(grvView, attable)
+            Assert.AreEqual(attable.Rows(0)("EMPNO"), grvView.SelectedValue.ToString)
+            Assert.AreEqual(attable.Rows(0)("EMPNO"), gbind.getValue(grvView))
 
         End Sub
 
         <Test()>
-        Public Sub RadioButtonAndCheckBoxSet()
+        Public Sub GridViewMultiKey()
+            Dim gbind As New GearsDataBinder
+
+            '通常
+            Dim grvView As GridView = ControlBuilder.createControl(Of GridView)("grvORDER").addKeys("NO", "DETAIL")
+
+            'テストデータを準備
+            Dim table As New DataTable
+            table.Columns.Add("NO")
+            table.Columns.Add("DETAIL")
+            table.Columns.Add("MATERIAL")
+
+            table.Rows.Add("1", "10", "POKKY")
+            table.Rows.Add("1", "20", "URON")
+            table.Rows.Add("2", "10", "BOX")
+
+            'バインド
+            gbind.dataBind(grvView, table)
+            Assert.AreEqual(table.Rows.Count, grvView.Rows.Count)
+
+            Dim attable As New DataTable
+            attable.Columns.Add("NO")
+            attable.Columns.Add("DETAIL")
+            attable.Rows.Add("1", "20")
+
+            'セット
+            gbind.dataAttach(grvView, attable)
+            Dim grvKey As New List(Of String)
+            For i As Integer = 0 To grvView.SelectedDataKey.Values.Count - 1
+                grvKey.Add(grvView.SelectedDataKey(i))
+            Next
+
+            Assert.AreEqual(String.Join(GearsControl.VALUE_SEPARATOR, grvKey), gbind.getValue(grvView))
+
+        End Sub
+
+        <Test()>
+        Public Sub RadioButtonAndCheckBox()
+            Dim gbind As New GearsDataBinder
 
             Dim radio As RadioButton = ControlBuilder.createControl("rbtFILTER")
             Dim check As CheckBox = ControlBuilder.createControl("chbFILTER")
 
-            Dim empRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
-            Dim outEmpRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", outOfFilterEmp))
-            Dim gbind As New GBinderTemplate
+            'テストデータを準備
+            Dim table As New DataTable
+            table.Columns.Add("FILTER")
+            table.Rows.Add("1")
 
-            gbind.dataAttach(radio, empRow)
-            gbind.dataAttach(check, empRow)
+            gbind.dataAttach(radio, table)
+            gbind.dataAttach(check, table)
 
             Assert.IsTrue(radio.Checked)
             Assert.IsTrue(check.Checked)
 
-            gbind.dataAttach(radio, outEmpRow)
-            gbind.dataAttach(check, outEmpRow)
+            table.Rows(0)("FILTER") = "0"
+            gbind.dataAttach(radio, table)
+            gbind.dataAttach(check, table)
 
             Assert.IsFalse(radio.Checked)
             Assert.IsFalse(check.Checked)
@@ -151,40 +177,39 @@ Namespace GearsTest
         End Sub
 
         <Test()>
-        Public Sub RadioAndCheckBoxListSet()
-            Dim empRow As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM V_EMP WHERE EMPNO = :pEmp ", SimpleDBA.makeParameters("pEmp", defaultEmp))
-            Dim radio As RadioButtonList = ControlBuilder.createControl("rbtDEPTNO")
-            Dim check As CheckBoxList = ControlBuilder.createControl("chlAREA")
+        Public Sub RadioAndCheckBoxList()
+            Dim gbind As New GearsDataBinder
 
-            Dim dept As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM DEPT")
-            Dim area As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM AREA")
-            Dim gbind As New GBinderTemplate
+            'テストデータを準備
+            Dim table As New DataTable
+            table.Columns.Add("ID")
+            table.Columns.Add("TEXT")
+            table.Rows.Add("1", "TOKYO")
+            table.Rows.Add("2", "OSAKA")
+            table.Rows.Add("3", "SHIKOKU")
+
+            Dim radio As RadioButtonList = ControlBuilder.createControl("rblAREA")
+            Dim check As CheckBoxList = ControlBuilder.createControl("cblAREA")
+
 
             'バインド
-            gbind.dataBind(radio, dept)
-            gbind.dataBind(check, area)
+            gbind.dataBind(radio, table)
+            gbind.dataBind(check, table)
 
-            Assert.AreEqual(radio.Items.Count, dept.Rows.Count)
-            Assert.AreEqual(area.Rows.Count, area.Rows.Count)
+            Assert.AreEqual(table.Rows.Count, radio.Items.Count)
+            Assert.AreEqual(table.Rows.Count, check.Items.Count)
 
             'アタッチ
-            gbind.dataAttach(radio, empRow)
-            gbind.dataAttach(check, empRow)
+            Dim atTable As New DataTable
+            atTable.Columns.Add("AREA")
+            atTable.Rows.Add("2")
 
-            Assert.AreEqual(DataSetReader.Item(empRow, "DEPTNO"), radio.SelectedValue)
-            Assert.AreEqual(DataSetReader.Item(empRow, "AREA"), check.SelectedValue)
+            gbind.dataAttach(radio, atTable)
+            gbind.dataAttach(check, atTable)
 
+            Assert.AreEqual(atTable.Rows(0)("AREA").ToString, radio.SelectedValue)
+            Assert.AreEqual(atTable.Rows(0)("AREA").ToString, check.SelectedValue)
 
-        End Sub
-
-        <Test()>
-        Public Sub SharedBindTest()
-            Dim list As DropDownList = ControlBuilder.createControl("ddlDEPT")
-            Dim depts As DataTable = SimpleDBA.executeSql(mainConnection, "SELECT * FROM DEPT")
-
-            GBinderTemplate.dataBind(list, New DataSource.DEPTNO(mainConnection))
-
-            Assert.AreEqual(depts.Rows.Count, list.Items.Count)
 
         End Sub
 

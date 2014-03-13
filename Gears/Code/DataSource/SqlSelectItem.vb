@@ -64,7 +64,7 @@ Namespace Gears.DataSource
         Public Sub New(ByVal col As String, Optional ByVal px As String = "")
             MyBase.New()
             _column = col
-            _prefix = px
+            Prefix = px
         End Sub
         Public Sub New(ByVal sqls As SqlSelectItem, Optional ByVal val As Object = Nothing)
             MyBase.New(sqls, val)

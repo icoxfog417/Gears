@@ -212,6 +212,19 @@ Namespace Gears.DataSource
             Return New SqlDataSource(dsource, sf)
         End Function
 
+        ''' <summary>楽観ロック情報</summary>
+        Public Function LockFilter() As List(Of SqlFilterItem)
+            Dim result As New List(Of SqlFilterItem)
+            Dim lockColumnList As List(Of String) = DataSource.LockCheckColum.Keys.ToList
+
+            For Each item As SqlFilterItem In Filter()
+                If lockColumnList.Contains(item.Column) Then result.Add(item)
+            Next
+
+            Return result
+
+        End Function
+
         ''' <summary>
         ''' このSqlBuilderをSqlDataSource化する
         ''' </summary>
@@ -294,7 +307,7 @@ Namespace Gears.DataSource
         ''' <returns></returns>
         ''' <remarks></remarks>
         Private Function formatSource(ByVal source As SqlDataSource) As String
-            Dim result As String = source.DataSource
+            Dim result As String = source.Name
 
             If IsMultiByte And source.Value.Count = 0 Then 'マルチバイト対応が必要で、パイプライン表関数でない(引数がない)
                 result = String.Format(MULTIBYTE_FORMAT, result)
@@ -568,14 +581,14 @@ Namespace Gears.DataSource
                         '再帰呼び出し
                         relSource = makeRelationStr(relation, params)
                     Else
-                        Select Case ds.getRelation(relation.DataSource)
+                        Select Case ds.getRelation(relation.Name)
                             Case RelationKind.INNER_JOIN
                                 relSource += " INNER JOIN " + formatSource(relation) + " ON "
                             Case RelationKind.LEFT_OUTER_JOIN
                                 relSource += " LEFT OUTER JOIN " + formatSource(relation) + " ON "
                         End Select
 
-                        Dim joins = From j As SqlFilterItem In ds.getJoinKey(relation.DataSource)
+                        Dim joins = From j As SqlFilterItem In ds.getJoinKey(relation.Name)
                                     Select formatColumn(j) + " = " + formatColumn(j.JoinTarget)
                         relSource += String.Join(" AND ", joins)
                     End If

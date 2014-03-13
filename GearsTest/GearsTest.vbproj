@@ -112,7 +112,7 @@
     <Compile Include="DataSource\JOB.vb" />
     <Compile Include="DataSource\UNITS.vb" />
     <Compile Include="GBinderTemplateTest.vb" />
-    <Compile Include="GDSTemplateTest.vb" />
+    <Compile Include="GearsDataSourceTest.vb" />
     <Compile Include="GearsAttributeTest.vb" />
     <Compile Include="GearsMediatorTest.vb" />
     <Compile Include="GearsRelationTest.vb" />

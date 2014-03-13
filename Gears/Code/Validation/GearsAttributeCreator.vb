@@ -10,6 +10,8 @@ Namespace Gears.Validation
         Private _ac As New GearsAttributeContainer
         Private cssClass As String = ""
 
+        Public Property SubstituteNamespace As String
+
         '個別クラス設定用
         Public Function isNumeric() As GearsAttributeCreator
             _ac.addAttribute(New GNumeric)
@@ -51,6 +53,13 @@ Namespace Gears.Validation
             Return Me
         End Function
 
+        Public Sub New()
+        End Sub
+
+        Public Sub New(ByVal subNamespace As String)
+            SubstituteNamespace = subNamespace
+        End Sub
+
         'Cssからの設定
         Public Function createAttributesFromString(cs As String) As GearsAttributeCreator
             cssClass = cs
@@ -82,18 +91,26 @@ Namespace Gears.Validation
 
                 '動的クラス作成処理
                 Try
-                    Dim attrType As Type = Type.GetType("Gears." + classStr)
+                    Dim attrType As Type = Type.GetType("Gears.Validation.Validator." + classStr)
                     Dim instance As Object = System.Activator.CreateInstance(attrType)
 
-                    For i As Integer = 1 To extractArgs.Length - 1 Step 2
-                        Dim pi As PropertyInfo = attrType.GetProperty(extractArgs(i))
-                        If Not pi Is Nothing Then
-                            Dim t As Type = pi.PropertyType 'プロパティの型情報を取得
-                            pi.SetValue(instance, System.Convert.ChangeType(extractArgs(i + 1), t), Nothing)
-                        End If
-                    Next
+                    If instance Is Nothing Then '代替名称空間で再トライ
+                        attrType = Type.GetType(SubstituteNamespace + "." + classStr)
+                        instance = System.Activator.CreateInstance(attrType)
+                    End If
 
-                    result = System.Convert.ChangeType(instance, attrType)
+                    If instance IsNot Nothing Then
+                        For i As Integer = 1 To extractArgs.Length - 1 Step 2
+                            Dim pi As PropertyInfo = attrType.GetProperty(extractArgs(i))
+                            If Not pi Is Nothing Then
+                                Dim t As Type = pi.PropertyType 'プロパティの型情報を取得
+                                pi.SetValue(instance, System.Convert.ChangeType(extractArgs(i + 1), t), Nothing)
+                            End If
+                        Next
+
+                        result = System.Convert.ChangeType(instance, attrType)
+
+                    End If
 
                 Catch ex As Exception
                     result = Nothing

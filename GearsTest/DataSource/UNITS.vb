@@ -5,7 +5,7 @@ Imports Gears.DataSource
 Namespace DataSource
 
     Public Class UNITS
-        Inherits GDSTemplate
+        Inherits GearsDataSource
 
         Public Sub New(ByVal conStr As String)
             MyBase.New(conStr, SqlBuilder.DS("UNITS"))

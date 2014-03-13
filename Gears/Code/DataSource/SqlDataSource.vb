@@ -20,16 +20,16 @@ Namespace Gears.DataSource
     <Serializable()>
     Public Class SqlDataSource
 
-        Private _dataSource As String
+        Private _name As String
         ''' <summary>
         ''' データソース名(テーブル/ビュー)
         ''' </summary>
-        Public Property DataSource() As String
+        Public Property Name() As String
             Get
-                Return _dataSource
+                Return _name
             End Get
             Set(ByVal value As String)
-                _dataSource = value
+                _name = value
             End Set
         End Property
 
@@ -60,6 +60,27 @@ Namespace Gears.DataSource
                 _suffix = value
             End Set
         End Property
+
+        Private _lockCheckColum As New Dictionary(Of String, LockType)
+        Public ReadOnly Property LockCheckColum As Dictionary(Of String, LockType)
+            Get
+                Return _lockCheckColum
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' 楽観ロック用の列の設定
+        ''' </summary>
+        ''' <param name="colname"></param>
+        ''' <param name="ltype"></param>
+        ''' <remarks></remarks>
+        Public Sub setLockCheckColumn(ByVal colname As String, ByVal ltype As LockType)
+            If LockCheckColum.ContainsKey(colname) Then
+                LockCheckColum(colname) = ltype
+            Else
+                LockCheckColum.Add(colname, ltype)
+            End If
+        End Sub
 
         Private _value As New Dictionary(Of String, Object)
         ''' <summary>
@@ -123,13 +144,14 @@ Namespace Gears.DataSource
         End Function
 
         Public Sub New(ByVal ds As String, Optional ByVal sf As String = "")
-            _dataSource = ds
+            _name = ds
             _suffix = sf
         End Sub
         Public Sub New(ByVal ds As SqlDataSource)
-            Me._dataSource = ds.DataSource
+            Me._name = ds.Name
             Me._schema = ds.Schema
             Me._suffix = ds.Suffix
+            Me._lockCheckColum = New Dictionary(Of String, LockType)(ds._lockCheckColum)
             Me._value = New Dictionary(Of String, Object)(ds.Value)
             Me._joinTargets = New List(Of SqlDataSource)(ds._joinTargets)
             Me._relations = New Dictionary(Of String, RelationKind)(ds._relations)
@@ -200,7 +222,7 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Function leftOuterJoin(ByRef sd As SqlDataSource, ByVal ParamArray cr() As SqlFilterItem) As SqlDataSource
             makeRelation(sd, cr)
-            _relations.Add(sd.DataSource, RelationKind.LEFT_OUTER_JOIN)
+            _relations.Add(sd.Name, RelationKind.LEFT_OUTER_JOIN)
 
             Return Me
 
@@ -223,7 +245,7 @@ Namespace Gears.DataSource
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function innerJoin(ByRef sd As SqlDataSource, ByVal ParamArray cr() As SqlFilterItem) As SqlDataSource
-            _relations.Add(sd.DataSource, RelationKind.INNER_JOIN)
+            _relations.Add(sd.Name, RelationKind.INNER_JOIN)
             makeRelation(sd, cr)
             Return Me
 
@@ -242,7 +264,7 @@ Namespace Gears.DataSource
                 item.pf(Me) '結合元には自身のsuffixを付与
                 item.JoinTarget.pf(sd) '結合相手は相手先のsuffixを付与
             Next
-            _joinKeys.Add(sd.DataSource, list)
+            _joinKeys.Add(sd.Name, list)
 
         End Sub
 

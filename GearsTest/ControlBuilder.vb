@@ -37,7 +37,7 @@ Namespace GearsTest
         End Function
 
         Public Shared Sub LoadControls(ByVal root As Control, ByVal mediator As GearsMediator)
-            Dim binder As New Gears.Binder.GBinderTemplate
+            Dim binder As New Gears.Binder.GearsDataBinder
             ControlSearcher.fetchControls(root,
                                           Sub(control As Control, ByRef dto As GearsDTO)
                                               mediator.addControl(control).dataBind()
@@ -50,7 +50,7 @@ Namespace GearsTest
 
 
         Public Shared Sub SetValues(ByVal root As Control, ByVal keyValue As Dictionary(Of String, Object))
-            Dim binder As New Gears.Binder.GBinderTemplate
+            Dim binder As New Gears.Binder.GearsDataBinder
             ControlSearcher.fetchControls(root,
                                           Sub(control As Control, ByRef dto As GearsDTO)
                                               binder.setValue(control, keyValue(control.ID))

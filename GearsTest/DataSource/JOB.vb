@@ -4,7 +4,7 @@ Imports Gears.DataSource
 Namespace DataSource
 
     Public Class JOB
-        Inherits GDSTemplate
+        Inherits GearsDataSource
 
         Public Sub New(ByVal conStr As String)
             MyBase.New(conStr, SqlBuilder.DS("EMP"))

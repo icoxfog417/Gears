@@ -561,7 +561,7 @@ Namespace Gears
             If fromControl Is Nothing Then
                 GMediator.lockDtoWhenSend(sender)
             Else
-                sender.addLockItems(reloadLockValue(fromControl)) '楽観的ロックのチェックを追加
+                reloadLockValue(fromControl).ForEach(Sub(f) sender.addFilter(f)) '楽観的ロックのチェックを追加
             End If
 
             '警告無視フラグがある場合、その設定を行う処理
@@ -677,7 +677,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Private Sub saveLockValueIfExist(ByVal gcon As GearsControl)
             If Not gcon.DataSource Is Nothing Then
-                Dim lockValue As List(Of SqlFilterItem) = gcon.DataSource.getLockCheckColValue
+                Dim lockValue As List(Of SqlFilterItem) = gcon.DataSource.getLockValue
                 If lockValue.Count > 0 Then
                     For Each item As SqlFilterItem In lockValue
                         ViewState(V_LOCKCOL + VIEW_STATE_SEPARATOR + gcon.ControlID + VIEW_STATE_SEPARATOR + item.Column) = item.Value

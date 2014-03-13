@@ -112,7 +112,7 @@ Namespace Gears
         End Sub
 
         Public Sub New(ByVal conName As String, ByVal sourceName As String, ByVal selection As List(Of SqlSelectItem))
-            _source = New GDSTemplate(conName, SqlBuilder.DS(sourceName))
+            _source = New GearsDataSource(conName, SqlBuilder.DS(sourceName))
             _selection = selection
         End Sub
 
