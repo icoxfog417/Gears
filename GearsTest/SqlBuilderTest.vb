@@ -49,7 +49,7 @@ Namespace GearsTest
         End Sub
 
         <Test()>
-        Public Sub sqlSameFilter()
+        Public Sub sqlFilterSameColumn()
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB WHERE ( COL1 = :F0 OR COL1 = :F1 )"
 
@@ -64,7 +64,7 @@ Namespace GearsTest
         End Sub
 
         <Test()>
-        Public Sub sqlFilterOfNull()
+        Public Sub sqlFilterNull()
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB WHERE COL1 IS NULL AND COL2 = :F1 "
 
@@ -79,7 +79,22 @@ Namespace GearsTest
         End Sub
 
         <Test()>
-        Public Sub sqlFilterOfNot()
+        Public Sub sqlFilterEmpty()
+            Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
+            Dim answer As String = "SELECT * FROM TAB "
+
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq(""))
+            sqlbd.addFilter(SqlBuilder.F("COL2").eq(""))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB"))
+
+            Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
+
+        <Test()>
+        Public Sub sqlFilterNot()
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB WHERE (NOT COL1 IS NULL AND NOT COL2 = :F1) AND ( NOT COL3 = :G1F0 OR COL4 = :G1F1 ) "
 
@@ -123,59 +138,6 @@ Namespace GearsTest
             Console.WriteLine(sql)
             Assert.AreEqual(trimAll(answer2), trimAll(sql))
 
-
-        End Sub
-
-        <Test(), TestCaseSource("DbServers")>
-        Public Sub sqlFilterGrouping(ds As DbServerType)
-            Dim sqlbd = New SqlBuilder(ds)
-            Dim answer As String = " SELECT * FROM TAB_A WHERE (COL1 = %p%G0F0 AND COL2 = %p%G0F1) AND (COL3 = %p%G1F0 OR COL4 = %p%G1F1) AND (( COL5 = %p%F0V0 OR COL5 = %p%F0V1 ) AND COL6 = %p%F1) "
-            Select Case ds
-                Case DbServerType.Oracle
-                    answer = answer.Replace("%p%", ":")
-                Case DbServerType.SQLServer, DbServerType.OLEDB
-                    answer = answer.Replace("%p%", "@")
-            End Select
-
-            Dim groupA As New SqlFilterGroup("A", False)
-            Dim groupB As New SqlFilterGroup("B")
-            sqlbd.DataSource = (SqlBuilder.DS("TAB_A"))
-            sqlbd.addFilter(SqlBuilder.F("COL1").eq("1").inGroup(groupA))
-            sqlbd.addFilter(SqlBuilder.F("COL2").eq("2").inGroup(groupA))
-            sqlbd.addFilter(SqlBuilder.F("COL3").eq("3").inGroup(groupB))
-            sqlbd.addFilter(SqlBuilder.F("COL4").eq("4").inGroup(groupB))
-            sqlbd.addFilter(SqlBuilder.F("COL5").eq("5-1" + sqlbd.ValueSeparator + "5-2"))
-            sqlbd.addFilter(SqlBuilder.F("COL6").eq("6"))
-            Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
-
-            Console.WriteLine(sql)
-            Assert.AreEqual(trimAll(answer), trimAll(sql))
-
-        End Sub
-
-        <Test()>
-        Public Sub sqlFilterAs()
-            Dim filter As New SqlFilterItem("TST_COLUMN")
-            filter.filterAs("eq", "X")
-            Assert.AreEqual("=", filter.Operand)
-
-            filter.filterAs("NEQ", "X")
-            Assert.AreEqual("<>", filter.Operand)
-
-            filter.filterAs("lt", "X")
-            Assert.AreEqual("<", filter.Operand)
-
-            filter.filterAs("Gt", "X")
-            Assert.AreEqual(">", filter.Operand)
-
-            filter.filterAs("ltEq", "X")
-            Assert.AreEqual("<=", filter.Operand)
-
-            filter.filterAs("GTEQ", "X")
-            Assert.AreEqual(">=", filter.Operand)
-
-            filter.filterAs("like", "X")
-            Assert.AreEqual("LIKE", filter.Operand.Trim)
 
         End Sub
 
@@ -232,6 +194,67 @@ Namespace GearsTest
 
         End Sub
 
+        <Test(), TestCaseSource("DbServers")>
+        Public Sub makeFilterGroup(ds As DbServerType)
+            Dim sqlbd = New SqlBuilder(ds)
+            Dim answer As String = " SELECT * FROM TAB_A WHERE (COL1 = %p%G0F0 AND COL2 = %p%G0F1) AND (COL3 = %p%G1F0 OR COL4 = %p%G1F1) AND (( COL5 = %p%F0V0 OR COL5 = %p%F0V1 ) AND COL6 = %p%F1) "
+            Select Case ds
+                Case DbServerType.Oracle
+                    answer = answer.Replace("%p%", ":")
+                Case DbServerType.SQLServer, DbServerType.OLEDB
+                    answer = answer.Replace("%p%", "@")
+            End Select
+
+            Dim groupA As New SqlFilterGroup("A", False)
+            Dim groupB As New SqlFilterGroup("B")
+            sqlbd.DataSource = (SqlBuilder.DS("TAB_A"))
+            sqlbd.addFilter(SqlBuilder.F("COL1").eq("1").inGroup(groupA))
+            sqlbd.addFilter(SqlBuilder.F("COL2").eq("2").inGroup(groupA))
+            sqlbd.addFilter(SqlBuilder.F("COL3").eq("3").inGroup(groupB))
+            sqlbd.addFilter(SqlBuilder.F("COL4").eq("4").inGroup(groupB))
+            sqlbd.addFilter(SqlBuilder.F("COL5").eq("5-1" + sqlbd.ValueSeparator + "5-2"))
+            sqlbd.addFilter(SqlBuilder.F("COL6").eq("6"))
+            Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
+
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
+
+        <Test()>
+        Public Sub makeFilterAs()
+            Dim filter As New SqlFilterItem("TST_COLUMN")
+            filter.filterAs("eq", "X")
+            Assert.AreEqual("=", filter.Operand)
+
+            filter.filterAs("NEQ", "X")
+            Assert.AreEqual("<>", filter.Operand)
+
+            filter.filterAs("lt", "X")
+            Assert.AreEqual("<", filter.Operand)
+
+            filter.filterAs("Gt", "X")
+            Assert.AreEqual(">", filter.Operand)
+
+            filter.filterAs("ltEq", "X")
+            Assert.AreEqual("<=", filter.Operand)
+
+            filter.filterAs("GTEQ", "X")
+            Assert.AreEqual(">=", filter.Operand)
+
+            filter.filterAs("like", "X")
+            Assert.AreEqual("LIKE", filter.Operand.Trim)
+
+            'Likeにおける%ラッパー
+            filter.filterAs("like", "X", True)
+            Assert.AreEqual("%X%", filter.Value.ToString)
+
+            filter.filterAs("like", "", True) '空白の場合は%でくくらない
+            Assert.AreEqual("", filter.Value.ToString)
+
+        End Sub
+
+       
         Public Shared Function compareWithoutSpace(ByVal left As String, ByVal right As String) As Boolean
             Return trimAll(left) = trimAll(right)
         End Function
