@@ -4,6 +4,7 @@ Imports System.Web.UI.WebControls
 Imports System.Collections
 Imports System.Data
 Imports Gears.DataSource
+Imports Gears.Util
 
 Namespace Gears.Binder
 
@@ -117,8 +118,8 @@ Namespace Gears.Binder
             If String.IsNullOrEmpty(list.DataTextField) Then list.DataTextField = dset.Columns(1).ColumnName
             For i As Integer = 0 To dset.Rows.Count - 1
 
-                Dim key As String = GearsSqlExecutor.getDataSetValue(list.DataValueField, dset, i).ToString
-                Dim value As String = GearsSqlExecutor.getDataSetValue(list.DataTextField, dset, i).ToString
+                Dim key As String = DataSetReader.Item(dset, list.DataValueField, i).ToString
+                Dim value As String = DataSetReader.Item(dset, list.DataTextField, i).ToString
                 list.Items.Add(New ListItem(value, key))
 
             Next
@@ -169,7 +170,7 @@ Namespace Gears.Binder
                         Next
                     Else
 
-                        Dim value As Object = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(con.ID), dset)
+                        Dim value As Object = DataSetReader.Item(dset, GearsControl.extractDataSourceid(con.ID))
                         If Not value Is Nothing Then 'Nothing = データテーブルに該当項目がない
                             setValue(con, value)
                         End If
@@ -196,7 +197,7 @@ Namespace Gears.Binder
             Dim result As Boolean = True
             For i = dset.Rows.Count - 1 To 0 Step -1
                 'データソースIDに基づきバインドを行う(リストキー項目がデータソース名である保証はない)
-                Dim value As Object = GearsSqlExecutor.getDataSetValue(GearsControl.extractDataSourceid(list.ID), dset, i)
+                Dim value As Object = DataSetReader.Item(dset, GearsControl.extractDataSourceid(list.ID), i)
                 If Not value Is Nothing Then
                     If Not list.Items.FindByValue(value.ToString) Is Nothing Then
                         list.SelectedValue = value.ToString

@@ -12,15 +12,6 @@ Namespace Gears.DataSource
         Inherits GearsDataSource
 
         ''' <summary>
-        ''' データを選択するためのビュー/テーブル名。
-        ''' </summary>
-        Protected ViewName As SqlDataSource = Nothing
-        ''' <summary>
-        ''' データの更新対象となるビュー/テーブル名。
-        ''' </summary>
-        Protected UpdateTarget As SqlDataSource = Nothing
-
-        ''' <summary>
         ''' Select処理について、本当のSelectか、UpdateやInsert前の確認用Selectなのか判別する
         ''' </summary>
         Private inContext As ActionType = ActionType.NONE
@@ -33,8 +24,7 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Sub New(ByVal conName As String, ByVal singleTable As SqlDataSource)
             MyBase.New(conName)
-            ViewName = singleTable
-            UpdateTarget = singleTable
+            TargetTable = singleTable
         End Sub
 
         ''' <summary>
@@ -47,47 +37,8 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Sub New(ByVal conName As String, ByVal view As SqlDataSource, ByVal target As SqlDataSource)
             MyBase.New(conName)
-            ViewName = view
-            UpdateTarget = target
-        End Sub
-
-        '初期セットするview/targetが、join等を行う複雑なものである場合に対応。protectedとし、publicでの公開はしない(今のところ)
-        ''' <summary>
-        ''' 内部のみに公開するコンストラクタ<br/>
-        ''' 何等かのロジックでデータソースを設定する場合に使用
-        ''' </summary>
-        ''' <param name="conName"></param>
-        ''' <remarks></remarks>
-        Protected Sub New(ByVal conName As String)
-            MyBase.New(conName)
-        End Sub
-
-        ''' <summary>
-        ''' 選択用のビューを設定する
-        ''' </summary>
-        ''' <param name="view"></param>
-        ''' <remarks></remarks>
-        Protected Sub setView(ByVal view As SqlDataSource)
-            ViewName = view
-        End Sub
-
-        ''' <summary>
-        ''' 更新ターゲットを設定する
-        ''' </summary>
-        ''' <param name="target"></param>
-        ''' <remarks></remarks>
-        Protected Sub setTarget(ByVal target As SqlDataSource)
-            UpdateTarget = target
-        End Sub
-
-        ''' <summary>
-        ''' ビュー/ターゲット両方に設定を行う
-        ''' </summary>
-        ''' <param name="vt"></param>
-        ''' <remarks></remarks>
-        Protected Sub setViewAndTarget(ByVal vt As SqlDataSource)
-            ViewName = vt
-            UpdateTarget = vt
+            SelectView = view
+            TargetTable = target
         End Sub
 
         ''' <summary>
@@ -96,7 +47,7 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overrides Function gSelect(ByRef sqlb As SqlBuilder) As System.Data.DataTable
+        Public Overrides Function gSelect(ByVal sqlb As SqlBuilder) As System.Data.DataTable
 
             If inContext = ActionType.NONE Or inContext = ActionType.SEL Then
                 GearsLogStack.setLog(GearsDTO.ActionToString(ActionType.SEL) + "処理を実行します", sqlb.confirmSql(ActionType.SEL))
@@ -114,7 +65,7 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overrides Function gSelectCount(ByRef sqlb As SqlBuilder) As Integer
+        Public Overrides Function gSelectCount(ByVal sqlb As SqlBuilder) As Integer
             GearsLogStack.setLog(GearsDTO.ActionToString(ActionType.SEL) + "処理を実行します", sqlb.confirmSql(ActionType.SEL))
             Return MyBase.gSelectCount(sqlb)
 
@@ -125,15 +76,26 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Overrides Sub setDataSource(ByRef sqlb As SqlBuilder)
+        Protected Overrides Sub setDataSource(ByVal sqlb As SqlBuilder)
 
             'デフォルトでセレクト用のデータソースを設定
             If sqlb Is Nothing OrElse sqlb.Action = ActionType.SEL Then
-                sqlb.DataSource = ViewName
+                sqlb.DataSource = SelectView
             Else
-                sqlb.DataSource = UpdateTarget '更新用のデータソースを設定
+                sqlb.DataSource = TargetTable '更新用のデータソースを設定
             End If
 
+        End Sub
+
+        '初期セットするview/targetが、join等を行う複雑なものである場合に対応。protectedとし、publicでの公開はしない(今のところ)
+        ''' <summary>
+        ''' 内部のみに公開するコンストラクタ<br/>
+        ''' 何等かのロジックでデータソースを設定する場合に使用
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <remarks></remarks>
+        Protected Sub New(ByVal conName As String)
+            MyBase.New(conName)
         End Sub
 
         ''' <summary>
@@ -141,7 +103,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Overrides Sub beforeExecute(ByRef sqlb As SqlBuilder)
+        Protected Overrides Sub beforeExecute(ByVal sqlb As SqlBuilder)
             GearsLogStack.setLog("SQL 実行前のチェック処理を開始します")
 
             MyBase.beforeExecute(sqlb)
@@ -155,7 +117,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Overrides Sub afterExecute(ByRef sqlb As SqlBuilder)
+        Protected Overrides Sub afterExecute(ByVal sqlb As SqlBuilder)
             GearsLogStack.setLog("SQL 実行後の処理を行います")
             MyBase.afterExecute(sqlb)
         End Sub
@@ -166,7 +128,7 @@ Namespace Gears.DataSource
         ''' <param name="dataFrom"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overrides Function makeExecute(ByRef dataFrom As GearsDTO) As SqlBuilder
+        Public Overrides Function makeExecute(ByVal dataFrom As GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = Nothing
 
             Dim adjustedDTO As GearsDTO = Nothing
@@ -186,7 +148,6 @@ Namespace Gears.DataSource
                 Try
                     adjustedDTO = confirmRecord(dataFrom) 'Saveの場合INS/UPDに調整など
                     sqlb = makeSqlBuilder(adjustedDTO)
-                    GExecutor.setSql(sqlb)
                 Catch ex As Exception
                     Throw
                 End Try
@@ -202,7 +163,7 @@ Namespace Gears.DataSource
         ''' <param name="confirmData"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function confirmRecord(ByRef confirmData As GearsDTO) As GearsDTO
+        Public Overridable Function confirmRecord(ByVal confirmData As GearsDTO) As GearsDTO
             '返り値用
             Dim adjustedDTO As GearsDTO = New GearsDTO(confirmData)
 
@@ -218,7 +179,7 @@ Namespace Gears.DataSource
 
                 '既存レコードの確認を行うSQLを作成
                 Dim selSqlb As New SqlBuilder(sqlb, False) 'フィルタ/セレクタを削除しコピー
-                selSqlb.DataSource = Me.UpdateTarget 'ビューではなく、元テーブルに対しSELECTを行う(キー項目は必ず元テーブルに含まれるが、ビューはその限りではない)
+                selSqlb.DataSource = Me.TargetTable 'ビューではなく、元テーブルに対しSELECTを行う(キー項目は必ず元テーブルに含まれるが、ビューはその限りではない)
 
                 If keyFilter.Count > 0 Then 'キー選択がある場合、フィルタとしてそのまま追加
                     Dim isKeyUpdateOccur As Boolean = False

@@ -5,13 +5,13 @@ Namespace Gears.DataSource
 
     Public Interface IDataSource
 
-        Function gSelect(ByRef data As GearsDTO) As DataTable
-        Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByRef data As GearsDTO) As DataTable
-        Function gSelectCount(ByRef data As GearsDTO) As Integer
+        Function gSelect(ByVal data As GearsDTO) As DataTable
+        Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByVal data As GearsDTO) As DataTable
+        Function gSelectCount(ByVal data As GearsDTO) As Integer
 
-        Sub gInsert(ByRef data As GearsDTO)
-        Sub gUpdate(ByRef data As GearsDTO)
-        Sub gDelete(ByRef data As GearsDTO)
+        Sub gInsert(ByVal data As GearsDTO)
+        Sub gUpdate(ByVal data As GearsDTO)
+        Sub gDelete(ByVal data As GearsDTO)
 
         Function gResultSet() As DataTable
 

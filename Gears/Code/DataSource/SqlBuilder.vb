@@ -97,6 +97,30 @@ Namespace Gears.DataSource
             End Set
         End Property
 
+        Public Shared Function GetDbServerType(ByVal conName As String) As DbServerType
+            Dim result As DbServerType = DbServerType.Oracle
+            Dim db As String = GearsSqlExecutor.GetConnectionString(conName).ProviderName.ToString
+
+            Select Case db
+                Case "System.Data.SqlClient"
+                    result = DbServerType.SQLServer
+                Case "System.Data.OleDb"
+                    result = DbServerType.OLEDB
+                Case "System.Data.OracleClient"
+                    result = DbServerType.Oracle
+                Case "Oracle.DataAccess.Client"
+                    result = DbServerType.Oracle
+                Case "MySql.Data.MySqlClient"
+                    result = DbServerType.MySQL
+                Case "Devart.Data.PostgreSql"
+                    result = DbServerType.PostgreSQL
+                Case "System.Data.SQLite"
+                    result = DbServerType.SQLite
+            End Select
+            Return result
+
+        End Function
+
         ''' <summary>
         ''' 一度に値を複数設定する場合のセパレータ(カンマ区切りなど)
         ''' </summary>
@@ -117,12 +141,12 @@ Namespace Gears.DataSource
 
         Public Sub New(ByVal conName As String, ByVal dsName As String, Optional ByVal aType As ActionType = ActionType.SEL)
             MyBase.New(aType)
-            DbServer = GearsSqlExecutor.getDbServerType(GearsSqlExecutor.getDBType(conName))
+            DbServer = GetDbServerType(conName)
             DataSource = New SqlDataSource(dsName)
         End Sub
         Public Sub New(ByVal conName As String, ByVal ds As SqlDataSource, Optional ByVal aType As ActionType = ActionType.SEL)
             MyBase.New(aType)
-            DbServer = GearsSqlExecutor.getDbServerType(GearsSqlExecutor.getDBType(conName))
+            DbServer = GetDbServerType(conName)
             DataSource = ds
         End Sub
 

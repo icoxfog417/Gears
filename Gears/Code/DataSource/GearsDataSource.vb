@@ -2,6 +2,7 @@
 Imports System.Data
 Imports System.Collections.Generic
 Imports Gears.Validation
+Imports Gears.Util
 
 Namespace Gears.DataSource
 
@@ -13,10 +14,37 @@ Namespace Gears.DataSource
         Implements IDataSource
 
         ''' <summary>
-        ''' SQL実行用オブジェクト
+        ''' データを選択するためのビュー/テーブル名。
         ''' </summary>
-        ''' <remarks></remarks>
-        Protected GExecutor As GearsSqlExecutor = Nothing
+        Private _selectView As SqlDataSource = Nothing
+        Public Property SelectView As SqlDataSource
+            Get
+                If _selectView IsNot Nothing Then
+                    Return _selectView
+                Else
+                    Return TargetTable
+                End If
+            End Get
+            Set(value As SqlDataSource)
+                _selectView = value
+            End Set
+        End Property
+
+        Private _targetTable As SqlDataSource = Nothing
+        ''' <summary>
+        ''' データの更新対象となるビュー/テーブル名。
+        ''' </summary>
+        Public Property TargetTable As SqlDataSource
+            Get
+                Return _targetTable
+            End Get
+            Set(value As SqlDataSource)
+                _targetTable = value
+                If _selectView Is Nothing Then
+                    _selectView = _targetTable
+                End If
+            End Set
+        End Property
 
         ''' <summary>
         ''' 楽観ロックの定義
@@ -56,18 +84,18 @@ Namespace Gears.DataSource
             End Set
         End Property
 
-        Public Sub New(ByVal conName As String)
-            GExecutor = New GearsSqlExecutor(conName)
-        End Sub
+        Private _connectionName As String = ""
+        Public ReadOnly Property ConnectionName As String
+            Get
+                Return _connectionName
+            End Get
+        End Property
 
-        ''' <summary>
-        ''' 接続文字列を取得する
-        ''' </summary>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function getConnectionName() As String
-            Return GExecutor.getConnectionName()
-        End Function
+        Private _resultSet As New DataTable
+
+        Public Sub New(ByVal conName As String)
+            _connectionName = conName
+        End Sub
 
         ''' <summary>
         ''' 選択/更新処理を実行する
@@ -75,7 +103,7 @@ Namespace Gears.DataSource
         ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function execute(ByRef dto As GearsDTO) As DataTable
+        Public Function execute(ByVal dto As GearsDTO) As DataTable
 
             Try
                 'データベース更新処理
@@ -96,12 +124,13 @@ Namespace Gears.DataSource
                         gUpdate(dto)
                 End Select
 
+            Catch ex As GearsException
+                Throw
             Catch ex As Exception
                 Throw
-
             End Try
 
-            Return GExecutor.getDataSet
+            Return _resultSet
 
         End Function
 
@@ -111,13 +140,14 @@ Namespace Gears.DataSource
         ''' <param name="data"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function makeSqlBuilder(ByRef data As GearsDTO) As SqlBuilder
+        Public Overridable Function makeSqlBuilder(ByVal data As GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = Nothing
+            Dim dbServer As DbServerType = SqlBuilder.GetDbServerType(ConnectionName)
             If Not data Is Nothing Then
                 sqlb = data.toSqlBuilder()
-                sqlb.DbServer = GExecutor.getDbServerType()
+                sqlb.DbServer = dbServer
             Else
-                sqlb = New SqlBuilder(GExecutor.getDbServerType(), ActionType.SEL)
+                sqlb = New SqlBuilder(dbServer, ActionType.SEL)
             End If
             sqlb.IsMultiByte = _isMultiByte
 
@@ -138,7 +168,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected MustOverride Sub setDataSource(ByRef sqlb As SqlBuilder)
+        Protected MustOverride Sub setDataSource(ByVal sqlb As SqlBuilder)
 
         ''' <summary>
         ''' 実行用のSQLを作成するためのメソッド
@@ -146,7 +176,7 @@ Namespace Gears.DataSource
         ''' <param name="dataFrom"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function makeExecute(ByRef dataFrom As GearsDTO) As SqlBuilder
+        Public Overridable Function makeExecute(ByVal dataFrom As GearsDTO) As SqlBuilder
             Return makeSqlBuilder(dataFrom)
         End Function
 
@@ -156,7 +186,7 @@ Namespace Gears.DataSource
         ''' <param name="data"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function gSelect(ByRef data As GearsDTO) As System.Data.DataTable Implements IDataSource.gSelect
+        Public Function gSelect(ByVal data As GearsDTO) As System.Data.DataTable Implements IDataSource.gSelect
             Dim sqlb As SqlBuilder = makeSqlBuilder(data)
             Return gSelect(sqlb)
         End Function
@@ -167,16 +197,31 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function gSelect(ByRef sqlb As SqlBuilder) As System.Data.DataTable
+        Public Overridable Function gSelect(ByVal sqlb As SqlBuilder) As System.Data.DataTable
             Try
-                GExecutor.load(sqlb)
+                Dim executor As New GearsSqlExecutor(ConnectionName)
+                _resultSet = executor.load(sqlb)
+                convertResultSet(_resultSet, sqlb)
             Catch ex As Exception
                 Throw
             End Try
 
-            Return GExecutor.getDataSet
+            Return _resultSet
 
         End Function
+
+        '項目名変換を行う
+        Public Sub convertResultSet(ByRef dataSet As DataTable, ByVal sqlb As SqlBuilder)
+            Dim conv As INameExchanger = sqlb.ItemColExchanger
+            If Not conv Is Nothing AndAlso Not dataSet Is Nothing AndAlso dataSet.Columns.Count > 0 Then
+                For Each col As DataColumn In dataSet.Columns
+
+                    If Not String.IsNullOrEmpty(conv.changeColToItem(col.ColumnName)) Then
+                        col.ColumnName = conv.changeColToItem(col.ColumnName)
+                    End If
+                Next
+            End If
+        End Sub
 
         ''' <summary>
         ''' ページサイズを指定したSelectを行う
@@ -186,7 +231,7 @@ Namespace Gears.DataSource
         ''' <param name="data"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByRef data As GearsDTO) As DataTable Implements IDataSource.gSelectPageBy
+        Public Function gSelectPageBy(ByVal maximumRows As Integer, ByVal startRowIndex As Integer, ByVal data As GearsDTO) As DataTable Implements IDataSource.gSelectPageBy
             Dim sqlb As SqlBuilder = makeSqlBuilder(data)
             sqlb.setPaging(startRowIndex, maximumRows)
             Return gSelect(sqlb)
@@ -199,7 +244,7 @@ Namespace Gears.DataSource
         ''' <param name="data"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function gSelectCount(ByRef data As GearsDTO) As Integer Implements IDataSource.gSelectCount
+        Public Function gSelectCount(ByVal data As GearsDTO) As Integer Implements IDataSource.gSelectCount
             Dim sqlb As SqlBuilder = makeSqlBuilder(data)
             Return gSelectCount(sqlb)
         End Function
@@ -210,16 +255,18 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function gSelectCount(ByRef sqlb As SqlBuilder) As Integer
+        Public Overridable Function gSelectCount(ByVal sqlb As SqlBuilder) As Integer
             Dim count As Integer = 0
 
             Try
-                count = GExecutor.count(sqlb)
+                Dim executor As New GearsSqlExecutor(ConnectionName)
+                count = executor.count(sqlb)
             Catch ex As Exception
                 Throw
             End Try
 
             Return count
+
         End Function
 
         ''' <summary>
@@ -227,7 +274,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="data"></param>
         ''' <remarks></remarks>
-        Public Sub gInsert(ByRef data As GearsDTO) Implements IDataSource.gInsert
+        Public Sub gInsert(ByVal data As GearsDTO) Implements IDataSource.gInsert
             Dim sqlb As SqlBuilder = makeExecute(data)
             gInsert(sqlb)
         End Sub
@@ -237,7 +284,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Public Overridable Sub gInsert(ByRef sqlb As SqlBuilder)
+        Public Overridable Sub gInsert(ByVal sqlb As SqlBuilder)
             executeProcess(sqlb)
         End Sub
 
@@ -246,7 +293,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="data"></param>
         ''' <remarks></remarks>
-        Public Sub gUpdate(ByRef data As GearsDTO) Implements IDataSource.gUpdate
+        Public Sub gUpdate(ByVal data As GearsDTO) Implements IDataSource.gUpdate
             Dim sqlb As SqlBuilder = makeExecute(data)
             gUpdate(sqlb)
         End Sub
@@ -256,7 +303,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Public Overridable Sub gUpdate(ByRef sqlb As SqlBuilder)
+        Public Overridable Sub gUpdate(ByVal sqlb As SqlBuilder)
             executeProcess(sqlb)
         End Sub
 
@@ -265,7 +312,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="data"></param>
         ''' <remarks></remarks>
-        Public Sub gDelete(ByRef data As GearsDTO) Implements IDataSource.gDelete
+        Public Sub gDelete(ByVal data As GearsDTO) Implements IDataSource.gDelete
             Dim sqlb As SqlBuilder = makeExecute(data)
             gDelete(sqlb)
         End Sub
@@ -275,7 +322,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Public Overridable Sub gDelete(ByRef sqlb As SqlBuilder)
+        Public Overridable Sub gDelete(ByVal sqlb As SqlBuilder)
             executeProcess(sqlb)
         End Sub
 
@@ -284,7 +331,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="data"></param>
         ''' <remarks></remarks>
-        Public Sub gSave(ByRef data As GearsDTO)
+        Public Sub gSave(ByVal data As GearsDTO)
             Dim sqlb As SqlBuilder = makeExecute(data)
             gSave(sqlb)
         End Sub
@@ -294,11 +341,13 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Public Overridable Sub gSave(ByRef sqlb As SqlBuilder)
+        Public Overridable Sub gSave(ByVal sqlb As SqlBuilder)
             If sqlb.Action = ActionType.INS Then
                 gInsert(sqlb)
             ElseIf sqlb.Action = ActionType.UPD Then
                 gUpdate(sqlb)
+            Else
+                'TODO INS/UPDの判断が行われていないケースの対処
             End If
         End Sub
 
@@ -307,11 +356,18 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Sub executeProcess(ByRef sqlb As SqlBuilder)
+        Protected Sub executeProcess(ByVal sqlb As SqlBuilder)
             beforeExecute(sqlb)
 
             Try
-                GExecutor.execute(sqlb) 'Saveの場合、ActionTypeはINS/UPDのどちらかに編集されている
+                Dim executor As New GearsSqlExecutor(ConnectionName)
+
+                'Saveの場合、ActionTypeはINS/UPDのどちらかに編集されていることを前提とする
+                executor.execute(sqlb)
+
+                '実行結果を読み込む
+                loadExecuted(sqlb)
+
             Catch ex As Exception
                 Throw
             End Try
@@ -320,12 +376,34 @@ Namespace Gears.DataSource
 
         End Sub
 
+        Protected Sub loadExecuted(ByVal sqlb As SqlBuilder)
+
+            '実行後のデータを読み込む
+            Dim sqlbForResult As New SqlBuilder(sqlb)
+            sqlbForResult.DataSource = SelectView 'SELECTビューから、更新対象を読み込む
+
+            If sqlb.Action = ActionType.INS Then
+                'INSERTの場合フィルタ値がないため、設定値をフィルタ値に変換してセット
+                For Each selection As SqlSelectItem In sqlb.Selection
+                    If selection.IsKey And sqlbForResult.Filter(selection.Column) Is Nothing Then
+                        sqlbForResult.addFilter(selection.toFilter)
+                    End If
+                Next
+            End If
+
+            '選択項目をクリア
+            sqlbForResult.Selection.Clear()
+
+            gSelect(sqlbForResult)
+
+        End Sub
+
         ''' <summary>
         ''' 更新処理実行前に行われるトリガ処理
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Overridable Sub beforeExecute(ByRef sqlb As SqlBuilder)
+        Protected Overridable Sub beforeExecute(ByVal sqlb As SqlBuilder)
             Dim result As Boolean = True
 
             If Not ModelValidator Is Nothing Then
@@ -349,7 +427,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Overridable Sub afterExecute(ByRef sqlb As SqlBuilder)
+        Protected Overridable Sub afterExecute(ByVal sqlb As SqlBuilder)
         End Sub
 
         ''' <summary>
@@ -358,7 +436,7 @@ Namespace Gears.DataSource
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function gResultSet() As System.Data.DataTable Implements IDataSource.gResultSet
-            Return GExecutor.getDataSet
+            Return _resultSet
         End Function
 
         ''' <summary>
@@ -369,7 +447,7 @@ Namespace Gears.DataSource
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function Item(ByVal index As Integer, Optional ByVal rowIndex As Integer = 0) As Object
-            Return GExecutor.getDataSetValue(index, rowIndex)
+            Return DataSetReader.Item(_resultSet, index, rowIndex)
         End Function
 
         ''' <summary>
@@ -380,7 +458,7 @@ Namespace Gears.DataSource
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function Item(ByVal index As String, Optional ByVal rowIndex As Integer = 0) As Object
-            Return GExecutor.getDataSetValue(index, rowIndex)
+            Return DataSetReader.Item(_resultSet, index, rowIndex)
         End Function
 
         ''' <summary>
@@ -405,9 +483,9 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Function getLockCheckColValue() As List(Of SqlFilterItem)
             Dim param As New List(Of SqlFilterItem)
-            If GExecutor.getDataSet.Rows.Count > 0 Then
+            If _resultSet.Rows.Count > 0 Then
                 For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
-                    Dim value As Object = GearsSqlExecutor.getDataSetValue(item.Key, GExecutor.getDataSet)
+                    Dim value As Object = DataSetReader.Item(_resultSet, item.Key)
                     param.Add(New SqlFilterItem(item.Key).eq(value))
                 Next
             End If
@@ -421,7 +499,7 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
-        Protected Sub setLockCheckColValueToSql(ByRef sqlb As SqlBuilder)
+        Protected Sub setLockCheckColValueToSql(ByVal sqlb As SqlBuilder)
             For Each item As KeyValuePair(Of String, LockType) In LockCheckCol
                 '元々設定されていた場合はそちらを優先する
                 If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then

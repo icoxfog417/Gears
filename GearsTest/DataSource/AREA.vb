@@ -9,13 +9,9 @@ Namespace DataSource
 
         Public Sub New(ByVal conStr As String)
             MyBase.New(conStr, SqlBuilder.DS("AREA"))
-            If GExecutor.getDbServerType = DbServerType.OLEDB Then
-                setViewAndTarget(SqlBuilder.DS("[AREA$]"))
-            End If
-
         End Sub
 
-        Public Overrides Function makeSqlBuilder(ByRef data As Gears.GearsDTO) As SqlBuilder
+        Public Overrides Function makeSqlBuilder(ByVal data As Gears.GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = MyBase.makeSqlBuilder(data)
 
             sqlb.addSelection(SqlBuilder.S("AREA").ASC)

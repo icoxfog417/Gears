@@ -11,14 +11,17 @@ Namespace GearsTest
 
         Private Const DefaultConnection As String = "SQLiteConnect"
         Private Const TestDataNumberIndex As String = "1"
-        Private Const SaveKey As String = "1010"
+        Private Const InsertKey As String = "1010"
+        Private Const UpdateKey As String = "1011"
+        Private Const DeleteKey As String = "1012"
+        Private Const SaveKey As String = "1013"
 
         <TestFixtureSetUp()>
         Public Sub setup()
             SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO BETWEEN '" + TestDataNumberIndex + "000' AND '" + TestDataNumberIndex + "999' ")
 
-            '8000～8001までのテストデータを作成
-            Dim params As New Dictionary(Of String, String)
+            '1000～1003までのテストデータを作成
+            Dim params As New Dictionary(Of String, Object)
             params.Add("F0", "1000")
             params.Add("F1", "DB TARO")
             params.Add("F2", "SALESMAN")
@@ -57,7 +60,7 @@ Namespace GearsTest
         End Sub
 
         <Test()>
-        Public Sub gSelectTest()
+        Public Sub gSelect()
             Dim ds As New DataSource.EMP(DefaultConnection)
             Dim selectDto As New GearsDTO(ActionType.SEL)
 
@@ -178,113 +181,149 @@ Namespace GearsTest
 
         'End Sub
 
-
         <Test()>
-        Public Sub gExecuteTest()
+        Public Sub gExecuteInsert()
             '事前に消しておく
-            SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO = '" + SaveKey + "'")
+            deleteRow(InsertKey)
 
-            '楽観ロックカラムの設定
+            'データソースの用意
             Dim ds As New DataSource.EMP(DefaultConnection)
-            ds.addLockCheckCol("UPD_YMD", LockType.UDATESTR)
-            ds.addLockCheckCol("UPD_HMS", LockType.UTIMESTR)
-            ds.addLockCheckCol("UPD_USR", LockType.USER)
 
             'INSERT
             Dim insertDto As New GearsDTO(ActionType.INS)
-            insertDto.addSelection(SqlBuilder.S("EMPNO").setValue(SaveKey).asKey())
-            insertDto.addSelection(SqlBuilder.S("ENAME").setValue("ランディージョンソン"))
-            insertDto.addSelection(SqlBuilder.S("JOB").setValue("FREE"))
+            insertDto.Add(SqlBuilder.S("EMPNO").setValue(InsertKey).asKey())
+            insertDto.Add(SqlBuilder.S("ENAME").setValue("ランディージョンソン"))
+            insertDto.Add(SqlBuilder.S("JOB").setValue("FREE"))
             insertDto.Action = ActionType.INS
             ds.execute(insertDto)
 
-            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
-            Assert.AreEqual(SaveKey, ds.Item("EMPNO").ToString)
+            Assert.IsTrue(compareDataSet(InsertKey, ds.gResultSet))
+            Assert.IsFalse(String.IsNullOrEmpty(ds.Item("UPD_YMD").ToString)) '楽観ロックのカラムセットを確認(DataSource/EMPを参照)
+            Assert.IsFalse(String.IsNullOrEmpty(ds.Item("UPD_HMS").ToString))
+
+            '終わったら消す
+            deleteRow(InsertKey)
+
+        End Sub
+
+        <Test()>
+        Public Sub gExecuteUpdatet()
+            '事前に作成しておく
+            insertRow(UpdateKey)
+
+            'データソースの用意
+            Dim ds As New DataSource.EMP(DefaultConnection)
 
             'UPDATE
             Dim updateDto As New GearsDTO(ActionType.UPD)
-            updateDto.addSelection(SqlBuilder.S("SAL").setValue("9999"))
-            updateDto.addSelection(SqlBuilder.S("HIREDATE").setValue("9000-01-01")) 'DBごとに書式を設定する必要あり(SQLiteだとハイフンつなぎ)
-            updateDto.addFilter(SqlBuilder.F("EMPNO").eq(SaveKey).asKey())
+            updateDto.Add(SqlBuilder.F("EMPNO").eq(UpdateKey).asKey())
+            updateDto.Add(SqlBuilder.S("SAL").setValue("9999"))
+            updateDto.Add(SqlBuilder.S("HIREDATE").setValue("9000-01-01")) 'DBごとに書式を設定する必要あり(SQLiteだとハイフンつなぎ)
             ds.execute(updateDto)
 
             Assert.AreEqual(1, ds.gResultSet.Rows.Count)
             Assert.AreEqual("9999", ds.Item("SAL").ToString)
+            Assert.AreEqual("90000101", CDate(ds.Item("HIREDATE")).ToString("yyyyMMdd"))
 
-            'DELETE
-            updateDto.Action = ActionType.DEL
-            ds.execute(updateDto)
-
-            Assert.AreEqual(0, SimpleDBA.executeSql(DefaultConnection, "SELECT 1 FROM EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", SaveKey)).Rows.Count)
+            '削除
+            deleteRow(UpdateKey)
 
         End Sub
 
         <Test()>
-        Public Sub gSaveTest()
+        Public Sub gDelete()
+            '事前に作成しておく
+            insertRow(DeleteKey)
+
+            'データソースの用意
             Dim ds As New DataSource.EMP(DefaultConnection)
-            ds.addLockCheckCol("UPD_YMD", LockType.UDATESTR)
-            ds.addLockCheckCol("UPD_HMS", LockType.UTIMESTR)
 
-            Dim saveDto As New GearsDTO(ActionType.SAVE)
+            'DELETE
+            Dim deleteDto As New GearsDTO(ActionType.DEL)
+            deleteDto.Add(SqlBuilder.F("EMPNO").eq(DeleteKey).asKey())
+            ds.execute(deleteDto)
 
-            saveDto.addSelection(SqlBuilder.S("EMPNO").setValue(SaveKey).asKey)
-            saveDto.addSelection(SqlBuilder.S("ENAME").setValue("山手五郎"))
-            saveDto.addSelection(SqlBuilder.S("JOB").setValue("TRAIN"))
-
-            'SAVE
-            saveDto.Action = ActionType.SAVE 'INSERT判断
-            ds.execute(saveDto)
-
-            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
-            Assert.AreEqual(SaveKey, ds.Item("EMPNO").ToString)
-
-            'ロックキーを設定
-            Dim savedLock As List(Of SqlFilterItem) = ds.getLockCheckColValue
-            saveDto.addLockItems(savedLock)
-
-            saveDto.addSelection(SqlBuilder.S("COMM").setValue("アップ"))
-            ds.execute(saveDto) 'UPDATE判断
-
-            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
-            Assert.AreEqual("アップ", ds.Item("COMM"))
-
-            'ロックエラー
-            saveDto.removeLockItem()
-            saveDto.addLockItems(savedLock)
-            Try
-                ds.execute(saveDto)
-            Catch ex As Exception
-                Assert.IsInstanceOf(GetType(GearsOptimisticLockException), ex)
-            End Try
-
-            'キー変更更新
-            saveDto.addFilter(SqlBuilder.F("EMPNO").eq("9999")) 'キー9999をnewKey(1000)に変更して更新、という状況をエミュレート
-            saveDto.IsPermitOtherKeyUpdate = False
-            Try
-                ds.execute(saveDto)
-            Catch ex As Exception
-                Assert.IsInstanceOf(GetType(GearsSqlException), ex)
-            End Try
-
-            saveDto.IsPermitOtherKeyUpdate = True
-            saveDto.addSelection(SqlBuilder.S("SAL").setValue("10"))
-            saveDto.removeLockItem()
-            saveDto.addLockItems(ds.getLockCheckColValue)
-
-            ds.execute(saveDto)
-
-            Assert.AreEqual(1, ds.gResultSet.Rows.Count)
-            Assert.AreEqual("10", ds.Item("SAL"))
-
-            '削除しておく
-            Dim clearDto As New GearsDTO(ActionType.DEL)
-            clearDto.addFilter(SqlBuilder.F("EMPNO").eq(SaveKey).asKey())
-            ds.execute(clearDto)
+            Assert.AreEqual(0, SimpleDBA.executeSql(DefaultConnection, "SELECT 1 FROM EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", DeleteKey)).Rows.Count)
 
         End Sub
 
+        <Test()>
+        Public Sub gExecuteSaveInsert()
+            '事前に消しておく
+            deleteRow(SaveKey)
 
+            Dim ds As New DataSource.EMP(DefaultConnection)
 
+            Dim saveDto As New GearsDTO(ActionType.SAVE)
+            saveDto.addSelection(SqlBuilder.S("EMPNO").setValue(SaveKey).asKey)
+            saveDto.addSelection(SqlBuilder.S("ENAME").setValue("INSERT MAN"))
+            saveDto.addSelection(SqlBuilder.S("JOB").setValue("TRAIN"))
+
+            ds.execute(saveDto)
+
+            Assert.IsTrue(compareDataSet(SaveKey, ds.gResultSet))
+            deleteRow(SaveKey)
+
+        End Sub
+
+        <Test()>
+        Public Sub gExecuteSaveUpdate()
+            '事前に登録しておく
+            insertRow(SaveKey)
+
+            Dim ds As New DataSource.EMP(DefaultConnection)
+
+            Dim saveDto As New GearsDTO(ActionType.SAVE)
+            saveDto.addFilter(SqlBuilder.F("EMPNO").eq(SaveKey).asKey)
+            saveDto.Add(SqlBuilder.S("SAL").setValue("9999"))
+            saveDto.Add(SqlBuilder.S("HIREDATE").setValue("1000-01-01"))
+
+            ds.execute(saveDto)
+
+            Assert.IsTrue(compareDataSet(SaveKey, ds.gResultSet))
+
+            deleteRow(SaveKey)
+
+        End Sub
+
+        <Test()>
+        Public Sub optimisticLock()
+
+        End Sub
+
+        <Test()>
+        Public Sub keyUpdate()
+
+        End Sub
+
+        Private Function getCount(ByVal key As String) As Integer
+            Dim cnt As Integer = SimpleDBA.executeSql(DefaultConnection, "SELECT 1 FROM EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", key)).Rows.Count
+            Return cnt
+        End Function
+
+        Private Function compareDataSet(ByVal key As String, ByVal dataset As DataTable) As Boolean
+            Dim answer As DataTable = SimpleDBA.executeSql(DefaultConnection, "SELECT * FROM V_EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", key))
+
+            Dim result As Boolean = True
+            result = (answer.Columns.Count = dataset.Columns.Count)
+
+            If result Then
+                For Each column As DataColumn In answer.Columns
+                    If answer.Rows(0)(column.ColumnName).ToString <> dataset.Rows(0)(column.ColumnName).ToString Then result = False
+                Next
+            End If
+
+            Return result
+
+        End Function
+
+        Private Sub deleteRow(ByVal key As String)
+            SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", key))
+        End Sub
+
+        Private Sub insertRow(ByVal key As String)
+            SimpleDBA.executeSql(DefaultConnection, "INSERT INTO EMP(EMPNO) VALUES (:emp)", SimpleDBA.makeParameters("emp", key))
+        End Sub
 
     End Class
 

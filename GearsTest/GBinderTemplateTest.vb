@@ -2,6 +2,7 @@
 Imports Gears
 Imports Gears.Binder
 Imports Gears.DataSource
+Imports Gears.Util
 
 Namespace GearsTest
 
@@ -53,20 +54,20 @@ Namespace GearsTest
             '列不指定バインド
             gbind.dataBind(dropDown, deptData)
             For i As Integer = 0 To dropDown.Items.Count - 1
-                Assert.AreEqual(dropDown.Items(i).Value, GearsSqlExecutor.getDataSetValue(0, deptData, i))
-                Assert.AreEqual(dropDown.Items(i).Text, GearsSqlExecutor.getDataSetValue(1, deptData, i))
+                Assert.AreEqual(dropDown.Items(i).Value, DataSetReader.Item(deptData, 0, i))
+                Assert.AreEqual(dropDown.Items(i).Text, DataSetReader.Item(deptData, 1, i))
             Next
 
             'アタッチ
             gbind.dataAttach(dropDown, empData)
 
-            Assert.AreEqual(dropDown.SelectedValue, GearsSqlExecutor.getDataSetValue("DNAME", empData))
+            Assert.AreEqual(dropDown.SelectedValue, DataSetReader.Item(empData, "DNAME"))
 
             'setter/getter
             dropDown.ClearSelection()
 
-            gbind.setValue(dropDown, GearsSqlExecutor.getDataSetValue("DNAME", empData))
-            Assert.AreEqual(dropDown.SelectedValue, GearsSqlExecutor.getDataSetValue("DNAME", empData))
+            gbind.setValue(dropDown, DataSetReader.Item(empData, "DNAME"))
+            Assert.AreEqual(dropDown.SelectedValue, DataSetReader.Item(empData, "DNAME"))
             Assert.AreEqual(dropDown.SelectedValue, gbind.getValue(dropDown))
 
 
@@ -170,8 +171,8 @@ Namespace GearsTest
             gbind.dataAttach(radio, empRow)
             gbind.dataAttach(check, empRow)
 
-            Assert.AreEqual(GearsSqlExecutor.getDataSetValue("DEPTNO", empRow), radio.SelectedValue)
-            Assert.AreEqual(GearsSqlExecutor.getDataSetValue("AREA", empRow), check.SelectedValue)
+            Assert.AreEqual(DataSetReader.Item(empRow, "DEPTNO"), radio.SelectedValue)
+            Assert.AreEqual(DataSetReader.Item(empRow, "AREA"), check.SelectedValue)
 
 
         End Sub

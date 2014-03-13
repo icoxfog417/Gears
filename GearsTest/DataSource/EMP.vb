@@ -9,9 +9,8 @@ Namespace DataSource
 
         Public Sub New(ByVal conStr As String)
             MyBase.New(conStr, SqlBuilder.DS("V_EMP"), SqlBuilder.DS("EMP"))
-            If GExecutor.getDbServerType = DbServerType.OLEDB Then
-                setViewAndTarget(SqlBuilder.DS("[EMP$]"))
-            End If
+            addLockCheckCol("UPD_YMD", LockType.UDATESTR)
+            addLockCheckCol("UPD_HMS", LockType.UTIMESTR)
         End Sub
 
     End Class

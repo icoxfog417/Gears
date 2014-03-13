@@ -18,12 +18,12 @@ Namespace GearsTest
             SimpleDBA.executeSql(DefaultConnection, "DELETE FROM EMP WHERE EMPNO BETWEEN '" + TestDataNumberIndex + "000' AND '" + TestDataNumberIndex + "999' ")
 
             '8000～8001までのテストデータを作成
-            Dim params As New Dictionary(Of String, String)
+            Dim params As New Dictionary(Of String, Object)
             params.Add("F0", "8000")
             params.Add("F1", "TEST TARO")
             params.Add("F2", "ANALYST")
             params.Add("F3", "7566")
-            params.Add("F4", "2012-07-01")
+            params.Add("F4", DateTime.Now)
             params.Add("F5", "800")
             params.Add("F6", "GearsMediatorTest")
             params.Add("F7", "20")

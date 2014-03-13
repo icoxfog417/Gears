@@ -236,7 +236,7 @@ Namespace Gears
         ''' <param name="isAutoLoadAttr">属性を自動ロードするか(デフォルトTrue)</param>
         ''' <remarks></remarks>
         Public Sub New(ByRef con As Control, ByVal conName As String, Optional ByVal dns As String = "", Optional isAutoLoadAttr As Boolean = True)
-            ConnectionName = conName
+            Me.ConnectionName = conName
             DsNameSpace = dns
             initInstance(con, isAutoLoadAttr)
 
@@ -250,7 +250,7 @@ Namespace Gears
         ''' <param name="isAutoLoadAttr"></param>
         ''' <remarks></remarks>
         Public Sub New(ByRef con As Control, ByRef gs As GearsDataSource, Optional isAutoLoadAttr As Boolean = True)
-            ConnectionName = gs.getConnectionName
+            Me.ConnectionName = gs.ConnectionName
             _DataSource = gs
             initInstance(con, isAutoLoadAttr)
 
