@@ -128,7 +128,8 @@ Namespace Gears
                         If ginfo.IsKey Then
                             sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())
                         Else
-                            sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value))
+                            'コントロールの場合、わざわざ%をつけてくれることはないので%でくくる
+                            sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value, isWrapWhenLike:=True))
                         End If
                     End If
 

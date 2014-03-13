@@ -14,7 +14,7 @@ Namespace Gears
         End Sub
 
         Public Function Relate(ParamArray cons As Control()) As gRuleExpression
-            Return Relate(cons)
+            Return Relate(cons.ToList)
         End Function
 
         Public Function Relate(ByVal cons As List(Of Control)) As gRuleExpression
@@ -57,15 +57,23 @@ Namespace Gears
         End Sub
 
         Public Function ToThe(ByVal toControl As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
-            Return _executor(_control, toControl, _dto)
+            Return _executor(_control, toControl, chooseDto(dto))
         End Function
 
         Public Function ToAll(Optional ByVal dto As GearsDTO = Nothing) As Boolean
-            Return _executor(_control, Nothing, _dto)
+            Return _executor(_control, Nothing, chooseDto(dto))
         End Function
 
         Public Function ToMyself(Optional ByVal dto As GearsDTO = Nothing) As Boolean
-            Return _executor(_control, _control, dto)
+            Return _executor(_control, _control, chooseDto(dto))
+        End Function
+
+        Private Function chooseDto(ByVal dto As GearsDTO) As GearsDTO
+            If dto IsNot Nothing Then
+                Return dto
+            Else
+                Return _dto
+            End If
         End Function
 
     End Class

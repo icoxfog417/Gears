@@ -17,7 +17,7 @@ Namespace Gears
     ''' dataBindによりリストなどの選択値、dataAttachにより実際の値がセットされます。<br/>
     ''' 例えば、A・B・Cというの選択肢があり選択中の値はB、という場合、A・B・Cという値はdataBindによりロードされ、
     ''' Bという値はdataAttachにより設定されます。dataAttachは主に特定の一行のDataTableを引数とし、この中で自Controlに該当する値を選択しセットします。
-    ''' <see cref="Gears.Binder.GBinderTemplate.dataAttach"/>
+    ''' <see cref="Gears.Binder.GearsDataBinder.dataAttach"/>
     ''' <br/>
     ''' なお、値の設定はsetValueを使用し直接的に行うことも可能です。dataBind/dataAttachによるプロセスはGearsPage等から自動的に処理される際に使用されます<br/>
     ''' <br/>

@@ -1,4 +1,5 @@
-﻿
+﻿Imports System.Data
+
 Namespace Gears.Util
 
     Public Class DataSetReader

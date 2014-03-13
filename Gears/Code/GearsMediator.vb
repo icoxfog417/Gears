@@ -656,7 +656,7 @@ Namespace Gears
         End Function
 
         Public Function isRegisteredControl(ByVal control As Control) As Boolean
-            If Not control Is Nothing AndAlso _gcontrols.ContainsKey(control.ID) Then
+            If (control IsNot Nothing AndAlso control.ID IsNot Nothing) AndAlso _gcontrols.ContainsKey(control.ID) Then
                 Return True
             Else
                 Return False

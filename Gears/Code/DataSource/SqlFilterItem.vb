@@ -151,11 +151,11 @@ Namespace Gears.DataSource
                 Case SqlFilterItem.TXT_LTEQ
                     Return lteq(value)
                 Case SqlFilterItem.TXT_LIKE
-                    Return likes(If(Not isWrapWhenLike, value, "%" + value + "%"))
+                    Return If(isWrapWhenLike And Not String.IsNullOrEmpty(value), likes("%" + value + "%"), likes(value))
                 Case SqlFilterItem.TXT_START_WITH
-                    Return likes(If(Not isWrapWhenLike, value, value + "%"))
+                    Return If(isWrapWhenLike And Not String.IsNullOrEmpty(value), likes(value + "%"), likes(value))
                 Case SqlFilterItem.TXT_END_WITH
-                    Return likes(If(Not isWrapWhenLike, value, "%" + value))
+                    Return If(isWrapWhenLike And Not String.IsNullOrEmpty(value), likes("%" + value), likes(value))
                 Case Else
                     Return Me 'Continue Method Chain
             End Select

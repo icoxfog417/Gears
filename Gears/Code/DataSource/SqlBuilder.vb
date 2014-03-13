@@ -629,16 +629,6 @@ Namespace Gears.DataSource
             Dim gList As New List(Of String)
             Dim fList As New Dictionary(Of String, List(Of String))
 
-            '条件式を作成するマクロ
-            Dim makefPart = Function(tf As SqlFilterItem, tp As String)
-                                Dim part As String = If(tf.Negation, "NOT ", "")
-                                If tf.hasValue Then
-                                    Return part + formatColumn(tf) + " " + tf.Operand + " " + PARAM_HEAD + tp
-                                Else
-                                    Return part + formatColumn(tf) + " IS NULL" '値がない場合NULLで比較
-                                End If
-                            End Function
-
             For gIdx As Integer = 0 To groups.Count - 1
                 Dim g = groups(gIdx).filters.First.item.Group
 
@@ -654,29 +644,28 @@ Namespace Gears.DataSource
                         fName = fl.ParamName
                     End If
 
+                    Dim vList As New List(Of String)
+                    Dim isAdd As Boolean = False
                     If fl.hasValue AndAlso (TypeOf fl.Value Is String AndAlso fl.Value.ToString.Contains(ValueSeparator)) Then
                         'Separatorによる複数指定の場合、これをSplitしてOR条件で結合する
                         Dim values As List(Of String) = fl.Value.ToString.Split(ValueSeparator).ToList
-                        Dim vList As New List(Of String)
                         For vIdx As Integer = 0 To values.Count - 1
                             Dim vName As String = fName + "V" + vIdx.ToString
-                            vList.Add(makefPart(fl, vName))
-                            params.Add(vName, values(vIdx))
+                            addParam(vList, params, fl, vName, values(vIdx))
                         Next
-                        If fList.ContainsKey(fl.Column) Then fList(fl.Column).AddRange(vList) Else fList.Add(fl.Column, vList)
                     Else
-                        params.Add(fName, fl.Value)
-                        Dim fstate As String = makefPart(fl, fName)
-                        If fList.ContainsKey(fl.Column) Then fList(fl.Column).Add(fstate) Else fList.Add(fl.Column, New List(Of String) From {fstate})
-
+                        addParam(vList, params, fl, fName)
                     End If
+
+                    If fList.ContainsKey(fl.Column) Then fList(fl.Column).AddRange(vList) Else fList.Add(fl.Column, vList)
+
                 Next
 
                 Dim fListOfEachColumn As New List(Of String)
                 For Each fstate As KeyValuePair(Of String, List(Of String)) In fList
                     If fstate.Value.Count > 1 Then
                         fListOfEachColumn.Add("(" + String.Join(" OR ", fstate.Value) + ")") '同一カラムに対する複数の条件はORにして囲う
-                    Else
+                    ElseIf fstate.Value.Count > 0 Then
                         fListOfEachColumn.Add(fstate.Value.First)
                     End If
                 Next
@@ -700,6 +689,27 @@ Namespace Gears.DataSource
             Dim where As String = String.Join(" AND ", gList) '条件をANDで結合
 
             Return where
+
+        End Function
+
+        Private Function addParam(ByRef list As List(Of String), ByRef params As Dictionary(Of String, Object), filter As SqlFilterItem, pName As String, Optional ByVal value As Object = Nothing) As Boolean
+            Dim isAdd As Boolean = True
+            Dim part As String = If(filter.Negation, "NOT ", "")
+
+            If filter.hasValue Then
+                list.Add(part + formatColumn(filter) + " " + filter.Operand + " " + PARAM_HEAD + pName)
+                If value Is Nothing Then
+                    params.Add(pName, filter.Value)
+                Else
+                    params.Add(pName, value)
+                End If
+            ElseIf filter.Value Is Nothing Then
+                list.Add(part + formatColumn(filter) + " IS NULL") '値がNothingの場合、NULLで比較
+            Else
+                isAdd = False
+            End If
+
+            Return isAdd
 
         End Function
 

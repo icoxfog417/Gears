@@ -571,12 +571,11 @@ Namespace Gears
 
             GearsLogStack.setLog(fromControl.ID + " の送信情報を収集しました(DTO作成)。", sender.toString())
 
-            'TODO 切り分け
             If fromControl IsNot Nothing Then
-                If fromControl.ID = toControl.ID Then
-                    result = GMediator.execute(fromControl, sender)
-                Else
+                If toControl Is Nothing OrElse fromControl.ID <> toControl.ID Then
                     result = GMediator.send(fromControl, toControl, sender)
+                Else
+                    result = GMediator.execute(fromControl, sender)
                 End If
             Else
                 result = GMediator.execute(toControl, sender)
