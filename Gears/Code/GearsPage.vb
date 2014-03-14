@@ -20,7 +20,6 @@ Namespace Gears
     Public MustInherit Class GearsPage
         Inherits Page
 
-
         ''' <summary>
         ''' 使用するConnectionNameを設定するためのConfig<br/>
         ''' Master.xxxと設定することで、Masterページのプロパティに設定した値を参照させることができる<br/>
@@ -154,7 +153,7 @@ Namespace Gears
 
             MyBase.OnInit(e)
 
-            EvalAuthority(Me) 'コントロールロード後、権限評価を実施する
+            GIsAuth(Me) 'コントロールロード後、権限評価を実施する
 
         End Sub
 
@@ -415,7 +414,7 @@ Namespace Gears
         ''' <param name="fromCon"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function GMakeRule(ByVal fromCon As Control) As gRuleExpression
+        Public Function GRule(ByVal fromCon As Control) As gRuleExpression
             Return New gRuleExpression(fromCon, GMediator)
         End Function
 
@@ -479,9 +478,9 @@ Namespace Gears
         ''' <param name="atype"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function ToDTO(ByVal fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
+        Public Function GPack(ByVal fromControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
             Dim dto As GearsDTO = New GearsDTO(atype)
-            Return ToDTO(fromControl, Nothing, dto)
+            Return GPack(fromControl, Nothing, dto)
         End Function
 
         ''' <summary>
@@ -491,8 +490,8 @@ Namespace Gears
         ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function ToDTO(ByVal fromControl As Control, ByVal dto As GearsDTO) As GearsDTO
-            Return ToDTO(fromControl, Nothing, dto)
+        Public Function GPack(ByVal fromControl As Control, ByVal dto As GearsDTO) As GearsDTO
+            Return GPack(fromControl, Nothing, dto)
         End Function
 
         ''' <summary>
@@ -503,8 +502,8 @@ Namespace Gears
         ''' <param name="atype"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function ToDTO(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
-            Return ToDTO(fromControl, toControl, New GearsDTO(atype))
+        Public Function GPack(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal atype As ActionType = ActionType.SEL) As GearsDTO
+            Return GPack(fromControl, toControl, New GearsDTO(atype))
         End Function
 
         ''' <summary>
@@ -515,7 +514,7 @@ Namespace Gears
         ''' <param name="fromDto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Overridable Function ToDTO(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
+        Public Overridable Function GPack(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
             Return GMediator.makeDTO(fromControl, toControl, fromDto)
 
         End Function
@@ -550,7 +549,7 @@ Namespace Gears
 
             'バリデーションチェック 
             If dto.Action <> ActionType.SEL Then '更新系の場合、バリデーション処理を実行
-                If Not IsValidateOk(fromControl) Then
+                If Not GIsValid(fromControl) Then
                     GearsLogStack.setLog(fromControl.ID + " でのバリデーション処理でエラーが発生しました。")
                     Return False
                 End If
@@ -766,7 +765,7 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function IsValidateOk(Optional ByVal con As Control = Nothing) As Boolean
+        Public Function GIsValid(Optional ByVal con As Control = Nothing) As Boolean
             Dim result As Boolean = True
             Dim target As Control = con
             GLog.Clear()
@@ -901,7 +900,7 @@ Namespace Gears
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
-        Public Sub EvalAuthority(ByVal con As Control)
+        Public Sub GIsAuth(ByVal con As Control)
             'ロールベースコントロールについて、指定ロール以外の場合コントロールを非表示/非活性化
             ControlSearcher.fetchControls(con, AddressOf Me.fetchRoleBaseControl, AddressOf Me.isRoleBaseControl)
 
