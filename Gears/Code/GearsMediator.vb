@@ -41,6 +41,15 @@ Namespace Gears
             End Get
         End Property
 
+        Public Function GControl(ByVal con As Control) As GearsControl
+            Dim econ As Control = GearsControl.extractControl(con)
+            If econ IsNot Nothing Then
+                Return GControl(econ.ID)
+            Else
+                Return Nothing
+            End If
+        End Function
+
         ''' <summary>指定したIDのGearsControlを取得する</summary>
         Public Function GControl(ByVal id As String) As GearsControl
             If Not id Is Nothing AndAlso _gcontrols.ContainsKey(id) Then
@@ -70,6 +79,10 @@ Namespace Gears
             End If
 
             Return result
+        End Function
+
+        Public Function Relation(ByVal con As Control) As List(Of GearsControl)
+            Return Relation(GearsControl.extractControl(con).ID)
         End Function
 
         Private _log As New Dictionary(Of String, GearsException)
@@ -215,15 +228,16 @@ Namespace Gears
         Public Sub addRelation(ByVal conF As Control, ByVal conT As Control)
 
             Dim templateString As String = "{0} はまだフレームワークに登録されていません。GMakeRuleを行う前に、GAddを使用し、コントロールの登録を行ってください"
-            If GControl(conF.ID) Is Nothing Then
+            If GControl(conF) Is Nothing Then
                 Throw New GearsException(String.Format(templateString, conF.ID))
-            ElseIf GControl(conT.ID) Is Nothing Then
+            ElseIf GControl(conT) Is Nothing Then
                 Throw New GearsException(String.Format(templateString, conT.ID))
             Else
-                If Not _relations.ContainsKey(conF.ID) Then
-                    _relations.Add(conF.ID, New List(Of String) From {conT.ID})
+                Dim fcon As GearsControl = GControl(conF)
+                If Not _relations.ContainsKey(fcon.ControlID) Then
+                    _relations.Add(fcon.ControlID, New List(Of String) From {GControl(conT).ControlID})
                 Else
-                    _relations(conF.ID).Add(conT.ID)
+                    _relations(fcon.ControlID).Add(GControl(conT).ControlID)
                 End If
             End If
 
@@ -358,7 +372,7 @@ Namespace Gears
                 'フォームコントロールの場合、フォーム属性を付与
                 For Each info As KeyValuePair(Of String, List(Of GearsControlInfo)) In message.ControlInfo
                     For Each conInfo As GearsControlInfo In info.Value
-                        If (GControl(fromControl.ID) IsNot Nothing AndAlso GControl(fromControl.ID).IsFormAttribute) Then '登録されているコントロール
+                        If (GControl(fromControl) IsNot Nothing AndAlso GControl(fromControl).IsFormAttribute) Then '登録されているコントロール
                             conInfo.IsFormAttribute = True
                         ElseIf GearsControl.isIdAttributeExist(fromControl.ID, GearsControl.ID_ATTR_FORM) Then
                             conInfo.IsFormAttribute = True
@@ -384,7 +398,7 @@ Namespace Gears
             Dim isExcept As Boolean = False
 
             '表示専用のコントロールは、SELECT以外の場合除外する
-            If GControl(control.ID) IsNot Nothing AndAlso (GControl(control.ID).IsDisplayOnly And dto.Action <> ActionType.SEL) Then isExcept = True
+            If GControl(control) IsNot Nothing AndAlso (GControl(control).IsDisplayOnly And dto.Action <> ActionType.SEL) Then isExcept = True
 
             '除外対象である場合は、どんな場合でも除外する
             If Not isExcept AndAlso _excepts.ContainsKey(dto.AttrInfo(RELATION_STORE_KEY)) Then
@@ -405,7 +419,7 @@ Namespace Gears
             End If
 
             If Not isExcept Then
-                Dim conInfos As List(Of GearsControlInfo) = GControl(control.ID).createControlInfo
+                Dim conInfos As List(Of GearsControlInfo) = GControl(control).createControlInfo
                 For Each c As GearsControlInfo In conInfos
                     dto.addControlInfo(c)
                 Next
@@ -437,7 +451,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function execute(ByVal control As Control, ByVal dto As GearsDTO) As Boolean
             _log.Clear()
-            Dim gcon As GearsControl = GControl(control.ID)
+            Dim gcon As GearsControl = GControl(control)
             Dim sender As GearsDTO = Nothing
             If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
                 sender = New GearsDTO(dto)
@@ -496,15 +510,15 @@ Namespace Gears
         Public Function send(ByVal fromControl As Control, ByVal toControl As Control, ByVal dto As GearsDTO) As Boolean
             _log.Clear()
 
-            Dim fcon As GearsControl = GControl(fromControl.ID)
+            Dim fcon As GearsControl = GControl(fromControl)
             Dim tcons As New List(Of GearsControl)
 
             If toControl Is Nothing Then
                 '指定がない場合、リレーションを使用する
-                _relations(fromControl.ID).ForEach(Sub(r) tcons.Add(GControl(r)))
+                _relations(fcon.ControlID).ForEach(Sub(r) tcons.Add(GControl(r)))
             Else
                 '具体的な指定がある場合はそれを使用する(リレーションの有無は問わない)
-                tcons = New List(Of GearsControl) From {GControl(toControl.ID)}
+                tcons = New List(Of GearsControl) From {GControl(toControl)}
             End If
 
             If tcons IsNot Nothing Then
@@ -543,13 +557,19 @@ Namespace Gears
 
             If con IsNot Nothing Then
                 '配下のコントロールも含めた関係リストを作成。配下のコントロールは宛先なしの関連として扱う
-                Dim subControls As List(Of String) = getRegisterdSubControlIds(con)
-                For Each scon As String In subControls
-                    If Not localRelation.ContainsKey(scon) Then localRelation.Add(scon, Nothing)
-                Next
+                Dim nodes As New List(Of String)
+                If con.HasControls Then
+                    nodes = getRegisterdSubControlIds(con)
+                    For Each scon As String In nodes
+                        If Not localRelation.ContainsKey(scon) Then localRelation.Add(scon, Nothing)
+                    Next
+                Else
+                    nodes.Add(con.ID)
+                End If
 
                 Dim root As RelationNode = RelationNode.makeTreeWithRoot(localRelation)
-                result = root.getBranches(subControls)
+                result = root.getBranches(nodes)
+
             Else
                 result = RelationNode.makeTree(localRelation)
             End If
@@ -560,17 +580,18 @@ Namespace Gears
 
         Private Function bindAndAttach(ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
             Dim log As New Dictionary(Of String, GearsException)
+            Dim nodeInProcess As String = ""
 
             Try
 
                 Dim bindResult As Boolean = gcon.dataBind(dto)
 
-                '配下のコントロールに対し値の反映を行う
-                '関連先のコントロールに対し通知を行う
-                If bindResult And gcon.Control.HasControls Then
+                '配下/関連先のコントロールに対し値の反映を行う
+                If bindResult And (gcon.Control.HasControls Or _relations.ContainsKey(gcon.ControlID)) Then
                     Dim visitList As List(Of RelationNode) = makeRelationMap(gcon.Control)
 
                     For Each node As RelationNode In visitList
+                        nodeInProcess = node.Value
                         Dim ncon As GearsControl = GControl(node.Value)
                         ncon.dataAttach(gcon.DataSource)
                         If Not node.isLeaf Then '子がある場合、親から子へ情報を伝達、値を設定する
@@ -588,10 +609,11 @@ Namespace Gears
                 End If
 
             Catch ex As GearsException
+                ex.addDetail("位置:" + nodeInProcess)
                 log.Add(gcon.ControlID, ex)
                 GearsLogStack.setLog(ex)
             Catch ex As Exception
-                Dim gex As New GearsException(gcon.ControlID + "の処理中に例外が発生しました", ex)
+                Dim gex As New GearsException(gcon.ControlID + "の処理中に例外が発生しました(位置:" + nodeInProcess + ")", ex)
                 log.Add(gcon.ControlID, gex)
                 GearsLogStack.setLog(gex)
             End Try
@@ -643,7 +665,7 @@ Namespace Gears
         Private Shared Function isIdNamingMatch(ByVal id As String) As Boolean
             Dim result As Boolean = False
 
-            If Not String.IsNullOrEmpty(id) Then
+            If Not String.IsNullOrEmpty(id) AndAlso id.Length >= 4 Then
                 Dim prefix As String = id.Substring(0, 4)
                 '小文字3文字+大文字～で始まるかチェック(例：txtHOGEなど)
                 If System.Text.RegularExpressions.Regex.IsMatch(prefix, "^[a-z]{3}[A-Z]") Then
@@ -665,7 +687,7 @@ Namespace Gears
 
         Public Function isRegisteredAsInput(ByVal control As Control) As Boolean
             If isRegisteredControl(control) Then
-                If isInputControl(GControl(control.ID).Control) Then
+                If isInputControl(control) Then
                     Return True
                 Else
                     Return False
@@ -690,10 +712,11 @@ Namespace Gears
         End Function
         Private Function makeFromToKey(ByVal fromControl As Control, ByVal toControl As Control) As String
             Dim fromToKey As String = ""
+            Dim fCon As Control = GearsControl.extractControl(fromControl)
             If Not toControl Is Nothing Then
-                fromToKey = fromControl.ID + CONTROL_ID_SEPARATOR + toControl.ID
+                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + GearsControl.extractControl(toControl).ID
             Else
-                fromToKey = fromControl.ID + CONTROL_ID_SEPARATOR + fromControl.ID 'デフォルト自分自身
+                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + fCon.ID 'デフォルト自分自身
             End If
             Return fromToKey
 

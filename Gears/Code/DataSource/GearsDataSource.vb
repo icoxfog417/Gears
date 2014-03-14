@@ -433,7 +433,11 @@ Namespace Gears.DataSource
 
             '実行後のデータを読み込む
             Dim sqlbForResult As New SqlBuilder(sqlb)
-            sqlbForResult.DataSource = SelectView 'SELECTビューから、更新対象を読み込む
+
+            '楽観ロックの選択をクリア
+            For Each lc As String In sqlbForResult.LockFilter.Select(Function(f) f.Column).ToList
+                sqlbForResult.removeFilter(lc)
+            Next
 
             If sqlb.Action = ActionType.INS Then
                 'INSERTの場合フィルタ値がないため、設定値をフィルタ値に変換してセット
@@ -446,6 +450,9 @@ Namespace Gears.DataSource
 
             '選択項目をクリア
             sqlbForResult.Selection.Clear()
+
+            'SELECTビューから、更新対象を読み込む
+            sqlbForResult.DataSource = SelectView
 
             gSelect(sqlbForResult)
 

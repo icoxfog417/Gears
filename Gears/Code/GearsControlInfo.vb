@@ -41,16 +41,6 @@ Namespace Gears
             End Get
         End Property
 
-        Private _pastValue As String = ""
-        ''' <summary>
-        ''' ロード前の値
-        ''' </summary>
-        Public ReadOnly Property PastValue() As String
-            Get
-                Return _pastValue
-            End Get
-        End Property
-
         Private _isFormAttribute As Boolean = False
         ''' <summary>
         ''' 更新フォーム属性
@@ -103,19 +93,21 @@ Namespace Gears
             End Set
         End Property
 
-        Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String, Optional ByVal p As String = "")
+        ''' <summary>前回ロードされた値</summary>
+        Public Property LoadedValue As String = ""
+
+        Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String)
             _controlId = conId
             _dataSourceId = ds
             _value = val
-            _pastValue = p
         End Sub
 
-        Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String, ByVal p As String, _
+        Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String, ByVal lval As String, _
                        ByVal key As Boolean, ByVal form As Boolean, ByVal filter As Boolean, ByVal opr As String)
             _controlId = conId
             _dataSourceId = ds
             _value = val
-            _pastValue = p
+            LoadedValue = lval
             _isKey = key
             _isFormAttribute = form
             _isFilterAttribute = filter
@@ -127,7 +119,7 @@ Namespace Gears
                    g.IsKey, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
         End Sub
         Public Sub New(ByRef g As GearsControlInfo)
-            Me.New(g.ControlID, g.DataSourceID, g.Value, g.PastValue, _
+            Me.New(g.ControlID, g.DataSourceID, g.Value, g.LoadedValue, _
                    g.IsKey, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
         End Sub
 
@@ -141,7 +133,6 @@ Namespace Gears
                 str += " " + _operatorAttribute + " "
             End If
 
-            str += Value + " ( past : " + PastValue + ")"
             If _isKey Then
                 str += Value + " !key! "
             End If

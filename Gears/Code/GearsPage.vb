@@ -369,7 +369,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function GGet(ByRef con As Control) As GearsControl
             If Not con Is Nothing Then
-                Return GMediator.GControl(con.ID)
+                Return GMediator.GControl(con)
             Else
                 Return Nothing
             End If
@@ -446,8 +446,8 @@ Namespace Gears
             Return GSend(form).ToMyself(dto)
         End Function
 
-        Public Function GLoad(ByVal view As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
-            Return GGet(view).dataBind(dto)
+        Public Function GLoad(ByVal form As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
+            Return GSend(form).ToMyself(dto)
         End Function
 
         Public Function GFilterBy(ByVal fromControl As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
@@ -532,35 +532,36 @@ Namespace Gears
             Dim result As Boolean = True
             GLog.Clear()
 
-            '更新系処理の場合、リロードによる二重ポストを検知
-            If Not dto Is Nothing AndAlso _
-                  (dto.Action <> ActionType.SEL And dto.Action <> ActionType.NONE) Then
+            'コントロールの登録チェック
+            If fromControl IsNot Nothing AndAlso GMediator.GControl(fromControl) Is Nothing Then
+                GearsLogStack.setLog(fromControl.ID + " はまだ登録されていません。GAddで登録する必要があります。")
+                Return False
+            End If
+
+            '更新系処理の場合のチェック
+            If Not dto Is Nothing AndAlso (dto.Action <> ActionType.SEL And dto.Action <> ActionType.NONE) Then
+                'リロード
                 If IsReload Then
                     GLog.Add(If(fromControl IsNot Nothing, fromControl.ID, "(Send Dto)"), New GearsException("画面のリフレッシュのため、更新処理は実行されません"))
                     dto.Action = ActionType.SEL
                 End If
-            End If
 
-            'コントロールの登録チェック
-            If fromControl IsNot Nothing AndAlso Not GMediator.isRegisteredControl(fromControl) Then
-                GearsLogStack.setLog(fromControl.ID + " はまだ登録されていません。Registerで登録する必要があります。")
-                Return False
-            End If
-
-            'バリデーションチェック 
-            If dto.Action <> ActionType.SEL Then '更新系の場合、バリデーション処理を実行
-                If Not GIsValid(fromControl) Then
-                    GearsLogStack.setLog(fromControl.ID + " でのバリデーション処理でエラーが発生しました。")
-                    Return False
+                'バリデーション
+                If dto.Action <> ActionType.SEL Then
+                    If Not GIsValid(fromControl) Then
+                        GearsLogStack.setLog(fromControl.ID + " でのバリデーション処理でエラーが発生しました。")
+                        Return False
+                    End If
                 End If
+
             End If
 
             'メイン処理実行
             Dim sender As GearsDTO = New GearsDTO(dto)
             If fromControl Is Nothing Then
                 GMediator.lockDtoWhenSend(sender)
-            Else
-                reloadLockValue(fromControl).ForEach(Sub(f) sender.addFilter(f)) '楽観的ロックのチェックを追加
+            ElseIf sender.Action <> ActionType.SEL Then
+                reloadLockValue(fromControl).ForEach(Sub(f) sender.addFilter(f)) '楽観的ロックの選択を追加
             End If
 
             '警告無視フラグがある場合、その設定を行う処理
@@ -584,8 +585,7 @@ Namespace Gears
             If result Then
                 GearsLogStack.setLog(fromControl.ID + " での更新に成功しました。")
                 '更新対象のロード時の値を保持 ※失敗した場合は、再処理のためロード時の値更新は行わない
-                saveLoadedValue(fromControl, toControl)
-
+                saveLoadedValue()
             Else
 
                 For Each logitem As KeyValuePair(Of String, GearsException) In GMediator.GLog()
@@ -600,53 +600,27 @@ Namespace Gears
 
             End If
 
-            ''更新系処理の場合、データの更新によるドロップダウンリストの項目増減がありうるため、実行(成否に関わらない)
-            'If dto.Action <> ActionType.SEL Then
-            '    For Each item As KeyValuePair(Of String, GearsControl) In GMediator.GControls
-            '        If item.Value.Control.EnableViewState = False Then
-            '            item.Value.dataBind()
-            '        End If
-            '    Next
-            'End If
-
             Return result
 
         End Function
 
         ''' <summary>
-        ''' 指定されたコントロールの関連先について、現在ロードされた値を確保する
+        ''' 登録済みコントロールのうち
         ''' </summary>
-        ''' <param name="fromControl"></param>
-        ''' <param name="toControl"></param>
         ''' <remarks></remarks>
-        Private Sub saveLoadedValue(ByVal fromControl As Control, ByVal toControl As Control)
+        Private Sub saveLoadedValue()
 
-            Dim list As List(Of GearsControl) = GMediator.Relation(fromControl.ID)
-            If Not list Is Nothing Then
-                For Each gcon As GearsControl In list
-                    If Not toControl Is Nothing AndAlso toControl.ID <> gcon.ControlID Then
-                        Continue For 'toControlの指定がある場合、それ以外は処理をスキップする
-                    End If
+            For Each gcon As KeyValuePair(Of String, GearsControl) In GMediator.GControls
+                gcon.Value.LoadedValue = gcon.Value.getValue() '現時点の値をLoadedValueに移す
 
-                    If gcon.IsFormAttribute Then '対象項目の場合
-                        'ロードした値を格納
-                        ControlSearcher.fetchControls(gcon.Control, AddressOf Me.fetchLoadedValue, AddressOf GMediator.isRegisteredAsInput)
-                        'ロック用項目がセットされている場合それも格納
-                        saveLockValueIfExist(gcon)
-                    End If
-                Next
-            End If
+                saveLoadedValue(gcon.Key)
 
-        End Sub
+                If gcon.Value.IsFormAttribute Then
+                    'ロック用項目がセットされている場合それも格納
+                    saveLockValueIfExist(gcon.Value)
+                End If
+            Next
 
-        ''' <summary>
-        ''' ロードされた値を保存する(再帰処理用)
-        ''' </summary>
-        ''' <param name="control"></param>
-        ''' <param name="dto"></param>
-        ''' <remarks></remarks>
-        Private Sub fetchLoadedValue(ByVal control As Control, ByRef dto As GearsDTO)
-            saveLoadedValue(control.ID)
         End Sub
 
         ''' <summary>

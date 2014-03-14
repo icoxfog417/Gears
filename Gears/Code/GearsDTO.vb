@@ -115,10 +115,10 @@ Namespace Gears
                     If ginfo.IsFormAttribute Then
                         If ginfo.IsKey Then
                             sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value).asKey())
-                            If ginfo.PastValue <> "" Then
-                                sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.PastValue).asKey()) '前回ロード時の値をフィルタ値として設定
+                            If Not String.IsNullOrEmpty(ginfo.LoadedValue <> "") Then
+                                sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.LoadedValue).asKey())
                             Else
-                                sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey()) '前回ロード時の値がない場合、現在値をフィルタ値として設定
+                                sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())
                             End If
                         Else
                             sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value))

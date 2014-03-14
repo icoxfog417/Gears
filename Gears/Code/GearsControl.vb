@@ -8,6 +8,7 @@ Imports Gears.DataSource
 Imports Gears.Validation
 Imports Gears.Binder
 Imports System.Data
+Imports Gears.Util
 
 Namespace Gears
 
@@ -65,9 +66,6 @@ Namespace Gears
         ''' データソースクラスが格納されているアセンブリ名
         ''' </summary>
         Private Shared DataSourceAssembleyName As String = ""
-
-        ''' <summary>前回ロードされた値</summary>
-        Public Property LoadedValue As String = ""
 
         Private _control As Control = Nothing
         ''' <summary>
@@ -226,6 +224,9 @@ Namespace Gears
             End Get
         End Property
 
+        ''' <summary>ロード時の値</summary>
+        Public Property LoadedValue As String = ""
+
         ''' <summary>
         ''' コンストラクタ<br/>
         ''' Controlと接続文字列を受け取り、ControlのIDからデータソースクラスを判定し設定する
@@ -263,12 +264,12 @@ Namespace Gears
         ''' <param name="isAutoLoadAttr"></param>
         ''' <remarks></remarks>
         Private Sub initInstance(ByRef con As Control, ByVal isAutoLoadAttr As Boolean)
-            _control = con
-            readIDByGearsRule(con.ID)
+            _control = extractControl(con)
+            readIDByGearsRule(_control.ID)
 
             'WHEREを作成する際のオペレーターの設定
-            If TypeOf con Is WebControl Then
-                Dim wcon As WebControl = CType(con, WebControl)
+            If TypeOf _control Is WebControl Then
+                Dim wcon As WebControl = CType(_control, WebControl)
                 If Not wcon.Attributes(ATTR_OPERATOR) Is Nothing Then
                     _OperatorAttribute = wcon.Attributes(ATTR_OPERATOR)
                 End If
@@ -670,6 +671,14 @@ Namespace Gears
                 Return ""
             End If
 
+        End Function
+
+        Public Shared Function extractControl(ByVal con As Control) As Control
+            If TypeOf con Is IFormItem Then
+                Return CType(con, IFormItem).getControl
+            Else
+                Return con
+            End If
         End Function
 
         ''' <summary>
