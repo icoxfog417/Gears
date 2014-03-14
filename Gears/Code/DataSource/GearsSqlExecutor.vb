@@ -131,6 +131,14 @@ Namespace Gears.DataSource
                 Using reader As DbDataReader = com.ExecuteReader()
                     resultSet.Load(reader)
                 End Using
+
+                If resultSet IsNot Nothing AndAlso resultSet.Columns.Count > 0 Then
+                    'DataReaderはデフォルトで全行を読み取り専用にしてしまうので、編集可能なように設定を変更
+                    For Each col As DataColumn In resultSet.Columns
+                        col.ReadOnly = False
+                    Next
+                End If
+
             Catch ex As Exception
                 gex = New GearsSqlException(ActionType.SEL, "データベースの読み込みに失敗しました", ex)
                 gex.addDetail(ex.Message, com.CommandText)

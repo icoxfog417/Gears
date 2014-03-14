@@ -199,7 +199,9 @@ Namespace Gears.DataSource
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function setValue(ByVal item As SqlItem) As SqlDataSource
-            setValue(item.Column, item.Value)
+            If item IsNot Nothing AndAlso item.hasValue Then
+                setValue(item.Column, item.Value)
+            End If
             Return Me
         End Function
 

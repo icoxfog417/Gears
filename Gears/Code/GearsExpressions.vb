@@ -79,11 +79,12 @@ Namespace Gears
     End Class
 
     Public Class gSelectExpression
-        Private _selection As New List(Of SqlSelectItem)
         Private _mediator As GearsMediator = Nothing
+        Private _selection As New List(Of SqlSelectItem)
 
         Public Sub New(ByVal selection As List(Of SqlSelectItem), ByVal mediator As GearsMediator)
             _selection = selection
+            _mediator = mediator
         End Sub
 
         Public Function From(ByVal fromControl As Control) As gSourceExpression
