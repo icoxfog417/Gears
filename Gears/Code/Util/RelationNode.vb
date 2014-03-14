@@ -126,7 +126,8 @@ Namespace Gears.Util
                 '初回、もしくは新規のルートであるパスの場合追加を行う
                 '事前にソートをしているため、A,A/B.A/B/C,Dのようにルートに近い順に並び替えが行われている。
                 '要素が含まれなくなったら、別のルートのブランチとなったと判断し追加を行う。
-                If String.IsNullOrEmpty(keyNow) Or Not key.Contains(keyNow) Then
+                'また、/を含まないルートについては無条件で追加を行う
+                If String.IsNullOrEmpty(keyNow) Or (Not key.Contains("/") OrElse Not key.Contains(keyNow)) Then
                     branchKeys.Add(key)
                     keyNow = key
                 End If

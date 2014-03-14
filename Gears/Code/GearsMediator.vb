@@ -232,6 +232,8 @@ Namespace Gears
                 Throw New GearsException(String.Format(templateString, conF.ID))
             ElseIf GControl(conT) Is Nothing Then
                 Throw New GearsException(String.Format(templateString, conT.ID))
+            ElseIf GControl(conF).ControlID = GControl(conT).ControlID Then
+                Throw New GearsException("自分自身への関係は登録できません(" + conF.ID + ")")
             Else
                 Dim fcon As GearsControl = GControl(conF)
                 If Not _relations.ContainsKey(fcon.ControlID) Then
@@ -609,7 +611,7 @@ Namespace Gears
                 End If
 
             Catch ex As GearsException
-                ex.addDetail("位置:" + nodeInProcess)
+                If Not String.IsNullOrEmpty(nodeInProcess) Then ex.addDetail("位置:" + nodeInProcess)
                 log.Add(gcon.ControlID, ex)
                 GearsLogStack.setLog(ex)
             Catch ex As Exception

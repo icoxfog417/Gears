@@ -418,7 +418,7 @@ Namespace Gears.DataSource
                 'Saveの場合、ActionTypeはINS/UPDのどちらかに編集されていることを前提とする
                 executor.execute(sqlb)
 
-                '実行結果を読み込む(要否検討)
+                '実行結果を読み込む
                 loadExecuted(sqlb)
 
             Catch ex As Exception
@@ -550,7 +550,7 @@ Namespace Gears.DataSource
                         If Not isLockCheckOk Then
                             Dim lockInfo As String = ""
                             lockValues.ForEach(Sub(f) lockInfo += f.Column + ":" + f.Value.ToString + " ")
-                            Throw New GearsOptimisticLockException("他のユーザーにより更新されています:" + Trim(lockInfo))
+                            Throw New GearsOptimisticLockException(Trim(lockInfo))
                         End If
                     Else
 

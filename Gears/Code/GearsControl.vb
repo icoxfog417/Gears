@@ -479,7 +479,7 @@ Namespace Gears
                 GearsLogStack.setLog("コントロール" + _control.ID + " にはデータソースが登録されていないため、処理は行われません")
             End If
 
-            If String.IsNullOrEmpty(valueNow) Then Me.setValue(valueNow) 'セットされていた値を復元する
+            If Not String.IsNullOrEmpty(valueNow) Then Me.setValue(valueNow) 'セットされていた値を復元する
 
             Return result
 

@@ -115,7 +115,7 @@ Namespace Gears
                     If ginfo.IsFormAttribute Then
                         If ginfo.IsKey Then
                             sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value).asKey())
-                            If Not String.IsNullOrEmpty(ginfo.LoadedValue <> "") Then
+                            If Not String.IsNullOrEmpty(ginfo.LoadedValue) Then
                                 sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.LoadedValue).asKey())
                             Else
                                 sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())

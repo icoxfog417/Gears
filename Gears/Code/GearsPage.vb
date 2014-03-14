@@ -447,7 +447,15 @@ Namespace Gears
         End Function
 
         Public Function GLoad(ByVal form As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
-            Return GSend(form).ToMyself(dto)
+            'Formコントロール内のキーを使用し、自身の値をリロードする
+            Dim loadDto As New GearsDTO(dto)
+            Dim sqlb As SqlBuilder = GPack(form, ActionType.SEL).toSqlBuilder
+            For Each f As SqlFilterItem In sqlb.Filter
+                loadDto.Filter.Add(f)
+            Next
+
+            Return GSend(loadDto).ToThe(form)
+
         End Function
 
         Public Function GFilterBy(ByVal fromControl As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
@@ -569,21 +577,21 @@ Namespace Gears
                 sender.IsIgnoreAlert = True
             End If
 
-            GearsLogStack.setLog(fromControl.ID + " の送信情報を収集しました(DTO作成)。", sender.toString())
-
             If fromControl IsNot Nothing Then
+                GearsLogStack.setLog(fromControl.ID + " から送信情報を収集しました(DTO作成)。", sender.toString())
                 If toControl Is Nothing OrElse fromControl.ID <> toControl.ID Then
                     result = GMediator.send(fromControl, toControl, sender)
                 Else
                     result = GMediator.execute(fromControl, sender)
                 End If
             Else
+                GearsLogStack.setLog(toControl.ID + " への送信情報を収集しました(DTO作成)。", sender.toString())
                 result = GMediator.execute(toControl, sender)
             End If
 
             '実行結果チェック
             If result Then
-                GearsLogStack.setLog(fromControl.ID + " での更新に成功しました。")
+                GearsLogStack.setLog(If(fromControl IsNot Nothing, fromControl.ID, toControl.ID) + " の更新に成功しました。")
                 '更新対象のロード時の値を保持 ※失敗した場合は、再処理のためロード時の値更新は行わない
                 saveLoadedValue()
             Else
@@ -964,10 +972,12 @@ Namespace Gears
             Dim msg As String
             If GLog.Count > 0 Then
                 msg = GLog.FirstLog.Message
-                If Not GLog.FirstLog.InnerException Is Nothing Then
-                    msg += "　詳細：" + GLog.FirstLog.InnerException.Message
-                ElseIf Not String.IsNullOrEmpty(GLog.FirstLog.MessageDetail()) Then
-                    msg += "　詳細：" + GLog.FirstLog.MessageDetail()
+                If IsLoggingMode() Then
+                    If Not GLog.FirstLog.InnerException Is Nothing Then
+                        msg += "　詳細：" + GLog.FirstLog.InnerException.Message
+                    ElseIf Not String.IsNullOrEmpty(GLog.FirstLog.MessageDetail()) Then
+                        msg += "　詳細：" + GLog.FirstLog.MessageDetail()
+                    End If
                 End If
 
                 If result Then

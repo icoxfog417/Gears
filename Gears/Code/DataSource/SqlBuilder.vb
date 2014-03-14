@@ -677,10 +677,12 @@ Namespace Gears.DataSource
                 Else
                     gPart = String.Join(" AND ", fListOfEachColumn)
                 End If
-                If fList.Count > 1 And groups.Count > 1 Then '条件式が複数あり、グループも複数指定されている場合括弧でくくる
+                If fListOfEachColumn.Count > 1 And groups.Count > 1 Then '条件式が複数あり、グループも複数指定されている場合括弧でくくる
                     gPart = "(" + gPart + ")"
                 End If
-                gList.Add(gPart)
+                If Not String.IsNullOrEmpty(gPart) Then
+                    gList.Add(gPart)
+                End If
 
                 fList.Clear()
 
