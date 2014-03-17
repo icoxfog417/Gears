@@ -5,7 +5,7 @@ Imports System.Collections
 Namespace Gears.DataSource
 
     ''' <summary>
-    ''' データベース種別
+    ''' データベース種別を表すEnum
     ''' </summary>
     Public Enum DbServerType As Integer
         Oracle
@@ -97,6 +97,12 @@ Namespace Gears.DataSource
             End Set
         End Property
 
+        ''' <summary>
+        ''' 接続文字列から、データべース種別を取得する
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function GetDbServerType(ByVal conName As String) As DbServerType
             Dim result As DbServerType = DbServerType.Oracle
             Dim db As String = GearsSqlExecutor.GetConnectionString(conName).ProviderName.ToString
@@ -155,6 +161,11 @@ Namespace Gears.DataSource
             DbServer = db
         End Sub
 
+        ''' <summary>
+        ''' 選択/抽出条件をコピーする
+        ''' </summary>
+        ''' <param name="sb"></param>
+        ''' <remarks></remarks>
         Public Sub ImportSqlItem(ByRef sb As SqlBuilder)
             For Each sl As SqlSelectItem In sb.Selection
                 Me.addSelection(sl)
@@ -212,10 +223,10 @@ Namespace Gears.DataSource
             Return New SqlDataSource(dsource, sf)
         End Function
 
-        ''' <summary>楽観ロック情報</summary>
+        ''' <summary>データソースの定義情報を元に、楽観ロック情報を抽出する</summary>
         Public Function LockFilter() As List(Of SqlFilterItem)
             Dim result As New List(Of SqlFilterItem)
-            Dim lockColumnList As List(Of String) = DataSource.LockCheckColum.Keys.ToList
+            Dim lockColumnList As List(Of String) = DataSource.LockCheckColumn.Keys.ToList
 
             For Each item As SqlFilterItem In Filter()
                 If lockColumnList.Contains(item.Column) Then result.Add(item)

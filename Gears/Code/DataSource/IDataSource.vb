@@ -3,6 +3,10 @@ Imports System.Data
 
 Namespace Gears.DataSource
 
+    ''' <summary>
+    ''' Gearsフレームワークにおけるデータソースを定義するためのインタフェース
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Interface IDataSource
 
         Function gSelect(ByVal data As GearsDTO) As DataTable

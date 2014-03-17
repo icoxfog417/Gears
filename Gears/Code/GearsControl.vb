@@ -251,12 +251,12 @@ Namespace Gears
         ''' データソースクラスを直接受け取るコンストラクタ
         ''' </summary>
         ''' <param name="con"></param>
-        ''' <param name="gs"></param>
+        ''' <param name="gds"></param>
         ''' <param name="isAutoLoadAttr"></param>
         ''' <remarks></remarks>
-        Public Sub New(ByRef con As Control, ByRef gs As GearsDataSource, Optional isAutoLoadAttr As Boolean = True)
-            Me.ConnectionName = gs.ConnectionName
-            _DataSource = gs
+        Public Sub New(ByRef con As Control, ByRef gds As GearsDataSource, Optional isAutoLoadAttr As Boolean = True)
+            Me.ConnectionName = gds.ConnectionName
+            _DataSource = gds
             initInstance(con, isAutoLoadAttr)
 
         End Sub
@@ -577,7 +577,7 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' 自身の情報をControlInfoオブジェクトへ格納
+        ''' 自身の情報をControlInfoオブジェクトへ格納する
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
@@ -709,7 +709,7 @@ Namespace Gears
         ''' <summary>
         ''' バリデーション結果のメッセージを取得
         ''' </summary>
-        Public Function getValidatedMsg() As String Implements IAttributeHolder.getValidatedMsg
+        Public Function getValidationError() As String Implements IAttributeHolder.getValidationError
             If Not _attributes Is Nothing Then
                 Return _attributes.ErrorMessage
             Else

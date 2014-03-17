@@ -4,11 +4,9 @@ Imports Gears.DataSource
 
 Namespace Gears.Validation
 
-    ''' ------------------------------------------------------------------------------
     ''' <summary>
-    ''' 検証用メソッドのアノテーション
+    ''' 検証用メソッドのアノテーション定義
     ''' </summary>
-    ''' ------------------------------------------------------------------------------
     <System.AttributeUsage(AttributeTargets.Method, AllowMultiple:=True, Inherited:=True)>
     Public Class ModelValidationMethod
         Inherits System.Attribute
@@ -90,32 +88,26 @@ Namespace Gears.Validation
             End Set
         End Property
 
-        ''' ------------------------------------------------------------------------------
         ''' <summary>
         ''' 検証実行前処理
         ''' </summary>
         ''' <param name="sqlb"></param>
-        ''' ------------------------------------------------------------------------------
         Public Overridable Sub setUpValidation(ByVal sqlb As SqlBuilder)
         End Sub
 
-        ''' ------------------------------------------------------------------------------
         ''' <summary>
         ''' 検証実行後処理
         ''' </summary>
         ''' <param name="sqlb"></param>
-        ''' ------------------------------------------------------------------------------
         Public Overridable Sub tearDownValidation(ByVal sqlb As SqlBuilder)
         End Sub
 
-        ''' ------------------------------------------------------------------------------
         ''' <summary>
         ''' 'ModelValidationMethodアノテーションの付与された、返り値が BooleanのPublicメソッドを実行していく
         ''' </summary>
         ''' <param name="sqlb">バリデーション対象のSqlBuilder</param>
         ''' <param name="isStockError">致命的エラーがあっても続行してエラーをため続ける場合はTrue</param>
         ''' <returns></returns>
-        ''' ------------------------------------------------------------------------------
         Public Function Validate(ByVal sqlb As SqlBuilder, Optional ByVal isStockError As Boolean = False) As ValidationResults
             'ModelValidationMethodを抽出
             Dim methods As List(Of ModelValidator) _
@@ -130,7 +122,7 @@ Namespace Gears.Validation
             Return _validResults
 
         End Function
-        ''' ------------------------------------------------------------------------------
+
         ''' <summary>
         ''' 対象のバリデーションを実行する
         ''' </summary>
@@ -153,7 +145,6 @@ Namespace Gears.Validation
         ''' </para>
         ''' </example>
         ''' </remarks>
-        ''' ------------------------------------------------------------------------------
         Public Function Validate(ByVal validatee As SqlBuilder, ByVal validates As List(Of ModelValidator), Optional ByVal isStockError As Boolean = False) As ValidationResults
             _validResults.Clear()
 
@@ -206,18 +197,15 @@ Namespace Gears.Validation
 
         End Function
 
-        ''' ------------------------------------------------------------------------------
         ''' <summary>
         ''' 
         ''' </summary>
         ''' <returns></returns>
-        ''' ------------------------------------------------------------------------------
         Public Function throwException() As GearsModelValidationException
             Dim ex As New GearsModelValidationException(_validResults)
             Throw ex
         End Function
 
-        ''' ------------------------------------------------------------------------------
         ''' <summary>
         ''' 検証用値取得メソッド
         ''' </summary>
@@ -225,7 +213,6 @@ Namespace Gears.Validation
         ''' <param name="colName"></param>
         ''' <param name="nothingAsSpace"></param>
         ''' <returns></returns>
-        ''' ------------------------------------------------------------------------------
         Public Function getValidateeValue(ByVal sqlb As SqlBuilder, ByVal colName As String, Optional ByVal nothingAsSpace As Boolean = False) As String
             If sqlb.Selection(colName) Is Nothing Then
                 If Not nothingAsSpace Then

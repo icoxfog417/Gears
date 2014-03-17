@@ -42,7 +42,7 @@ Namespace Gears.Validation
             End Get
         End Property
 
-        Public Function getValidatedMsg() As String Implements IAttributeHolder.getValidatedMsg
+        Public Function getValidatedMsg() As String Implements IAttributeHolder.getValidationError
             Return _gattributes.ErrorMessage
         End Function
 

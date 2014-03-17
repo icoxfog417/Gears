@@ -33,10 +33,12 @@ Namespace Gears.DataSource
             _isOrGroup = isOr
         End Sub
 
+        ''' <summary>Orで囲うグループを作成する</summary>
         Public Shared Function Ors(ParamArray filters As SqlFilterItem()) As List(Of SqlFilterItem)
             Return Ors(filters.ToList)
         End Function
 
+        ''' <summary>Orで囲うグループを作成する</summary>
         Public Shared Function Ors(ByRef filters As List(Of SqlFilterItem)) As List(Of SqlFilterItem)
             Dim gName As String = Guid.NewGuid.ToString("N")
             Dim myGroup As SqlFilterGroup = New SqlFilterGroup(gName, True)
@@ -44,10 +46,12 @@ Namespace Gears.DataSource
             Return filters
         End Function
 
+        ''' <summary>Andで囲うグループを作成する</summary>
         Public Shared Function Ands(ParamArray filters As SqlFilterItem()) As List(Of SqlFilterItem)
-            Return ANDs(filters.ToList)
+            Return Ands(filters.ToList)
         End Function
 
+        ''' <summary>Andで囲うグループを作成する</summary>
         Public Shared Function Ands(ByRef filters As List(Of SqlFilterItem)) As List(Of SqlFilterItem)
             Dim gName As String = Guid.NewGuid.ToString("N")
             Dim myGroup As SqlFilterGroup = New SqlFilterGroup(gName, False)
@@ -179,14 +183,19 @@ Namespace Gears.DataSource
             End Select
         End Function
 
+        ''' <summary>前置詞を付与する</summary>
         Public Function pf(ByVal pre As String) As SqlFilterItem
             MyBase.basePf(pre)
             Return Me
         End Function
+
+        ''' <summary>データソースから前置詞を付与する</summary>
         Public Function pf(ByRef sds As SqlDataSource) As SqlFilterItem
             MyBase.basePf(sds)
             Return Me
         End Function
+
+        ''' <summary>キーを設定する</summary>
         Public Function asKey() As SqlFilterItem
             MyBase.baseAsKey()
             Return Me

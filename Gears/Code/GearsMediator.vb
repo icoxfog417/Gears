@@ -204,42 +204,42 @@ Namespace Gears
         ''' <summary>
         ''' コントロール同士の関連を登録する(文字列でIDを指定)
         ''' </summary>
-        ''' <param name="conF"></param>
-        ''' <param name="conT"></param>
+        ''' <param name="fromControlId"></param>
+        ''' <param name="toControlId"></param>
         ''' <remarks></remarks>
-        Public Sub addRelation(ByVal conF As String, ByVal conT As String)
+        Public Sub addRelation(ByVal fromControlId As String, ByVal toControlId As String)
 
-            If Not GControl(conF) Is Nothing And Not GControl(conT) Is Nothing Then
-                addRelation(GControl(conF).Control, GControl(conT).Control)
+            If Not GControl(fromControlId) Is Nothing And Not GControl(toControlId) Is Nothing Then
+                addRelation(GControl(fromControlId).Control, GControl(toControlId).Control)
             End If
 
         End Sub
 
-        Public Sub addRelation(ByVal conF As GearsControl, ByVal conT As GearsControl)
-            addRelation(conF.ControlID, conT.ControlID)
+        Public Sub addRelation(ByVal fromControl As GearsControl, ByVal toControl As GearsControl)
+            addRelation(fromControl.ControlID, toControl.ControlID)
         End Sub
 
         ''' <summary>
         ''' コントロール同士の関連を登録する
         ''' </summary>
-        ''' <param name="conF"></param>
-        ''' <param name="conT"></param>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
         ''' <remarks></remarks>
-        Public Sub addRelation(ByVal conF As Control, ByVal conT As Control)
+        Public Sub addRelation(ByVal fromControl As Control, ByVal toControl As Control)
 
-            Dim templateString As String = "{0} はまだフレームワークに登録されていません。GMakeRuleを行う前に、GAddを使用し、コントロールの登録を行ってください"
-            If GControl(conF) Is Nothing Then
-                Throw New GearsException(String.Format(templateString, conF.ID))
-            ElseIf GControl(conT) Is Nothing Then
-                Throw New GearsException(String.Format(templateString, conT.ID))
-            ElseIf GControl(conF).ControlID = GControl(conT).ControlID Then
-                Throw New GearsException("自分自身への関係は登録できません(" + conF.ID + ")")
+            Dim templateString As String = "{0} はまだGearsMediatorに登録されていません"
+            If GControl(fromControl) Is Nothing Then
+                Throw New GearsException(String.Format(templateString, fromControl.ID))
+            ElseIf GControl(toControl) Is Nothing Then
+                Throw New GearsException(String.Format(templateString, toControl.ID))
+            ElseIf GControl(fromControl).ControlID = GControl(toControl).ControlID Then
+                Throw New GearsException("自分自身への関連は登録できません(" + fromControl.ID + ")")
             Else
-                Dim fcon As GearsControl = GControl(conF)
+                Dim fcon As GearsControl = GControl(fromControl)
                 If Not _relations.ContainsKey(fcon.ControlID) Then
-                    _relations.Add(fcon.ControlID, New List(Of String) From {GControl(conT).ControlID})
+                    _relations.Add(fcon.ControlID, New List(Of String) From {GControl(toControl).ControlID})
                 Else
-                    _relations(fcon.ControlID).Add(GControl(conT).ControlID)
+                    _relations(fcon.ControlID).Add(GControl(toControl).ControlID)
                 End If
             End If
 
@@ -250,14 +250,30 @@ Namespace Gears
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
-        ''' <param name="escapes"></param>
+        ''' <param name="excepts"></param>
         ''' <remarks></remarks>
-        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal escapes As List(Of String))
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal excepts As List(Of Control))
+
+            Dim exceptIds As New List(Of String)
+            excepts.ForEach(Sub(c) If c IsNot Nothing AndAlso Not String.IsNullOrEmpty(c.ID) Then exceptIds.Add(GearsControl.extractControl(c).ID))
+            addExcept(fromControl, toControl, exceptIds)
+
+        End Sub
+
+        ''' <summary>
+        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する(除外を文字列指定)
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="excepts"></param>
+        ''' <remarks></remarks>
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal excepts As List(Of String))
             Dim key As String = makeFromToKey(fromControl, toControl)
+
             If Not _excepts.ContainsKey(key) Then
-                _excepts.Add(key, escapes)
+                _excepts.Add(key, excepts)
             Else
-                _excepts(key).AddRange(escapes)
+                _excepts(key).AddRange(excepts)
             End If
         End Sub
 
@@ -266,10 +282,10 @@ Namespace Gears
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
-        ''' <param name="escapes"></param>
+        ''' <param name="excepts"></param>
         ''' <remarks></remarks>
-        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ParamArray escapes As String())
-            addExcept(fromControl, toControl, escapes.ToList)
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ParamArray excepts As Control())
+            addExcept(fromControl, toControl, excepts.ToList)
         End Sub
 
         ''' <summary>
@@ -289,6 +305,25 @@ Namespace Gears
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' 除外対象を管理するためのキーを作成する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function makeFromToKey(ByVal fromControl As Control, ByVal toControl As Control) As String
+            Dim fromToKey As String = ""
+            Dim fCon As Control = GearsControl.extractControl(fromControl)
+            If Not toControl Is Nothing Then
+                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + GearsControl.extractControl(toControl).ID
+            Else
+                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + fCon.ID 'デフォルト自分自身
+            End If
+            Return fromToKey
+
+        End Function
 
         ''' <summary>
         ''' 自身の持つデフォルトの接続文字列/名称空間を使用しGearsControlを作成する
@@ -321,7 +356,8 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 指定されたコントロール内にあり、かつ登録済みのコントロールをリスト化し返却する
+        ''' 指定されたコントロール内にあり、かつ登録済みのコントロールをリスト化し返却する<br/>
+        ''' なお、ここのコントロールにはIFormItemであるコントロールは含まない(内部のコントロールは取り出す)
         ''' </summary>
         ''' <param name="target"></param>
         ''' <returns></returns>
@@ -345,7 +381,9 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' FROMからTOのコントロールへ処理を行う際のDTOを作成する。
+        ''' fromのコントロール情報からDTOを作成し、toのコントロールに送信する。<br/>
+        ''' toコントロールは受け取ったDTOを自身のデータソースクラスに渡し、データベースの抽出/更新処理を実行する<br/>
+        ''' ※データベースに対しどのような処理が行われるかは、DTOのActionにより決定される
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl">Nothing可。除外対象を明示的に使用したい場合に指定</param>
@@ -389,7 +427,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 指定ControlをControlInfoに変換し、dto内に格納する<br/>
+        ''' 指定ControlをControlInfoに変換し、DTOに格納する<br/>
         ''' 除外指定が行われているか、DisplayOnlyであるコントロールの場合、これを対象としない
         ''' </summary>
         ''' <param name="control"></param>
@@ -444,7 +482,7 @@ Namespace Gears
 
         ''' <summary>
         ''' 与えられたコントロールに対して、指定されたアクションを実行する<br/>
-        ''' この処理では、DTOは自分で作成し、自分自身のデータソースに適用する。
+        ''' この処理では、自身から作成したDTOを自身のデータソースに送信する。
         ''' フォーム等で更新を行う場合はこのような処理となる
         ''' </summary>
         ''' <param name="control"></param>
@@ -468,7 +506,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 関連する全てのコントロールに対し、自身の値で更新を行う
+        ''' 関連する全てのコントロールに対し、自身から生成したDTOを指定されたActionで送信する。
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="aType"></param>
@@ -479,7 +517,8 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 関連する全てのコントロールに対し、自身の値で更新を行う
+        ''' 関連する全てのコントロールに対し、自身から生成したDTOを送信する。<br/>
+        ''' DTOは、引数で指定されたDTOをベースとしそこに追加する形で作成する。
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="dto"></param>
@@ -490,7 +529,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 関連する指定コントロールに対し、自身の値で更新を行う
+        ''' 相手先を明示的に指定し、自身から生成したDTOを指定されたActionで送信する。
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
@@ -502,7 +541,8 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 関連するコントロールに対し、自身の値で更新をかける
+        ''' 相手先を明示的に指定し、自身から生成したDTOを送信する。<br/>
+        ''' DTOは、引数で指定されたDTOをベースとしそこに追加する形で作成する。
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
@@ -527,7 +567,7 @@ Namespace Gears
                 For Each con As GearsControl In tcons
 
                     Dim sender As GearsDTO = Nothing
-                    If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
+                    If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then 'ロックがかけられている場合追加しない
                         sender = New GearsDTO(dto)
                     Else
                         sender = makeDTO(fromControl, toControl, dto)
@@ -548,10 +588,22 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' DTOをロックし、その後の処理で値が追加されないようにする
+        ''' </summary>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
         Public Sub lockDtoWhenSend(ByRef dto As GearsDTO)
             dto.addAttrInfo(LOCK_WHEN_SEND_KEY, "X")
         End Sub
 
+        ''' <summary>
+        ''' 指定されたコントロール内にある処理対象コントロールと関連をリスト化する。<br/>
+        ''' これを元にdataAttachを実行していく。
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function makeRelationMap(Optional ByVal con As Control = Nothing) As List(Of RelationNode)
 
             Dim localRelation As Dictionary(Of String, List(Of String)) = _relations.ToDictionary(Function(i) i.Key, Function(i) i.Value)
@@ -580,6 +632,14 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' DTOの受信処理と、それにより更新された内容を関連/サブコントロールに対し送信する処理を行う。<br/>
+        ''' 具体的には、更新されたDataSourceの結果セット(DataTable)の値を配下のコントロールへ反映するために、関連を考慮しながらdataBind/dataAttachを実行していく。
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function bindAndAttach(ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
             Dim log As New Dictionary(Of String, GearsException)
             Dim nodeInProcess As String = ""
@@ -624,6 +684,12 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 入力用フォームコントロールか否かを判定する。ただし、ネーミングルールに沿わないものは除外する。
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function isInputControl(ByVal control As Control) As Boolean
             Dim result As Boolean = False
 
@@ -649,6 +715,12 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 入力用コントロール以外に、対象の候補となるコントロールを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function isOtherTarget(ByVal control As Control) As Boolean
             Dim result As Boolean = False
 
@@ -664,6 +736,12 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' コントロールIDのネーミングルールをチェックする
+        ''' </summary>
+        ''' <param name="id"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Shared Function isIdNamingMatch(ByVal id As String) As Boolean
             Dim result As Boolean = False
 
@@ -679,6 +757,12 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' GearsMediatorに登録済みのコントロールか否かを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function isRegisteredControl(ByVal control As Control) As Boolean
             If (control IsNot Nothing AndAlso control.ID IsNot Nothing) AndAlso _gcontrols.ContainsKey(control.ID) Then
                 Return True
@@ -687,6 +771,12 @@ Namespace Gears
             End If
         End Function
 
+        ''' <summary>
+        ''' 登録済みかつ入力用フォームコントロールであることを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function isRegisteredAsInput(ByVal control As Control) As Boolean
             If isRegisteredControl(control) Then
                 If isInputControl(control) Then
@@ -700,28 +790,8 @@ Namespace Gears
         End Function
 
         Public Overrides Function toString() As String
-            Dim str As String = ""
-            For Each item As KeyValuePair(Of String, List(Of String)) In _relations
-                Dim temp As String = item.Key + " : "
-                For Each relate As String In item.Value
-                    temp += relate + ","
-                Next
-                temp += vbCrLf
-                str += temp
-            Next
-            Return str
-
-        End Function
-        Private Function makeFromToKey(ByVal fromControl As Control, ByVal toControl As Control) As String
-            Dim fromToKey As String = ""
-            Dim fCon As Control = GearsControl.extractControl(fromControl)
-            If Not toControl Is Nothing Then
-                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + GearsControl.extractControl(toControl).ID
-            Else
-                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + fCon.ID 'デフォルト自分自身
-            End If
-            Return fromToKey
-
+            Dim result As String = ConnectionName + "/" + DsNameSpace
+            Return result
         End Function
 
     End Class

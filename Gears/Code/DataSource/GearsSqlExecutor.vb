@@ -6,10 +6,15 @@ Imports System.Data.Common
 
 Namespace Gears.DataSource
 
+    ''' <summary>
+    ''' SqlBuilderを受け取り、データベースに対しSQLを実行する
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsSqlExecutor
 
         Private _factory As DbProviderFactory = Nothing
         Private _dbType As String = Nothing
+        ''' <summary>データベース種別</summary>
         Public ReadOnly Property DbType As String
             Get
                 Return _dbType
@@ -17,13 +22,15 @@ Namespace Gears.DataSource
         End Property
 
         Private _connectionString As String = Nothing
+        ''' <summary>接続設定文字列</summary>
         Public ReadOnly Property ConnectionString As String
             Get
-                Return _ConnectionString
+                Return _connectionString
             End Get
         End Property
 
         Private _dbServer As DbServerType = Nothing
+        ''' <summary>データベース種別(Enum)</summary>
         Public ReadOnly Property DbServer As DbServerType
             Get
                 Return _dbServer
@@ -31,6 +38,7 @@ Namespace Gears.DataSource
         End Property
 
         Private _connectionName As String = ""
+        ''' <summary>接続文字列</summary>
         Public ReadOnly Property ConnectionName As String
             Get
                 Return _connectionName
@@ -39,11 +47,15 @@ Namespace Gears.DataSource
 
         Private _connection As DbConnection = Nothing
 
-        'コンストラクタ
         Public Sub New(ByVal conName As String)
             initConnection(conName)
         End Sub
 
+        ''' <summary>
+        ''' 接続文字列からデータベースの情報を取得し、設定する
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <remarks></remarks>
         Private Sub initConnection(ByVal conName As String)
             
             '各種情報をセット
@@ -59,6 +71,12 @@ Namespace Gears.DataSource
 
         End Sub
 
+        ''' <summary>
+        ''' 設定ファイルから接続文字列に定義された接続設定を取得する
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function GetConnectionString(ByVal conName As String) As ConnectionStringSettings
             If ConfigurationManager.ConnectionStrings(conName) Is Nothing Then
                 Throw New GearsException("接続文字列 " + conName + " は定義されていません")
@@ -67,6 +85,14 @@ Namespace Gears.DataSource
             End If
         End Function
 
+        ''' <summary>
+        ''' SqlBuilderからDbCommandを作成する
+        ''' </summary>
+        ''' <param name="sql"></param>
+        ''' <param name="asType"></param>
+        ''' <param name="isNeedOrder"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function createSqlCommand(ByVal sql As SqlBuilder, Optional ByVal asType As ActionType = ActionType.NONE, Optional ByVal isNeedOrder As Boolean = True) As DbCommand
             Dim params As New Dictionary(Of String, Object)
             Dim sqlstr As String = ""
@@ -94,6 +120,14 @@ Namespace Gears.DataSource
 
         End Function
 
+        ''' <summary>
+        ''' SqlBuilderからDbCommandを作成する
+        ''' </summary>
+        ''' <param name="sql"></param>
+        ''' <param name="params"></param>
+        ''' <param name="atype"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function createSqlCommand(ByVal sql As String, ByRef params As Dictionary(Of String, Object), ByVal atype As ActionType) As DbCommand
             Dim com As DbCommand = _connection.CreateCommand
 
@@ -111,6 +145,12 @@ Namespace Gears.DataSource
 
         End Function
 
+        ''' <summary>
+        ''' 件数を取得するためのSQLを生成する
+        ''' </summary>
+        ''' <param name="sql"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function createSelectCount(ByRef sql As SqlBuilder) As DbCommand
             Dim com As DbCommand = createSqlCommand(sql, ActionType.SEL, False)
             com.CommandText = "SELECT count(*) FROM ( " + com.CommandText + " ) weiVgnitnuoc "
@@ -118,7 +158,12 @@ Namespace Gears.DataSource
 
         End Function
 
-        'データセットの取得処理
+        ''' <summary>
+        ''' データのロード処理
+        ''' </summary>
+        ''' <param name="sql"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function load(ByVal sql As SqlBuilder) As DataTable
 
             Dim com As DbCommand = Nothing
@@ -155,6 +200,12 @@ Namespace Gears.DataSource
             End If
         End Function
 
+        ''' <summary>
+        ''' データ件数の取得処理
+        ''' </summary>
+        ''' <param name="sql"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function count(ByVal sql As SqlBuilder) As Integer
             Dim com As DbCommand = Nothing
             Dim gex As GearsSqlException = Nothing
@@ -184,6 +235,11 @@ Namespace Gears.DataSource
 
         End Function
 
+        ''' <summary>
+        ''' データベースの実行処理
+        ''' </summary>
+        ''' <param name="sql"></param>
+        ''' <remarks></remarks>
         Public Sub execute(ByVal sql As SqlBuilder)
             If sql.Action <> ActionType.SEL Then 'selectは対象外
 
@@ -212,6 +268,12 @@ Namespace Gears.DataSource
             End If
         End Sub
 
+        ''' <summary>
+        ''' データベースへの実行処理<br/>
+        ''' 受け取ったSqlBuilderの配列を、トランザクションで処理する
+        ''' </summary>
+        ''' <param name="sqlbs"></param>
+        ''' <remarks></remarks>
         Public Sub execute(ByVal sqlbs As List(Of SqlBuilder))
 
             Dim com As DbCommand = Nothing

@@ -76,10 +76,10 @@ Namespace Gears.DataSource
         ''' prefixを付与する<br/>
         ''' 例:SELECT * FROM tab t WHERE t.DATE > '20121212' としたい場合、filter.pf("t")としてprefixを付与する
         ''' </summary>
-        ''' <param name="pre"></param>
+        ''' <param name="pf"></param>
         ''' <remarks></remarks>
-        Protected Sub basePf(ByVal pre As String)
-            _Prefix = pre
+        Protected Sub basePf(ByVal pf As String)
+            _Prefix = pf
         End Sub
 
         ''' <summary>

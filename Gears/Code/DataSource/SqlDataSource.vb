@@ -13,8 +13,7 @@ Namespace Gears.DataSource
     End Enum
 
     ''' <summary>
-    ''' SQLの実行対象(Table/View)を表すクラス<br/>
-    ''' 標準クラスと名称が重複しているので、名称変更を検討
+    ''' SQLの実行対象(Table/View)を表すクラス
     ''' </summary>
     ''' <remarks></remarks>
     <Serializable()>
@@ -61,24 +60,30 @@ Namespace Gears.DataSource
             End Set
         End Property
 
-        Private _lockCheckColum As New Dictionary(Of String, LockType)
-        Public ReadOnly Property LockCheckColum As Dictionary(Of String, LockType)
+        Private _lockCheckColumn As New Dictionary(Of String, LockType)
+        ''' <summary>
+        ''' 楽観ロックチェックに使用する列項目
+        ''' </summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public ReadOnly Property LockCheckColumn As Dictionary(Of String, LockType)
             Get
-                Return _lockCheckColum
+                Return _lockCheckColumn
             End Get
         End Property
 
         ''' <summary>
-        ''' 楽観ロック用の列の設定
+        ''' 楽観ロック用の列を設定する
         ''' </summary>
         ''' <param name="colname"></param>
         ''' <param name="ltype"></param>
         ''' <remarks></remarks>
         Public Sub setLockCheckColumn(ByVal colname As String, ByVal ltype As LockType)
-            If LockCheckColum.ContainsKey(colname) Then
-                LockCheckColum(colname) = ltype
+            If LockCheckColumn.ContainsKey(colname) Then
+                LockCheckColumn(colname) = ltype
             Else
-                LockCheckColum.Add(colname, ltype)
+                LockCheckColumn.Add(colname, ltype)
             End If
         End Sub
 
@@ -151,7 +156,7 @@ Namespace Gears.DataSource
             Me._name = ds.Name
             Me._schema = ds.Schema
             Me._suffix = ds.Suffix
-            Me._lockCheckColum = New Dictionary(Of String, LockType)(ds._lockCheckColum)
+            Me._lockCheckColumn = New Dictionary(Of String, LockType)(ds._lockCheckColumn)
             Me._value = New Dictionary(Of String, Object)(ds.Value)
             Me._joinTargets = New List(Of SqlDataSource)(ds._joinTargets)
             Me._relations = New Dictionary(Of String, RelationKind)(ds._relations)

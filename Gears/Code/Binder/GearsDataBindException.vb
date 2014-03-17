@@ -4,6 +4,10 @@ Imports System.Web.UI
 
 Namespace Gears.Binder
 
+    ''' <summary>
+    ''' コントロールへのDataBind時の例外
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsDataBindException
         Inherits GearsException
 
@@ -24,7 +28,7 @@ Namespace Gears.Binder
 
         'メソッド
         Public Function getSourceControl() As String
-            Return Detail(MSG_CONTROL)
+            Return toStringDetail(MSG_CONTROL)
         End Function
         Public Sub clearSourceControl()
             clearDetail(MSG_CONTROL)

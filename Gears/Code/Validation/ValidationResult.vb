@@ -1,22 +1,19 @@
 ﻿Imports Microsoft.VisualBasic
 
 Namespace Gears.Validation
-    ''' ------------------------------------------------------------------------------
+
     ''' <summary>
     ''' 検証結果の種別
     ''' </summary>
-    ''' ------------------------------------------------------------------------------
     Public Enum ValidationResultType
         Critical
         Alert
         Success
     End Enum
 
-    ''' ------------------------------------------------------------------------------
     ''' <summary>
-    ''' 結果を評価するためのインナークラス
+    ''' 検証結果を評価するためのクラス
     ''' </summary>
-    ''' ------------------------------------------------------------------------------
     Public Class ValidationResults
 
         Private results As New List(Of ValidationResult)
@@ -101,11 +98,10 @@ Namespace Gears.Validation
 
     End Class
 
-    ''' ------------------------------------------------------------------------------
+
     ''' <summary>
-    ''' 結果格納用オブジェクト
+    ''' 検証結果格納用オブジェクト
     ''' </summary>
-    ''' ------------------------------------------------------------------------------
     Public Class ValidationResult
 
         Private _validResult As ValidationResultType

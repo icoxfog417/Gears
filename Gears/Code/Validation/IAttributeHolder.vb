@@ -8,7 +8,7 @@ Namespace Gears.Validation
         ReadOnly Property validateeValue As String
         ReadOnly Property GCssClass As String
         Function isValidateOk() As Boolean
-        Function getValidatedMsg() As String
+        Function getValidationError() As String
 
     End Interface
 

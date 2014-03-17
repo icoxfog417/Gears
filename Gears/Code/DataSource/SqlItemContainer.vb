@@ -14,24 +14,33 @@ Namespace Gears.DataSource
 
         ''' <summary>SQLの選択項目</summary>
         Private _selection As New List(Of SqlSelectItem)
+
+        ''' <summary>SQLの選択項目</summary>
         Public Function Selection() As List(Of SqlSelectItem)
             Return _selection
         End Function
+
+        ''' <summary>指定したSQLの選択項目を取得する</summary>
         Public Function Selection(ByVal column As String) As SqlSelectItem
             Return _selection.Where(Function(x) x.Column = column).FirstOrDefault
         End Function
+
+        ''' <summary>指定したSQLの選択項目を取得する</summary>
         Public Function Selection(ByVal index As Integer) As SqlSelectItem
             Return _selection(index)
         End Function
 
         ''' <summary>SQLの条件項目</summary>
         Private _filter As New List(Of SqlFilterItem)
+        ''' <summary>SQLの条件項目</summary>
         Public Function Filter() As List(Of SqlFilterItem)
             Return _filter
         End Function
+        ''' <summary>指定したSQLの条件項目を取得する</summary>
         Public Function Filter(ByVal column As String) As SqlFilterItem
             Return _filter.Where(Function(x) x.Column = column).FirstOrDefault
         End Function
+        ''' <summary>指定したSQLの条件項目を取得する</summary>
         Public Function Filter(ByVal index As Integer) As SqlFilterItem
             Return _filter(index)
         End Function
@@ -123,6 +132,11 @@ Namespace Gears.DataSource
             End If
         End Sub
 
+        ''' <summary>
+        ''' SqlItemを追加する汎用処理
+        ''' </summary>
+        ''' <param name="item"></param>
+        ''' <remarks></remarks>
         Public Sub Add(ByVal item As SqlItem)
             If TypeOf item Is SqlSelectItem Then
                 addSelection(item)
@@ -131,6 +145,12 @@ Namespace Gears.DataSource
             End If
         End Sub
 
+        ''' <summary>
+        ''' SqlItemを追加する汎用処理
+        ''' </summary>
+        ''' <typeparam name="T"></typeparam>
+        ''' <param name="items"></param>
+        ''' <remarks></remarks>
         Public Sub Add(Of T As SqlItem)(ByVal items As List(Of t))
             For Each item In items
                 Add(item)

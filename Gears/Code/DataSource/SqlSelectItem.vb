@@ -87,14 +87,19 @@ Namespace Gears.DataSource
             End If
         End Function
 
+        ''' <summary>前置詞を付与する</summary>
         Public Function pf(ByVal pre As String) As SqlSelectItem
             MyBase.basePf(pre)
             Return Me
         End Function
+
+        ''' <summary>データソースから前置詞を付与する</summary>
         Public Function pf(ByRef sds As SqlDataSource) As SqlSelectItem
             MyBase.basePf(sds)
             Return Me
         End Function
+
+        ''' <summary>キーを設定する</summary>
         Public Function asKey() As SqlSelectItem
             MyBase.baseAsKey()
             Return Me

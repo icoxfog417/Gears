@@ -5,7 +5,8 @@ Imports System.Web.UI.WebControls
 Namespace Gears
 
     ''' <summary>
-    ''' GearsControlの情報をまとめたクラス
+    ''' GearsControlの値や設定情報をまとめたクラス。<br/>
+    ''' GearsControl本体はWebControlを含む重たいクラスであるため、本クラスに値を移すことで扱いやすくする
     ''' </summary>
     ''' <remarks></remarks>
     <Serializable()>
@@ -23,7 +24,7 @@ Namespace Gears
 
         Private _dataSourceId As String = ""
         ''' <summary>
-        ''' データソースクラスのID
+        ''' データソースクラス名
         ''' </summary>
         Public ReadOnly Property DataSourceID() As String
             Get
@@ -82,7 +83,7 @@ Namespace Gears
 
         Private _operatorAttribute As String = ""
         ''' <summary>
-        ''' 検索時のオペレーター設定
+        ''' 検索する際のオペレーター設定(=や>=など)
         ''' </summary>
         Public Property OperatorAttribute() As String
             Get
@@ -96,48 +97,58 @@ Namespace Gears
         ''' <summary>前回ロードされた値</summary>
         Public Property LoadedValue As String = ""
 
-        Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String)
+        ''' <summary>
+        ''' 最低限の情報をセットするコンストラクタ
+        ''' </summary>
+        ''' <param name="conId"></param>
+        ''' <param name="dsID"></param>
+        ''' <param name="value"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal conId As String, ByVal dsId As String, ByVal value As String)
             _controlId = conId
-            _dataSourceId = ds
-            _value = val
+            _dataSourceId = dsId
+            _value = value
         End Sub
 
-        Public Sub New(ByVal conId As String, ByVal ds As String, ByVal val As String, ByVal lval As String, _
-                       ByVal key As Boolean, ByVal form As Boolean, ByVal filter As Boolean, ByVal opr As String)
+        ''' <summary>
+        ''' GearsControlから生成を行うコンストラクタ
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByRef gcon As GearsControl)
+            Me.New(gcon.ControlID, gcon.DataSourceID, gcon.getValue, gcon.LoadedValue, _
+                   gcon.IsKey, gcon.IsFormAttribute, gcon.IsFilterAttribute, gcon.OperatorAttribute)
+        End Sub
+
+        ''' <summary>
+        ''' コピーコンストラクタ
+        ''' </summary>
+        ''' <param name="cInfo"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByRef cInfo As GearsControlInfo)
+            Me.New(cInfo.ControlID, cInfo.DataSourceID, cInfo.Value, cInfo.LoadedValue, _
+                   cInfo.IsKey, cInfo.IsFormAttribute, cInfo.IsFilterAttribute, cInfo.OperatorAttribute)
+        End Sub
+
+        Private Sub New(ByVal conId As String, ByVal dsId As String, ByVal value As String, ByVal lvalue As String, _
+               ByVal isKey As Boolean, ByVal isForm As Boolean, ByVal isFilter As Boolean, ByVal opr As String)
             _controlId = conId
-            _dataSourceId = ds
-            _value = val
-            LoadedValue = lval
-            _isKey = key
-            _isFormAttribute = form
-            _isFilterAttribute = filter
+            _dataSourceId = dsId
+            _value = value
+            LoadedValue = lvalue
+            _isKey = isKey
+            _isFormAttribute = isForm
+            _isFilterAttribute = isFilter
             _operatorAttribute = opr
         End Sub
 
-        Public Sub New(ByRef g As GearsControl)
-            Me.New(g.ControlID, g.DataSourceID, g.getValue, g.LoadedValue, _
-                   g.IsKey, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
-        End Sub
-        Public Sub New(ByRef g As GearsControlInfo)
-            Me.New(g.ControlID, g.DataSourceID, g.Value, g.LoadedValue, _
-                   g.IsKey, g.IsFormAttribute, g.IsFilterAttribute, g.OperatorAttribute)
-        End Sub
-
         Public Overrides Function toString() As String
-            Dim str As String = ""
-            '文字数の都合上英語表示
-            str += _dataSourceId
-            If String.IsNullOrEmpty(_operatorAttribute) Then
-                str += " = "
-            Else
-                str += " " + _operatorAttribute + " "
-            End If
+            Dim result As String = _dataSourceId + " {0} " + Value
+            result = String.Format(result, If(Not String.IsNullOrEmpty(_operatorAttribute), _operatorAttribute, "="))
 
-            If _isKey Then
-                str += Value + " !key! "
-            End If
+            If IsKey Then result = result + "[Key]"
 
-            Return str
+            Return result
 
         End Function
 

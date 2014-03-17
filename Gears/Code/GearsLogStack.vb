@@ -4,7 +4,7 @@ Imports System.Web
 Namespace Gears
 
     ''' <summary>
-    ''' 内部ログを記録するためのクラス<br/>
+    ''' ログを記録するためのクラス<br/>
     ''' Sharedで履歴を管理し、各インスタンスをShared配列に格納する形でログを収集する
     ''' </summary>
     ''' <remarks></remarks>

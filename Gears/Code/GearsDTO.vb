@@ -23,8 +23,8 @@ Namespace Gears
     End Enum
 
     ''' <summary>
-    ''' Controlの値などをGearsDataSourceへ渡す役割を担うクラス<br/>
-    ''' GearsDTOはGearsDataSourceのmakeSqlBuilderを介すことで最終的なSQL実行オブジェクトとなる。
+    ''' Controlなどの画面上の値をGearsDataSourceへ渡す役割を担うクラス<br/>
+    ''' 最終的には、SQLの実行体であるSqlBuilderへ変換される。
     ''' </summary>
     ''' <remarks></remarks>
     <Serializable()>
@@ -96,25 +96,28 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' DTOをSqlBuilderに変換します<br/>
-        ''' 具体的には、コントロール情報(GearsControlInfo)をselect/filter項目に変換します
+        ''' DTOをSqlBuilderに変換する<br/>
+        ''' 具体的には、コントロール情報(GearsControlInfo)をSQLの選択項目/抽出条件に変換します。
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function toSqlBuilder(Optional ByVal ds As SqlDataSource = Nothing) As SqlBuilder
             Dim sqlb As SqlBuilder = New SqlBuilder(Me, False)
 
-            'セレクタ/フィルタの設定
+            'コントロールの値を選択項目/抽出条件に変換する
             For Each item As KeyValuePair(Of String, List(Of GearsControlInfo)) In _controlInfo
                 For Each ginfo As GearsControlInfo In item.Value
                     Dim opr As String = SqlFilterItem.TXT_EQUAL
-                    If Not String.IsNullOrEmpty(ginfo.OperatorAttribute()) Then
+                    If Not String.IsNullOrEmpty(ginfo.OperatorAttribute()) Then 'Operatorの設定がある場合は、それを使用する
                         opr = ginfo.OperatorAttribute()
                     End If
 
                     If ginfo.IsFormAttribute Then
                         If ginfo.IsKey Then
                             sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value).asKey())
+
+                            'キー項目については、抽出条件に追加を行う(UpdateのにおけるWhereのイメージ)。
+                            'この抽出条件はロード時の値があればそれを使用する(キーの変更があった場合を想定)
                             If Not String.IsNullOrEmpty(ginfo.LoadedValue) Then
                                 sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.LoadedValue).asKey())
                             Else
@@ -124,11 +127,11 @@ Namespace Gears
                             sqlb.addSelection(SqlBuilder.S(ginfo.DataSourceID).setValue(ginfo.Value))
                         End If
 
-                    Else 'フィルタパネル、もしくは何も設定がない場合はフィルタ値として判断する
+                    Else 'フィルタパネル、もしくは何も設定がない場合は抽出条件として判断する
                         If ginfo.IsKey Then
                             sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value).asKey())
                         Else
-                            'コントロールの場合、わざわざ%をつけてくれることはないので%でくくる
+                            'コントロールの場合、Like条件にわざわざ%はつけないため、%でくくるようにする
                             sqlb.addFilter(SqlBuilder.F(ginfo.DataSourceID).filterAs(opr, ginfo.Value, isWrapWhenLike:=True))
                         End If
                     End If
@@ -137,7 +140,7 @@ Namespace Gears
             Next
 
             '追加で設定されたselect/filterをセット
-            'select以外の場合、キーが複数存在することは出来ない
+            'select以外でキーの選択条件が複数存在することはないため、重複した場合は置き換える
             For Each item In Selection()
                 If Action <> ActionType.SEL And (sqlb.Selection(item.Column) IsNot Nothing And item.IsKey) Then
                     sqlb.removeSelection(item.Column)
@@ -145,7 +148,7 @@ Namespace Gears
                 sqlb.addSelection(New SqlSelectItem(item))
             Next
             For Each item In Filter()
-                If Action <> ActionType.SEL And (sqlb.Filter(item.Column) IsNot Nothing And item.IsKey) Then  'select以外でキーが複数存在することは出来ない
+                If Action <> ActionType.SEL And (sqlb.Filter(item.Column) IsNot Nothing And item.IsKey) Then
                     sqlb.removeFilter(item.Column)
                 End If
                 sqlb.addFilter(New SqlFilterItem(item))
@@ -164,9 +167,9 @@ Namespace Gears
             str += "更新タイプ：" + ActionToString(Action) + vbCrLf
             If Action = ActionType.SAVE Then
                 'この時点ではInsertになるかUpdateになるか判別がつかないため、両方表示
-                str += "予想実行SQL(更新対象はdummyで表示)：" + vbCrLf + sql.confirmSql(ActionType.UPD) + vbCrLf + sql.confirmSql(ActionType.INS)
+                str += "SQL：" + vbCrLf + sql.confirmSql(ActionType.UPD) + vbCrLf + sql.confirmSql(ActionType.INS)
             Else
-                str += "予想実行SQL(更新対象はdummyで表示)：" + vbCrLf + sql.confirmSql(Action)
+                str += "SQL：" + vbCrLf + sql.confirmSql(Action)
             End If
             Return str
 

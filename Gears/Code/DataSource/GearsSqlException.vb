@@ -3,6 +3,10 @@ Imports System.Runtime.Serialization
 
 Namespace Gears.DataSource
 
+    ''' <summary>
+    ''' SQL処理実行時の例外
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsSqlException
         Inherits GearsException
 
@@ -29,7 +33,7 @@ Namespace Gears.DataSource
 
         'メソッド
         Public Function getActionType() As String
-            Return Detail(MSG_ATYPE)
+            Return toStringDetail(MSG_ATYPE)
         End Function
         Public Sub clearActionType()
             clearDetail(MSG_ATYPE)

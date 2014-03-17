@@ -9,7 +9,7 @@ Imports Gears.Util
 Namespace Gears.Binder
 
     ''' <summary>
-    ''' コントロールにデータをバインドする処理を実装する
+    ''' コントロールに対するDataBind/値設定処理を行う
     ''' </summary>
     ''' <remarks></remarks>
     Public Class GearsDataBinder
@@ -152,7 +152,7 @@ Namespace Gears.Binder
         End Function
 
         ''' <summary>
-        ''' コントロールに値を設定する処理
+        ''' コントロールに値を設定する
         ''' </summary>
         ''' <param name="con"></param>
         ''' <param name="dset"></param>

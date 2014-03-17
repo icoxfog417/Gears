@@ -2,6 +2,10 @@
 
 Namespace Gears.DataSource
 
+    ''' <summary>
+    ''' 楽観ロックの例外
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsOptimisticLockException
         Inherits GearsSqlException
 

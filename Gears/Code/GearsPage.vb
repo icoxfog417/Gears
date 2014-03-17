@@ -102,8 +102,7 @@ Namespace Gears
         Protected GLog As New Dictionary(Of String, GearsException)
 
         ''' <summary>
-        ''' コントロールの管理を行うGearsMediatorを初期化する<br/>
-        ''' 個別に呼び出す場合はGPageInitをオーバーライドし、その中で呼び出すこと。
+        ''' コントロールの管理を行うGearsMediatorを初期化する
         ''' </summary>
         ''' <param name="conName"></param>
         ''' <param name="dns"></param>
@@ -142,8 +141,7 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' ページ初期化イベント<br/>
-        ''' GPageInit(Override可)の実行を行う
+        ''' ページ初期化イベント
         ''' </summary>
         ''' <param name="e"></param>
         ''' <remarks></remarks>
@@ -282,7 +280,10 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' ページ
+        ''' ページの初期化処理。<br/>
+        ''' * ネーミングルールに沿うコントロールをGearsMediatorに登録する
+        ''' * ViewStateに保持しておいた値から、ロード時の値をGearsControlにセットしておく
+        ''' * CssClassから、GearsControlにバリデーション/スタイル表示のためのAttributeをロードする
         ''' </summary>
         ''' <remarks></remarks>
         Protected Sub setUpPageControls()
@@ -376,7 +377,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 自動で登録されないコントロールを手動で登録する
+        ''' 自動で登録されないコントロールを手動でGearsMediatorに登録する
         ''' </summary>
         ''' <param name="con"></param>
         ''' <param name="isAutoLoadAttr"></param>
@@ -387,7 +388,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 自動で登録されないコントロールを手動で登録する
+        ''' 自動で登録されないコントロールを手動でGearsMediatorに登録する
         ''' </summary>
         ''' <param name="con"></param>
         ''' <param name="ds"></param>
@@ -418,34 +419,77 @@ Namespace Gears
             Return New gRuleExpression(fromCon, GMediator)
         End Function
 
+        ''' <summary>
+        ''' データ抽出処理を行う
+        ''' </summary>
+        ''' <param name="selection"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GSelect(ByVal ParamArray selection As SqlSelectItem()) As gSelectExpression
             Return GSelect(selection.ToList)
         End Function
 
+        ''' <summary>
+        ''' データ抽出処理を行う
+        ''' </summary>
+        ''' <param name="selection"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GSelect(Optional ByVal selection As List(Of SqlSelectItem) = Nothing) As gSelectExpression
             Return New gSelectExpression(selection, GMediator)
         End Function
 
+        ''' <summary>
+        ''' フォームを保存する（キーが一致すればUpdate/しなければInsertを行う）
+        ''' </summary>
+        ''' <param name="form"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GSave(ByVal form As Control) As Boolean
             Dim dto As New GearsDTO(ActionType.SAVE)
             Return GSend(form).ToMyself(dto)
         End Function
 
+        ''' <summary>
+        ''' フォームの値でデータベースを更新する
+        ''' </summary>
+        ''' <param name="form"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GUpdate(ByVal form As Control) As Boolean
             Dim dto As New GearsDTO(ActionType.UPD)
             Return GSend(form).ToMyself(dto)
         End Function
 
+        ''' <summary>
+        ''' フォームの値をデータベースに挿入する
+        ''' </summary>
+        ''' <param name="form"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GInsert(ByVal form As Control) As Boolean
             Dim dto As New GearsDTO(ActionType.INS)
             Return GSend(form).ToMyself(dto)
         End Function
 
+        ''' <summary>
+        ''' フォーム内のキー項目の値に合致するレコードをデータベースから削除する
+        ''' </summary>
+        ''' <param name="form"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GDelete(ByVal form As Control) As Boolean
             Dim dto As New GearsDTO(ActionType.DEL)
             Return GSend(form).ToMyself(dto)
         End Function
 
+        ''' <summary>
+        ''' フォーム内のキー項目の値で、データベースからレコードをロードし自身に設定する(フォームのリロード)
+        ''' </summary>
+        ''' <param name="form"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GLoad(ByVal form As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
             'Formコントロール内のキーを使用し、自身の値をリロードする
             Dim loadDto As New GearsDTO(dto)
@@ -458,29 +502,55 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' 自身の値で、関連する全てのコントロールに対しフィルタをかける
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GFilterBy(ByVal fromControl As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
             Dim fDto As GearsDTO = dto
             If fDto Is Nothing Then fDto = New GearsDTO(ActionType.SEL)
             Return GSend(fromControl).ToAll(fDto)
         End Function
 
+        ''' <summary>
+        ''' 自身の値で、指定したコントロールに対しフィルタをかける
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function GFilterBy(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
             Dim fDto As GearsDTO = dto
             If fDto Is Nothing Then fDto = New GearsDTO(ActionType.SEL)
             Return GSend(fromControl).ToThe(toControl, fDto)
         End Function
 
+        ''' <summary>
+        ''' DTOの送信処理を記述する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function GSend(ByVal fromControl As Control) As gSendExpression
-            Return New gSendExpression(fromControl, Nothing, AddressOf Me.execute)
-        End Function
-
-        Private Function GSend(ByVal dto As GearsDTO) As gSendExpression
-            Return New gSendExpression(Nothing, dto, AddressOf Me.execute)
+            Return New gSendExpression(fromControl, AddressOf Me.execute)
         End Function
 
         ''' <summary>
-        ''' 配下のコントロール情報を収集しGearsDTOにまとめる<br/>
-        ''' 実装はGearsMediatorに委譲
+        ''' DTOの送信処理を記述する
+        ''' </summary>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function GSend(ByVal dto As GearsDTO) As gSendExpression
+            Return New gSendExpression(dto, AddressOf Me.execute)
+        End Function
+
+        ''' <summary>
+        ''' 自身のコントロール情報を収集しGearsDTOにまとめ、指定したActionをセットする
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="atype"></param>
@@ -492,7 +562,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 配下のコントロール情報を収集しGearsDTOにまとめる
+        ''' 与えられたDTOに自身のコントロール情報を追加する形で、GearsDTOを作成する
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="dto"></param>
@@ -503,7 +573,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 配下のコントロール情報を収集しGearsDTOにまとめる
+        ''' 指定した相手先に送るためのDTOを作成する
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
@@ -515,7 +585,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 配下のコントロール情報を収集しGearsDTOにまとめる
+        ''' 与えられたDTOを元に指定した相手先に送るためのDTOを作成する
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
@@ -528,7 +598,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' fromコントロールの変更を、関連先に通知するメソッド<br/>
+        ''' fromコントロールから与えられたDTOを元にDTOを作成し、toコントロールに送信する<br/>
         ''' </summary>
         ''' <param name="fromControl"></param>
         ''' <param name="toControl"></param>
@@ -596,6 +666,7 @@ Namespace Gears
                 saveLoadedValue()
             Else
 
+                '実行結果がNGであった場合、ログをセット
                 For Each logitem As KeyValuePair(Of String, GearsException) In GMediator.GLog()
                     If Not GLog.ContainsKey(logitem.Key) Then
                         GLog.Add(logitem.Key, logitem.Value)
@@ -604,6 +675,7 @@ Namespace Gears
                     End If
                 Next
 
+                'モデルバリデーションの結果を評価する(エラー/警告など)
                 result = evalModel(GLog)
 
             End If
@@ -613,7 +685,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 登録済みコントロールのうち
+        ''' 登録済みコントロールのロード時の値をViewStateに保管する
         ''' </summary>
         ''' <remarks></remarks>
         Private Sub saveLoadedValue()
@@ -632,7 +704,7 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' ロードされた値を保存する
+        ''' ViewStateに指定されたコントロールの値を保存する
         ''' </summary>
         ''' <param name="conId"></param>
         ''' <remarks></remarks>
@@ -651,7 +723,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 楽観ロック用の値を取得し、保存する
+        ''' 楽観ロック用の値を取得し、ViewStateに保存する
         ''' </summary>
         ''' <param name="gcon"></param>
         ''' <remarks></remarks>
@@ -668,7 +740,7 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' 楽観ロック用の値を取得する
+        ''' ViewStateに保存しておいた楽観ロック用の値を取得する
         ''' </summary>
         ''' <param name="con"></param>
         ''' <returns></returns>
@@ -742,7 +814,7 @@ Namespace Gears
         End Sub
 
         ''' <summary>
-        ''' 画面のバリデーションを行う
+        ''' 登録されたコントロールのAttributeに基づき、バリデーション処理を実行する
         ''' </summary>
         ''' <param name="con"></param>
         ''' <returns></returns>
@@ -783,7 +855,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 各コントロールに対しバリデーションを行う
+        ''' 登録済みの各コントロールに対しバリデーションを行う
         ''' </summary>
         ''' <param name="control"></param>
         ''' <param name="dto"></param>
@@ -792,14 +864,14 @@ Namespace Gears
             If Not GMediator.GControl(control.ID) Is Nothing Then
                 Dim gcon As GearsControl = GMediator.GControl(control.ID)
                 If Not gcon.isValidateOk() Then
-                    GLog.Add(control.ID, New GearsDataValidationException(gcon.getValidatedMsg))
+                    GLog.Add(control.ID, New GearsDataValidationException(gcon.getValidationError))
                 End If
             End If
 
         End Sub
 
         ''' <summary>
-        ''' バリデーション結果を評価する
+        ''' モデルバリデーションの結果を評価する
         ''' </summary>
         ''' <param name="logs"></param>
         ''' <returns></returns>
@@ -878,7 +950,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 与えられたControl領域について、権限の評価を行う
+        ''' 与えられたControl領域に対し、権限の評価を行う
         ''' </summary>
         ''' <param name="con"></param>
         ''' <remarks></remarks>
@@ -1058,7 +1130,13 @@ Namespace Gears
 
     End Class
 
+    ''' <summary>
+    ''' GearsPage内で使用する拡張ユーティリティ
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Module GearsPageExtendModule
+
+        ''' <summary>最初のログを取得する</summary>
         <Runtime.CompilerServices.Extension()> _
         Public Function FirstLog(ByVal log As Dictionary(Of String, GearsException)) As GearsException
             If log IsNot Nothing AndAlso log.Count > 0 Then

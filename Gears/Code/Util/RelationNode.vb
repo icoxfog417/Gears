@@ -9,16 +9,19 @@ Namespace Gears.Util
         Public Delegate Function nodeHandler(ByVal node As RelationNode) As String
 
         Public Property Parent As RelationNode = Nothing
+        ''' <summary>親ノード</summary>
         Private Sub setParent(ByVal node As RelationNode)
             Parent = node
         End Sub
 
         Public Property Children As New List(Of RelationNode)
+        ''' <summary>関連子ノード</summary>
         Public Sub addChild(ByRef node As RelationNode)
             node.setParent(Me)
             Children.Add(node)
         End Sub
 
+        ''' <summary>値(キー)</summary>
         Public Property Value As String
 
         Public Sub New(ByVal value As String)
@@ -39,6 +42,7 @@ Namespace Gears.Util
             End If
         End Sub
 
+        ''' <summary>指定されたキーを持つノードを探索する</summary>
         Public Function findNode(ByVal value As String) As RelationNode
             Dim targets As New List(Of RelationNode)
 
@@ -61,6 +65,7 @@ Namespace Gears.Util
 
         End Function
 
+        ''' <summary>指定されたノードを親に持つか判定する</summary>
         Public Function hasThisParent(ByVal node As RelationNode) As Boolean
 
             Dim targets As New List(Of RelationNode)
@@ -81,6 +86,7 @@ Namespace Gears.Util
 
         End Function
 
+        ''' <summary>ルートからの深さを返す</summary>
         Public Function getDepth() As Integer
             Dim ps As List(Of String) = visitParents(Function(node As RelationNode) As String
                                                          Return "X"
@@ -88,6 +94,7 @@ Namespace Gears.Util
             Return ps.Count
         End Function
 
+        ''' <summary>親を探索し各要素に指定したデリゲートを適用する処理</summary>
         Public Function visitParents(ByVal func As nodeHandler) As List(Of String)
             Dim result As New List(Of String)
 
@@ -103,6 +110,7 @@ Namespace Gears.Util
 
         End Function
 
+        ''' <summary>子を探索し各要素に指定したデリゲートを適用する処理</summary>
         Public Function visitChildren(ByVal func As nodeHandler) As List(Of String)
             Dim result As New List(Of String)
 
@@ -120,6 +128,12 @@ Namespace Gears.Util
 
         End Function
 
+        ''' <summary>
+        ''' 指定した値を関連の内に持つものを抽出する
+        ''' </summary>
+        ''' <param name="nodes"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getBranches(ByVal nodes As List(Of String)) As List(Of RelationNode)
             Dim paths As New Dictionary(Of String, RelationNode)
             Dim result As New List(Of RelationNode)
@@ -160,6 +174,12 @@ Namespace Gears.Util
 
         End Function
 
+        ''' <summary>
+        ''' 関連を定義したディクショナリからツリー構造を作成し、ノードとして返す
+        ''' </summary>
+        ''' <param name="relations"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function makeTreeWithRoot(ByVal relations As Dictionary(Of String, List(Of String))) As RelationNode
             Dim trees As List(Of RelationNode) = makeTree(relations)
             If trees.Count > 1 Then
@@ -170,6 +190,12 @@ Namespace Gears.Util
             End If
         End Function
 
+        ''' <summary>
+        ''' 関連を定義したディクショナリからツリー構造を作成する
+        ''' </summary>
+        ''' <param name="relations"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function makeTree(ByVal relations As Dictionary(Of String, List(Of String))) As List(Of RelationNode)
             Dim nodes As New List(Of RelationNode)
             Dim children As New List(Of RelationNode)
@@ -238,12 +264,14 @@ Namespace Gears.Util
 
         End Function
 
+        ''' <summary>末端要素であるか否か</summary>
         Public ReadOnly Property isLeaf As Boolean
             Get
                 Return Children.Count = 0
             End Get
         End Property
 
+        ''' <summary>ルート要素であるか否か</summary>
         Public ReadOnly Property isRoot As Boolean
             Get
                 Return Parent Is Nothing

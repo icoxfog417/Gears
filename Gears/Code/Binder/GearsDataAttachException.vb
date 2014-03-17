@@ -4,6 +4,10 @@ Imports System.Web.UI
 
 Namespace Gears.Binder
 
+    ''' <summary>
+    ''' コントロールへの値設定時の例外
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsDataAttachException
         Inherits GearsDataBindException
 
@@ -12,7 +16,7 @@ Namespace Gears.Binder
             MyBase.New()
         End Sub
         Public Sub New(ByRef con As Control, Optional ByVal innerException As Exception = Nothing)
-            MyBase.New(con, "コントロール " + con.ID + " へのデータ展開処理に失敗しました", innerException)
+            MyBase.New(con, "コントロール " + con.ID + " への値設定に失敗しました", innerException)
             setSourceControl(con.ID)
         End Sub
 

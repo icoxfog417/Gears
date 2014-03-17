@@ -79,6 +79,12 @@ Namespace Gears.DataSource
         End Property
 
         Private _connectionName As String = ""
+        ''' <summary>
+        ''' 接続文字列
+        ''' </summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public ReadOnly Property ConnectionName As String
             Get
                 Return _connectionName
@@ -170,7 +176,7 @@ Namespace Gears.DataSource
             End If
             sqlb.IsMultiByte = _isMultiByte
 
-            If SelectView.LockCheckColum.Count > 0 Then
+            If SelectView.LockCheckColumn.Count > 0 Then
                 '選択の場合で明確な選択項目がない場合(SELECT * の場合)以外は、楽観ロックカラムを指定(選択)する
                 If Not (data.Action = ActionType.SEL And sqlb.Selection.Where(Function(s) Not s.IsNoSelect).Count = 0) Then
                     addLockValue(sqlb)
@@ -269,7 +275,12 @@ Namespace Gears.DataSource
 
         End Function
 
-        '項目名変換を行う
+        ''' <summary>
+        ''' SqlBuilderに設定された項目変換に基づき、DataTableのカラム名を変換する
+        ''' </summary>
+        ''' <param name="dataSet"></param>
+        ''' <param name="sqlb"></param>
+        ''' <remarks></remarks>
         Public Sub convertResultSet(ByRef dataSet As DataTable, ByVal sqlb As SqlBuilder)
             Dim conv As INameExchanger = sqlb.ItemColExchanger
             If Not conv Is Nothing AndAlso Not dataSet Is Nothing AndAlso dataSet.Columns.Count > 0 Then
@@ -429,6 +440,11 @@ Namespace Gears.DataSource
 
         End Sub
 
+        ''' <summary>
+        ''' データベース更新後の値を読み込む
+        ''' </summary>
+        ''' <param name="sqlb"></param>
+        ''' <remarks></remarks>
         Protected Sub loadExecuted(ByVal sqlb As SqlBuilder)
 
             '実行後のデータを読み込む
@@ -490,6 +506,12 @@ Namespace Gears.DataSource
         Protected Overridable Sub afterExecute(ByVal sqlb As SqlBuilder)
         End Sub
 
+        ''' <summary>
+        ''' Saveの場合のInsert/Update判定、また楽観ロックのチェックを行う
+        ''' </summary>
+        ''' <param name="confirmData"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function confirmRecord(ByVal confirmData As GearsDTO) As ActionType
             Return confirmRecord(makeSqlBuilder(confirmData))
         End Function
@@ -616,7 +638,7 @@ Namespace Gears.DataSource
         Public Function getLockValue() As List(Of SqlFilterItem)
             Dim param As New List(Of SqlFilterItem)
             If _resultSet.Rows.Count > 0 Then
-                For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColum
+                For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
                     Dim value As Object = DataSetReader.Item(_resultSet, item.Key)
                     If Not IsDBNull(value) Then
                         param.Add(New SqlFilterItem(item.Key).eq(value))
@@ -636,7 +658,7 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
         Protected Sub addLockValue(ByVal sqlb As SqlBuilder)
-            For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColum
+            For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
                 '元々設定されていた場合はそちらを優先する
                 If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
                     sqlb.addSelection(SqlBuilder.S(item.Key).setValue(getLockTypeValue(item.Value)))
