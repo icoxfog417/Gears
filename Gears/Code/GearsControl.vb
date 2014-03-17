@@ -15,14 +15,14 @@ Namespace Gears
     ''' <summary>
     ''' System.Web.UI.WebControlをラップするControl<br/>
     ''' 1.値のセットについて<br/>
-    ''' dataBindによりリストなどの選択値、dataAttachにより実際の値がセットされます。<br/>
+    ''' 基本的にdataBindにより選択リストの取得、dataAttachにより値のセットが行われます。<br/>
     ''' 例えば、A・B・Cというの選択肢があり選択中の値はB、という場合、A・B・Cという値はdataBindによりロードされ、
-    ''' Bという値はdataAttachにより設定されます。dataAttachは主に特定の一行のDataTableを引数とし、この中で自Controlに該当する値を選択しセットします。
-    ''' <see cref="Gears.Binder.GearsDataBinder.dataAttach"/>
+    ''' Bという値はdataAttachにより設定されます。dataAttachは主に特定の一行のDataTableを引数とし、この中で自Controlに該当する値を選択しセットします
+    ''' <see cref="Gears.Binder.GearsDataBinder.dataAttach"/>。<br/>
+    ''' なお、値の取得/設定はgetValue/setValueを使用し直接的に行うことも可能です。<br/>
     ''' <br/>
-    ''' なお、値の設定はsetValueを使用し直接的に行うことも可能です。dataBind/dataAttachによるプロセスはGearsPage等から自動的に処理される際に使用されます<br/>
-    ''' <br/>
-    ''' dataBindに使用されるGearsDataSourceは、手動で渡すこともできますが基本的にIDから推定されます<a href="http://gearssite.apphb.com/GearsSampleControl.aspx" target="_blank">名称規約について</a><br/>
+    ''' dataBindに使用されるGearsDataSourceは、基本的にIDから推定されます<a href="http://gearssite.apphb.com/GearsSampleControl.aspx" target="_blank">名称規約について</a><br/>
+    ''' 簡単な例としては、ddlUNITというコントロールの場合「UNIT」がデータソースクラス名称として推定されます。<br/>
     ''' <br/>
     ''' 2.値の検証(バリデーション)について<br/>
     ''' GearsControlはバリデーションの機能も保持しています。バリデーションのための設定情報はCssClassから抽出されます。<br/>
@@ -120,6 +120,10 @@ Namespace Gears
         ''' </summary>
         Public Property IsKey As Boolean
 
+        ''' <summary>
+        ''' このコントロールをキーとして設定する
+        ''' </summary>
+        ''' <remarks></remarks>
         Public Sub asKey()
             _IsKey = True
         End Sub
@@ -673,6 +677,13 @@ Namespace Gears
 
         End Function
 
+        ''' <summary>
+        ''' IFormItemからControlを取得する<br/>
+        ''' IFormItemはラベルとコントロールが一体となったようなコントロールをイメージしています
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Shared Function extractControl(ByVal con As Control) As Control
             If TypeOf con Is IFormItem Then
                 Return CType(con, IFormItem).getControl
