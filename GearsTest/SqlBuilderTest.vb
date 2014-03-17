@@ -83,6 +83,20 @@ Namespace GearsTest
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB "
 
+            sqlbd.Add(SqlFilterGroup.Ors(SqlBuilder.F("COL1").eq(""), SqlBuilder.F("COL2").eq("")))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB"))
+
+            Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
+
+        <Test()>
+        Public Sub sqlFilterGroupEmpty()
+            Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
+            Dim answer As String = "SELECT * FROM TAB "
+
             sqlbd.addFilter(SqlBuilder.F("COL1").eq(""))
             sqlbd.addFilter(SqlBuilder.F("COL2").eq(""))
             sqlbd.DataSource = (SqlBuilder.DS("TAB"))
@@ -98,11 +112,9 @@ Namespace GearsTest
             Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
             Dim answer As String = "SELECT * FROM TAB WHERE (NOT COL1 IS NULL AND NOT COL2 = :F1) AND ( NOT COL3 = :G1F0 OR COL4 = :G1F1 ) "
 
-            Dim group As New SqlFilterGroup("A")
             sqlbd.addFilter(SqlBuilder.F("COL1").eq(Nothing).nots)
             sqlbd.addFilter(SqlBuilder.F("COL2").eq("1").nots)
-            sqlbd.addFilter(SqlBuilder.F("COL3").eq("1").inGroup(group).nots)
-            sqlbd.addFilter(SqlBuilder.F("COL4").eq("1").inGroup(group))
+            sqlbd.Add(SqlFilterGroup.Ors(SqlBuilder.F("COL3").eq("1").nots, SqlBuilder.F("COL4").eq("1")))
             sqlbd.DataSource = (SqlBuilder.DS("TAB"))
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
@@ -111,6 +123,20 @@ Namespace GearsTest
 
         End Sub
 
+        <Test()>
+        Public Sub sqlFilterGrouping()
+            Dim sqlbd = New SqlBuilder(DbServerType.Oracle)
+            Dim answer As String = "SELECT * FROM TAB WHERE (NOT COL1 IS NULL AND COL2 = :G0F1) AND ( COL3 >= :G1F0 OR COL4 = :G1F1 ) "
+
+            sqlbd.Add(SqlFilterGroup.Ands(SqlBuilder.F("COL1").eq(Nothing).nots, SqlBuilder.F("COL2").eq("1")))
+            sqlbd.Add(SqlFilterGroup.Ors(SqlBuilder.F("COL3").gteq("1"), SqlBuilder.F("COL4").eq("1")))
+            sqlbd.DataSource = (SqlBuilder.DS("TAB"))
+
+            Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)
+            Console.WriteLine(sql)
+            Assert.AreEqual(trimAll(answer), trimAll(sql))
+
+        End Sub
 
         <Test(), TestCaseSource("DbServers")>
         Public Sub sqlJoin(ds As DbServerType)

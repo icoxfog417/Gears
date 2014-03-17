@@ -33,8 +33,26 @@ Namespace Gears.DataSource
             _isOrGroup = isOr
         End Sub
 
-        Public Shared Function newGroup(ByVal groupName As String, Optional ByVal isOr As Boolean = True) As SqlFilterGroup
-            Return New SqlFilterGroup(groupName, isOr)
+        Public Shared Function Ors(ParamArray filters As SqlFilterItem()) As List(Of SqlFilterItem)
+            Return Ors(filters.ToList)
+        End Function
+
+        Public Shared Function Ors(ByRef filters As List(Of SqlFilterItem)) As List(Of SqlFilterItem)
+            Dim gName As String = Guid.NewGuid.ToString("N")
+            Dim myGroup As SqlFilterGroup = New SqlFilterGroup(gName, True)
+            myGroup.grouping(filters)
+            Return filters
+        End Function
+
+        Public Shared Function Ands(ParamArray filters As SqlFilterItem()) As List(Of SqlFilterItem)
+            Return ANDs(filters.ToList)
+        End Function
+
+        Public Shared Function Ands(ByRef filters As List(Of SqlFilterItem)) As List(Of SqlFilterItem)
+            Dim gName As String = Guid.NewGuid.ToString("N")
+            Dim myGroup As SqlFilterGroup = New SqlFilterGroup(gName, False)
+            myGroup.grouping(filters)
+            Return filters
         End Function
 
         ''' <summary>

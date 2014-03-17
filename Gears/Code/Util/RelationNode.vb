@@ -61,6 +61,26 @@ Namespace Gears.Util
 
         End Function
 
+        Public Function hasThisParent(ByVal node As RelationNode) As Boolean
+
+            Dim targets As New List(Of RelationNode)
+
+            Dim findOut As nodeHandler = Function(n As RelationNode) As String
+                                             If n.Value = node.Value Then targets.Add(n)
+                                             Return "X"
+                                         End Function
+
+            '親を探索
+            Dim parentSearch As List(Of String) = visitParents(findOut)
+
+            If targets.Count > 0 Then
+                Return True
+            Else
+                Return False
+            End If
+
+        End Function
+
         Public Function getDepth() As Integer
             Dim ps As List(Of String) = visitParents(Function(node As RelationNode) As String
                                                          Return "X"
@@ -102,6 +122,7 @@ Namespace Gears.Util
 
         Public Function getBranches(ByVal nodes As List(Of String)) As List(Of RelationNode)
             Dim paths As New Dictionary(Of String, RelationNode)
+            Dim result As New List(Of RelationNode)
 
             For Each node As String In nodes
                 Dim n As RelationNode = findNode(node)
@@ -119,23 +140,20 @@ Namespace Gears.Util
             Dim keys As List(Of String) = paths.Keys.ToList
             Dim branchKeys As New List(Of String)
 
-            keys.Sort() '昇順に並び替え
+            keys.Sort() '昇順に並び替えhasThisParent
 
-            Dim keyNow As String = ""
+            Dim breakNode As RelationNode = Nothing
+
+            '得られたノードを、独立したブランチに集約する
+            '例:A/BとA/B/Cというノードがあった場合、A/B/CはA/Bであるノードの一部分であるため、A/Bのみ選択する
+            '
+            '事前にソートを行っておいたことで、親→子(ルートに近い→遠い)順にノードは並んでいる。
+            'このため、上から処理しノードが親に含まれなくなった段階でBreakをし要素を追加していく。
             For Each key In keys
-                '初回、もしくは新規のルートであるパスの場合追加を行う
-                '事前にソートをしているため、A,A/B.A/B/C,Dのようにルートに近い順に並び替えが行われている。
-                '要素が含まれなくなったら、別のルートのブランチとなったと判断し追加を行う。
-                'また、/を含まないルートについては無条件で追加を行う
-                If String.IsNullOrEmpty(keyNow) Or (Not key.Contains("/") OrElse Not key.Contains(keyNow)) Then
-                    branchKeys.Add(key)
-                    keyNow = key
+                If breakNode Is Nothing OrElse Not paths(key).hasThisParent(breakNode) Then
+                    result.Add(paths(key))
+                    breakNode = paths(key)
                 End If
-            Next
-
-            Dim result As New List(Of RelationNode)
-            For Each bkey As String In branchKeys
-                result.Add(paths(bkey))
             Next
 
             Return result

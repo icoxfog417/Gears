@@ -131,6 +131,12 @@ Namespace Gears.DataSource
             End If
         End Sub
 
+        Public Sub Add(Of T As SqlItem)(ByVal items As List(Of t))
+            For Each item In items
+                Add(item)
+            Next
+        End Sub
+
         ''' <summary>選択情報の追加</summary>
         Public Sub addSelection(ByVal item As SqlSelectItem)
             _selection.Add(item)

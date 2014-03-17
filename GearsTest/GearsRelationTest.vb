@@ -9,7 +9,7 @@ Namespace GearsTest
     <TestFixture()>
     Public Class GearsRelationTest
 
-        Private Const DefaultConnection As String = "SQLiteConnec"
+        Private Const DefaultConnection As String = "SQLiteConnect"
 
         ''' <summary>
         ''' コントロールのリレーションを見て、ブランチを作成する
@@ -56,14 +56,25 @@ Namespace GearsTest
             Dim tree As New Dictionary(Of String, List(Of String))
             tree.Add("A", New List(Of String) From {"B", "C"})
             tree.Add("B", New List(Of String) From {"D"})
-            tree.Add("C", Nothing)
+            tree.Add("C", New List(Of String) From {"C1", "C2"})
+            tree.Add("C3", Nothing)
 
             Dim node As RelationNode = RelationNode.makeTreeWithRoot(tree)
 
-            Dim branches As List(Of RelationNode) = node.getBranches(New List(Of String) From {"B", "C"})
+            Dim branches As List(Of RelationNode) = node.getBranches(New List(Of String) From {"B", "D", "C", "C3"})
             branches.ForEach(Sub(n) Console.WriteLine(n))
 
-            Assert.AreEqual(2, branches.Count) 'B-D,とCの2件
+            'A-B , C , C3の3件
+            Assert.AreEqual(3, branches.Count)
+            branches.ForEach(Sub(n) Assert.IsTrue(New List(Of String)() From {"B", "C", "C3"}.Contains(n.Value)))
+
+            'Cの1件(C1/C2は子要素のため集約される)
+            branches = node.getBranches(New List(Of String) From {"C", "C1", "C2"})
+            Assert.IsTrue(branches.Count = 1 And branches.First.Value = "C")
+
+            branches = node.getBranches(New List(Of String) From {"C1", "C2"})
+            Assert.AreEqual(2, branches.Count) 'C1/C2の2件
+            branches.ForEach(Sub(n) Assert.IsTrue(New List(Of String)() From {"C1", "C2"}.Contains(n.Value)))
 
         End Sub
 

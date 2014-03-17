@@ -82,6 +82,7 @@
     <Compile Include="Code\GearsExpressions.vb" />
     <Compile Include="Code\Util\ControlSearcher.vb" />
     <Compile Include="Code\Util\DataSetReader.vb" />
+    <Compile Include="Code\Util\IFormItem.vb" />
     <Compile Include="Code\Validation\GearsDataValidationException.vb" />
     <Compile Include="Code\DataSource\GearsOptimisticLockException.vb" />
     <Compile Include="Code\Validation\GearsModelValidationException.vb" />
