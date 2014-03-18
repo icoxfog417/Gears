@@ -841,7 +841,7 @@ Namespace Gears
                 For Each item As KeyValuePair(Of String, GearsException) In GLog
                     If Not GMediator.GControl(item.Key) Is Nothing AndAlso _
                         TypeOf GMediator.GControl(item.Key).Control Is WebControl AndAlso _
-                        TypeOf item.Value Is GearsDataValidationException Then
+                        TypeOf item.Value Is GearsValidationException Then
 
                         Dim wcon As WebControl = CType(GMediator.GControl(item.Key).Control, WebControl)
                         wcon.CssClass += " " + GearsAttribute.ERR_STYLE
@@ -864,7 +864,7 @@ Namespace Gears
             If Not GMediator.GControl(control.ID) Is Nothing Then
                 Dim gcon As GearsControl = GMediator.GControl(control.ID)
                 If Not gcon.isValidateOk() Then
-                    GLog.Add(control.ID, New GearsDataValidationException(gcon.getValidationError))
+                    GLog.Add(control.ID, New GearsValidationException(gcon.getValidationError))
                 End If
             End If
 

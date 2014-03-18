@@ -248,7 +248,7 @@ Namespace Gears.DataSource
 
             Dim ds As New SqlDataSource("(" + sql + ")", suffix)
             For Each item As KeyValuePair(Of String, Object) In param
-                ds.setValue(item.Key, item.Value)
+                ds.addParameter(item.Key, item.Value)
             Next
 
             Return ds
@@ -320,7 +320,7 @@ Namespace Gears.DataSource
         Private Function formatSource(ByVal source As SqlDataSource) As String
             Dim result As String = source.Name
 
-            If IsMultiByte And source.Value.Count = 0 Then 'マルチバイト対応が必要で、パイプライン表関数でない(引数がない)
+            If IsMultiByte And source.Parameter.Count = 0 Then 'マルチバイト対応が必要で、パイプライン表関数でない(引数がない)
                 result = String.Format(MULTIBYTE_FORMAT, result)
             End If
 
@@ -579,7 +579,7 @@ Namespace Gears.DataSource
         Private Function makeRelationStr(ByVal ds As SqlDataSource, ByRef params As Dictionary(Of String, Object)) As String
             Dim source As String = ""
 
-            ds.readValues(params)
+            ds.readParameter(params)
 
             If Not ds.hasRelation Then
                 source = formatSource(ds)

@@ -3,6 +3,10 @@ Imports Gears.Validation
 
 Namespace Gears.Validation
 
+    ''' <summary>
+    ''' モデルバリデーションのエラーを表す例外
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsModelValidationException
         Inherits GearsException
 
@@ -13,7 +17,6 @@ Namespace Gears.Validation
             End Get
         End Property
 
-        'コンストラクタ
         Public Sub New(ByVal result As ValidationResults)
             MyBase.New(result.ErrorMessage)
             _result = result

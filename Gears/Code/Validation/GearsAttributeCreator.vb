@@ -4,51 +4,77 @@ Imports Gears.Validation.Validator
 
 Namespace Gears.Validation
 
+    ''' <summary>
+    ''' 属性を作成するためのクラス
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsAttributeCreator
 
+        ''' <summary>属性を定義するCSSクラスの接頭辞</summary>
         Public Const CSS_HEAD As String = "gears-"
+
+        ''' <summary>属性のコンテナ</summary>
         Private _ac As New GearsAttributeContainer
+
+        ''' <summary>属性のスタイル</summary>
         Private cssClass As String = ""
 
-        Public Property SubstituteNamespace As String
+        ''' <summary>属性の名称空間を明示的に指定(デフォルトはGears.Validation.Validatorから生成される)</summary>
+        Public Property AttributeNamespace As String
 
-        '個別クラス設定用
+        ''' <summary>数値型の属性を作成</summary>
         Public Function isNumeric() As GearsAttributeCreator
             _ac.addAttribute(New GNumeric)
             Return Me
         End Function
+
+        ''' <summary>日付型の属性を作成</summary>
         Public Function isDate() As GearsAttributeCreator
             _ac.addAttribute(New GDate)
             Return Me
         End Function
+
+        ''' <summary>必須の属性を作成</summary>
         Public Function isRequired() As GearsAttributeCreator
             _ac.addAttribute(New GRequired)
             Return Me
         End Function
+
+        ''' <summary>項目のバイト長をチェックする属性を作成</summary>
         Public Function isLength(i As Integer) As GearsAttributeCreator
             _ac.addAttribute(New GByteLength(i))
             Return Me
         End Function
+
+        ''' <summary>項目のバイト長間隔をチェックする属性を作成</summary>
         Public Function isLengthBetween(min As Integer, max As Integer) As GearsAttributeCreator
             _ac.addAttribute(New GByteLengthBetween(min, max))
             Return Me
         End Function
+
+        ''' <summary>項目が特定文字で始まるかをチェックする属性を作成</summary>
         Public Function isStartWith(s As String) As GearsAttributeCreator
             _ac.addAttribute(New GStartWith(s))
             Return Me
         End Function
+
+        ''' <summary>項目の整数部/小数点以下桁数をチェックする属性を作成</summary>
         Public Function isPeriodPositionOk(ByVal beforep As Integer, ByVal afterp As Integer) As GearsAttributeCreator
             _ac.addAttribute(New GPeriodPositionOk(beforep, afterp))
             Return Me
         End Function
+
+        ''' <summary>指定正規表現への一致をチェックする属性を作成</summary>
         Public Function isMatch(ByVal pattern As String, Optional ByVal whenMatch As Boolean = True) As GearsAttributeCreator
             _ac.addAttribute(New GMatch(pattern, whenMatch))
             Return Me
         End Function
-        Public Function isComp(ByVal targetValue As String, Optional ByVal compType As String = "=") As GearsAttributeCreator
-            Dim attr As New GComp()
-            attr.TgtValue = targetValue
-            attr.CompType = compType
+
+        ''' <summary>比較演算でのチェックをする属性を作成</summary>
+        Public Function isCompare(ByVal expected As String, Optional ByVal operatorType As String = "=") As GearsAttributeCreator
+            Dim attr As New GCompare()
+            attr.Expected = expected
+            attr.OperatorType = operatorType
             _ac.addAttribute(attr)
             Return Me
         End Function
@@ -56,13 +82,23 @@ Namespace Gears.Validation
         Public Sub New()
         End Sub
 
-        Public Sub New(ByVal subNamespace As String)
-            SubstituteNamespace = subNamespace
+        ''' <summary>属性の名称空間を明示的に指定</summary>
+        ''' <param name="attrNamespace"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal attrNamespace As String)
+            AttributeNamespace = attrNamespace
         End Sub
 
-        'Cssからの設定
-        Public Function createAttributesFromString(cs As String) As GearsAttributeCreator
-            cssClass = cs
+        ''' <summary>
+        ''' CSS文字列から属性を作成する<br/>
+        ''' CSSはgears-属性クラス名_属性クラスのプロパティ_プロパティの値...という形式で構成される<br/>
+        ''' 例:gears-GByteLengthBetween_MinLength_0_Length_18
+        ''' </summary>
+        ''' <param name="css"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function createAttributesFromString(css As String) As GearsAttributeCreator
+            cssClass = css
             Dim splitedClass() As String = Split(cssClass, " ")
 
             For i As Integer = 0 To splitedClass.Length - 1
@@ -77,6 +113,12 @@ Namespace Gears.Validation
             Return Me
         End Function
 
+        ''' <summary>
+        ''' 単一のCSSクラス名から属性クラスを作成する
+        ''' </summary>
+        ''' <param name="cssClass"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function createAttributeFromString(cssClass As String) As GearsAttribute
             Dim result As GearsAttribute = Nothing
             If Not cssClass Is Nothing AndAlso cssClass.StartsWith(CSS_HEAD) Then
@@ -94,8 +136,8 @@ Namespace Gears.Validation
                     Dim attrType As Type = Type.GetType("Gears.Validation.Validator." + classStr)
                     Dim instance As Object = System.Activator.CreateInstance(attrType)
 
-                    If instance Is Nothing Then '代替名称空間で再トライ
-                        attrType = Type.GetType(SubstituteNamespace + "." + classStr)
+                    If instance Is Nothing AndAlso Not String.IsNullOrEmpty(AttributeNamespace) Then '代替名称空間で再トライ
+                        attrType = Type.GetType(AttributeNamespace + "." + classStr)
                         instance = System.Activator.CreateInstance(attrType)
                     End If
 
@@ -121,6 +163,11 @@ Namespace Gears.Validation
 
         End Function
 
+        ''' <summary>
+        ''' 作成した属性コンテナを取得する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function pack() As GearsAttributeContainer
             Dim result As New GearsAttributeContainer(_ac)
             '初期化しない方が便利なケースがあるかもしれないが、混乱を避けるならこれがベスト
@@ -132,6 +179,11 @@ Namespace Gears.Validation
             Return result
         End Function
 
+        ''' <summary>
+        ''' 作成されたCssClassを取得する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Function getCssClass() As String
             If cssClass = "" Then
                 Return _ac.CssClass
@@ -140,6 +192,10 @@ Namespace Gears.Validation
             End If
         End Function
 
+        ''' <summary>
+        ''' 作成処理を初期化する
+        ''' </summary>
+        ''' <remarks></remarks>
         Private Sub clearCreator()
             _ac.clearAttributes()
             cssClass = ""

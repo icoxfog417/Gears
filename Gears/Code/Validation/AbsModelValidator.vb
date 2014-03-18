@@ -5,15 +5,28 @@ Imports Gears.DataSource
 Namespace Gears.Validation
 
     ''' <summary>
-    ''' 検証用メソッドのアノテーション定義
+    ''' モデルバリデーションを行うメソッドに付与するアノテーション定義
     ''' </summary>
     <System.AttributeUsage(AttributeTargets.Method, AllowMultiple:=True, Inherited:=True)>
     Public Class ModelValidationMethod
         Inherits System.Attribute
 
+        ''' <summary>デフォルトの検証順序</summary>
         Public Const DEFAULT_ORDER As Integer = 999
 
+        Private _order As Integer = DEFAULT_ORDER
+        ''' <summary>検証を行う順番</summary>
+        Public Property Order() As Integer
+            Get
+                Return _order
+            End Get
+            Set(ByVal value As Integer)
+                _order = value
+            End Set
+        End Property
+
         Private _falseAsAlert As Boolean = False
+        ''' <summary>検証結果がNGであった場合、警告として扱うか(デフォルトはエラーになる)</summary>
         Public Property FalseAsAlert() As Boolean
             Get
                 Return _falseAsAlert
@@ -24,6 +37,7 @@ Namespace Gears.Validation
         End Property
 
         Private _onlyWhenTheseValueExist As String = ""
+        ''' <summary>指定した項目に値があった場合のみ検証を行う</summary>
         Public Property OnlyWhenTheseValueExist() As String
             Get
                 Return _onlyWhenTheseValueExist
@@ -33,52 +47,56 @@ Namespace Gears.Validation
             End Set
         End Property
 
-
-        Private _order As Integer = DEFAULT_ORDER
-        Public Property Order() As Integer
-            Get
-                Return _order
-            End Get
-            Set(ByVal value As Integer)
-                _order = value
-            End Set
-        End Property
-
     End Class
 
+    ''' <summary>
+    ''' モデル(データソースクラス)での検証を行うためのバリデーター
+    ''' </summary>
+    ''' <remarks></remarks>
     Public MustInherit Class AbsModelValidator
 
+        ''' <summary>バリデーションを行うメソッド定義</summary>
+        ''' <param name="sqlb"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Delegate Function ModelValidator(ByVal sqlb As SqlBuilder) As Boolean
 
         Private _validResults As New ValidationResults
-
+        ''' <summary>各バリデーションの実行結果を収めたコンテナ</summary>
         Public ReadOnly Property ValidResults As ValidationResults
             Get
                 Return _validResults
             End Get
         End Property
+
+        ''' <summary>バリデーション実行結果</summary>
         Public ReadOnly Property IsValid As Boolean
             Get
                 Return _validResults.IsValid
             End Get
         End Property
+
+        ''' <summary>バリデーション実行結果(警告を除く)</summary>
         Public ReadOnly Property IsValidIgnoreAlert As Boolean
             Get
                 Return _validResults.IsValidIgnoreAlert
             End Get
         End Property
 
-        Private _errorMessage As String = "" 'メソッドでのメッセージ更新用(表には出ない)
+        Private _errorMessage As String = ""
+        ''' <summary>検証結果メッセージを取得する</summary>
         Public Property ErrorMessage As String
             Get
                 Return _validResults.ErrorMessage
             End Get
             Protected Set(value As String)
+                '内部的に使用する。Publicでアクセスする際はvalidResultsから取得する
                 _errorMessage = value
             End Set
         End Property
 
         Private _errorSource As String = ""
+        ''' <summary>エラーの発生した項目名</summary>
         Public Property ErrorSource() As String
             Get
                 Return _validResults.ErrorSource
@@ -103,7 +121,7 @@ Namespace Gears.Validation
         End Sub
 
         ''' <summary>
-        ''' 'ModelValidationMethodアノテーションの付与された、返り値が BooleanのPublicメソッドを実行していく
+        ''' ModelValidationMethodアノテーションの付与された、返り値が BooleanのPublicメソッドを実行していく
         ''' </summary>
         ''' <param name="sqlb">バリデーション対象のSqlBuilder</param>
         ''' <param name="isStockError">致命的エラーがあっても続行してエラーをため続ける場合はTrue</param>
@@ -155,7 +173,7 @@ Namespace Gears.Validation
                 _errorMessage = ""
                 _errorSource = ""
 
-                'Dim attr As ModelValidationMethod = Attribute.GetCustomAttribute(mv.GetMethodInfo, GetType(ModelValidationMethod))
+                'Dim attr As ModelValidationMethod = Attribute.GetCustomAttribute(mv.GetMethodInfo, GetType(ModelValidationMethod)) '4.5から使用可
                 Dim attr As ModelValidationMethod = Attribute.GetCustomAttribute(mv.Method, GetType(ModelValidationMethod))
                 Dim isExecute As Boolean = True
 
@@ -198,7 +216,7 @@ Namespace Gears.Validation
         End Function
 
         ''' <summary>
-        ''' 
+        ''' バリデーションエラーがあった場合に例外をスローする
         ''' </summary>
         ''' <returns></returns>
         Public Function throwException() As GearsModelValidationException

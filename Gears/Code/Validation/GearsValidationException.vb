@@ -2,10 +2,13 @@
 
 Namespace Gears.Validation
 
-    Public Class GearsDataValidationException
+    ''' <summary>
+    ''' バリデーションの例外を表すクラス
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Class GearsValidationException
         Inherits GearsException
 
-        'コンストラクタ
         Public Sub New()
             MyBase.New()
         End Sub

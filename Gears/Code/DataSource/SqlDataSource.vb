@@ -87,16 +87,16 @@ Namespace Gears.DataSource
             End If
         End Sub
 
-        Private _value As New Dictionary(Of String, Object)
+        Private _parameter As New Dictionary(Of String, Object)
         ''' <summary>
         ''' 特にパイプライン表関数などで、パラメーターを使用する場合に使用する値
         ''' </summary>
         ''' <value></value>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public ReadOnly Property Value As Dictionary(Of String, Object)
+        Public ReadOnly Property Parameter As Dictionary(Of String, Object)
             Get
-                Return _value
+                Return _parameter
             End Get
         End Property
 
@@ -105,8 +105,8 @@ Namespace Gears.DataSource
         ''' </summary>
         ''' <param name="params"></param>
         ''' <remarks></remarks>
-        Public Sub readValues(ByRef params As Dictionary(Of String, Object))
-            For Each item As KeyValuePair(Of String, Object) In _value
+        Public Sub readParameter(ByRef params As Dictionary(Of String, Object))
+            For Each item As KeyValuePair(Of String, Object) In _parameter
                 params.Add(item.Key, item.Value)
             Next
         End Sub
@@ -157,7 +157,7 @@ Namespace Gears.DataSource
             Me._schema = ds.Schema
             Me._suffix = ds.Suffix
             Me._lockCheckColumn = New Dictionary(Of String, LockType)(ds._lockCheckColumn)
-            Me._value = New Dictionary(Of String, Object)(ds.Value)
+            Me._parameter = New Dictionary(Of String, Object)(ds.Parameter)
             Me._joinTargets = New List(Of SqlDataSource)(ds._joinTargets)
             Me._relations = New Dictionary(Of String, RelationKind)(ds._relations)
             Me._joinKeys = New Dictionary(Of String, List(Of SqlFilterItem))(ds._joinKeys)
@@ -185,15 +185,15 @@ Namespace Gears.DataSource
 
         ''' <summary>パラメータの設定</summary>
         ''' <param name="pname"></param>
-        ''' <param name="pval"></param>
+        ''' <param name="value"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function setValue(ByVal pname As String, ByVal pval As Object) As SqlDataSource
-            If Not String.IsNullOrEmpty(pname) And Not pval Is Nothing Then
-                If _value.ContainsKey(pname) Then
-                    _value(pname) = pval
+        Public Function addParameter(ByVal pname As String, ByVal value As Object) As SqlDataSource
+            If Not String.IsNullOrEmpty(pname) And Not value Is Nothing Then
+                If _parameter.ContainsKey(pname) Then
+                    _parameter(pname) = value
                 Else
-                    _value.Add(pname, pval)
+                    _parameter.Add(pname, value)
                 End If
             End If
             Return Me
@@ -203,9 +203,9 @@ Namespace Gears.DataSource
         ''' <param name="item"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function setValue(ByVal item As SqlItem) As SqlDataSource
+        Public Function addParameter(ByVal item As SqlItem) As SqlDataSource
             If item IsNot Nothing AndAlso item.hasValue Then
-                setValue(item.Column, item.Value)
+                addParameter(item.Column, item.Value)
             End If
             Return Me
         End Function
