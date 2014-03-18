@@ -83,7 +83,6 @@
     <Compile Include="Code\Util\ControlSearcher.vb" />
     <Compile Include="Code\Util\DataSetReader.vb" />
     <Compile Include="Code\Util\IFormItem.vb" />
-    <Compile Include="Code\Validation\GearsDataValidationException.vb" />
     <Compile Include="Code\DataSource\GearsOptimisticLockException.vb" />
     <Compile Include="Code\Validation\GearsModelValidationException.vb" />
     <Compile Include="Code\GearsControl.vb" />
@@ -99,6 +98,9 @@
     <Compile Include="Code\DataSource\GearsSqlExecutor.vb" />
     <Compile Include="Code\Binder\IDataBinder.vb" />
     <Compile Include="Code\DataSource\IDataSource.vb" />
+    <Compile Include="Code\Validation\GearsValidationException.vb" />
+    <Compile Include="Code\Validation\Marker\GMarkerDate.vb" />
+    <Compile Include="Code\Validation\Validator\GCompare.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -128,7 +130,6 @@
     <Compile Include="Code\Validation\ValidationResult.vb" />
     <Compile Include="Code\Validation\Validator\GByteLength.vb" />
     <Compile Include="Code\Validation\Validator\GByteLengthBetween.vb" />
-    <Compile Include="Code\Validation\Validator\GComp.vb" />
     <Compile Include="Code\Validation\Validator\GDate.vb" />
     <Compile Include="Code\Validation\Marker\GMarkerNumeric.vb" />
     <Compile Include="Code\Validation\Validator\GMatch.vb" />
@@ -138,7 +139,6 @@
     <Compile Include="Code\Validation\Validator\GRequired.vb" />
     <Compile Include="Code\Validation\Validator\GStartWith.vb" />
     <Compile Include="Code\Validation\Marker\IAttributeMarker.vb" />
-    <Compile Include="Code\Validation\Marker\MarkerNumeric.vb" />
     <Compile Include="Code\Util\RelationNode.vb" />
   </ItemGroup>
   <ItemGroup>

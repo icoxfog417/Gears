@@ -53,7 +53,6 @@ Namespace GearsTest
             Assert.IsFalse(attr.isValidateOk("123454.56"))
             Assert.IsFalse(attr.isValidateOk("23456.456"))
 
-            Assert.AreEqual("gs-number gs-vlength_9", attr.CssClass)
 
         End Sub
 

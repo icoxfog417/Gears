@@ -12,7 +12,6 @@ Namespace GearsTest
         Public Sub isByteLengthOk()
             Dim validator As New GByteLength(3)
 
-            Assert.AreEqual("gs-vlength_3", validator.CssClass)
             Assert.IsTrue(validator.isValidateOk("123"))
             Assert.IsTrue(validator.isValidateOk("abc"))
             Assert.IsTrue(validator.isValidateOk("ほg"))
@@ -28,7 +27,6 @@ Namespace GearsTest
 
             Dim validator As New GByteLengthBetween(3)
 
-            Assert.AreEqual("gs-vlength_3", validator.CssClass)
             Assert.IsTrue(validator.isValidateOk("123"))
             Assert.IsTrue(validator.isValidateOk("ab"))
             Assert.IsTrue(validator.isValidateOk(""))
@@ -43,7 +41,7 @@ Namespace GearsTest
 
         <Test()>
         Public Sub isCompareOk()
-            Dim validator As New GComp()
+            Dim validator As New GCompare()
 
             Assert.IsTrue(validator.isValidateOk("abc", "abc", "="))
             Assert.IsFalse(validator.isValidateOk("abc", "xxx", "="))
@@ -99,11 +97,6 @@ Namespace GearsTest
             Assert.IsFalse(validator.isValidateOk("A123456789:山手商店."))
             Assert.IsFalse(validator.isValidateOk("B123456789:山手商店"))
 
-            validator.WhenMatch = False
-
-            Assert.IsFalse(validator.isValidateOk("B123456789:山手商店."))
-            Assert.IsTrue(validator.isValidateOk("A123456789:山手商店."))
-
         End Sub
 
         <Test()>
@@ -112,7 +105,7 @@ Namespace GearsTest
             Dim validator As New GNumeric
 
             Assert.AreEqual("gs-number", validator.CssClass)
-            Assert.IsTrue(validator.hasMarker(GetType(MarkerNumeric)))
+            Assert.IsTrue(validator.hasMarker(GetType(GMarkerNumeric)))
 
             Assert.IsTrue(validator.isValidateOk("123"))
             Assert.IsTrue(validator.isValidateOk("123.123"))
