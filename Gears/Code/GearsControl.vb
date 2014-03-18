@@ -558,7 +558,7 @@ Namespace Gears
             Dim value As Object = DataBinder.getValue(_control)
             Dim result As String = If(value Is Nothing, "", value.ToString)
 
-            If Not _attributes Is Nothing AndAlso _attributes.hasMarker(GetType(Marker.MarkerNumeric)) Then
+            If Not _attributes Is Nothing AndAlso _attributes.hasMarker(GetType(Marker.GMarkerNumeric)) Then
                 If String.IsNullOrWhiteSpace(result.ToString) Then
                     result = Nothing '数値の場合Nothing化する
                 End If

@@ -2,6 +2,10 @@
 
 Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 値の比較検証を行うための属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GCompare
         Inherits GearsAttribute
 
@@ -10,6 +14,7 @@ Namespace Gears.Validation.Validator
         End Sub
 
         Private _operatorType As String = "="
+        ''' <summary>比較を行うためのオペレーター</summary>
         Public Property OperatorType() As String
             Get
                 Return _operatorType
@@ -20,6 +25,7 @@ Namespace Gears.Validation.Validator
         End Property
 
         Private _expected As String = ""
+        ''' <summary>期待される値</summary>
         Public Property Expected() As String
             Get
                 Return _expected
@@ -29,8 +35,16 @@ Namespace Gears.Validation.Validator
             End Set
         End Property
 
-        Public Overloads Function isValidateOk(leftValue As String, rightValue As String, Optional ByVal ct As String = "=") As Boolean
-            _operatorType = ct
+        ''' <summary>
+        ''' 比較値・期待値・演算子を直接指定してバリデーションを行う
+        ''' </summary>
+        ''' <param name="leftValue"></param>
+        ''' <param name="rightValue"></param>
+        ''' <param name="opr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Overloads Function isValidateOk(leftValue As String, rightValue As String, Optional ByVal opr As String = "=") As Boolean
+            _operatorType = opr
             _expected = rightValue
             Return isValidateOk(leftValue)
 
@@ -68,6 +82,12 @@ Namespace Gears.Validation.Validator
 
         End Sub
 
+        ''' <summary>比較を行うための関数。与えられた値が数値/日付に見える場合それを考慮し演算</summary>
+        ''' <param name="leftValue"></param>
+        ''' <param name="rightValue"></param>
+        ''' <param name="ct"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Private Function compare(ByVal leftValue As String, ByVal rightValue As String, ByVal ct As String) As Boolean
 
             Dim numValue As Double = 0

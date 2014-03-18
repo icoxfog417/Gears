@@ -2,7 +2,11 @@
 
 Namespace Gears
 
-    Public Interface IAttributeMarker 'Attributeの属性を判定するためのクラスであることを示す、マーカーインターフェース
+    ''' <summary>
+    ''' 属性をまとめるためのマーカーであることを示すインタフェース
+    ''' </summary>
+    ''' <remarks></remarks>
+    Public Interface IAttributeMarker
     End Interface
 
 End Namespace

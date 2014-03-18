@@ -3,26 +3,26 @@
 Namespace Gears.Validation.Marker
 
     ''' <summary>
-    ''' 数値属性を表すマーカー<br/>
-    ''' これを継承する属性については、共通のCssClass gs-number を付与する
+    ''' 日付属性を表すマーカー<br/>
+    ''' これを継承する属性については、共通のCssClass gs-date を付与する
     ''' </summary>
     ''' <remarks></remarks>
-    Public MustInherit Class GMarkerNumeric
+    Public MustInherit Class GMarkerDate
         Inherits GearsAttribute
         Implements IAttributeMarker
 
         ''' <summary>
-        ''' 数値属性に共通するCSSClass
+        ''' 日付属性に共通するCSSClass
         ''' </summary>
         ''' <remarks></remarks>
-        Protected Const NUMBER_CSS As String = "gs-number"
+        Protected Const DATE_CSS As String = "gs-date"
 
         ''' <summary>
         ''' コンストラクタで数値属性共通の値をセット
         ''' </summary>
         ''' <remarks></remarks>
         Public Sub New()
-            CssClass = NUMBER_CSS
+            CssClass = DATE_CSS
         End Sub
 
     End Class

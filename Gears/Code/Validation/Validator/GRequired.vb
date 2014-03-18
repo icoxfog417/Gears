@@ -2,12 +2,12 @@
 
 Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 必須の入力を検証する属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GRequired
         Inherits GearsAttribute
-
-        Public Sub New()
-            MyBase.new()
-        End Sub
 
         Protected Overrides Sub Validate()
             initProperty()

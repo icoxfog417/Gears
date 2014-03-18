@@ -65,8 +65,8 @@ Namespace Gears.Validation
         End Function
 
         ''' <summary>指定正規表現への一致をチェックする属性を作成</summary>
-        Public Function isMatch(ByVal pattern As String, Optional ByVal whenMatch As Boolean = True) As GearsAttributeCreator
-            _ac.addAttribute(New GMatch(pattern, whenMatch))
+        Public Function isMatch(ByVal pattern As String) As GearsAttributeCreator
+            _ac.addAttribute(New GMatch(pattern))
             Return Me
         End Function
 

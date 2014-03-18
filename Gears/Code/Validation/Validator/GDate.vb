@@ -1,18 +1,20 @@
 ﻿Imports Microsoft.VisualBasic
+Imports Gears.Validation.Marker
 
 Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 日付を検証するための属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GDate
-        Inherits GearsAttribute
-
-        Protected Const CSS_STYLE As String = "gs-date"
-
-        Public Sub New()
-            MyBase.new()
-            CssClass = CSS_STYLE
-        End Sub
+        Inherits GMarkerDate
 
         Private _format As String = ""
+        ''' <summary>日付フォーマットを指定する(指定がなくても一般的な書式はカバーされる)</summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Property Format() As String
             Get
                 Return _format

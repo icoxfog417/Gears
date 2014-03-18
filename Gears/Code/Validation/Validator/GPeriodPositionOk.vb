@@ -2,22 +2,31 @@
 
 Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 整数部/小数部が定義長の範囲内であるか検証する属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GPeriodPositionOk
         Inherits GNumeric
 
-        Private _beforep As Integer = 0
-        Private _afterp As Integer = 0
-
         Public Sub New()
-            CssClass = CSS_STYLE
+            MyBase.New()
         End Sub
 
+        ''' <summary>
+        ''' 小数点前/後の定義長を指定し作成する
+        ''' </summary>
+        ''' <param name="beforep"></param>
+        ''' <param name="afterp"></param>
+        ''' <remarks></remarks>
         Public Sub New(ByVal beforep As Integer, ByVal afterp As Integer)
             MyBase.New()
             Me.BeforeP = beforep
             Me.AfterP = afterp
         End Sub
 
+        Private _beforep As Integer = 0
+        ''' <summary>整数部の最大長</summary>
         Public Property BeforeP() As Integer
             Get
                 Return _beforep
@@ -27,6 +36,8 @@ Namespace Gears.Validation.Validator
             End Set
         End Property
 
+        Private _afterp As Integer = 0
+        ''' <summary>小数点以下桁数の最大長</summary>
         Public Property AfterP() As Integer
             Get
                 Return _afterp
@@ -44,12 +55,12 @@ Namespace Gears.Validation.Validator
 
                 Dim regex As New System.Text.RegularExpressions.Regex("^[+-]?\d{0," + _beforep.ToString + "}(\.\d{0," + _afterp.ToString + "})?$")
                 Dim ret As Boolean = False
-                ret = IsNumeric(num)
+                ret = IsNumeric(num) 'そもそも数値かどうか判定
 
                 If ret Then
                     ret = regex.IsMatch(num)
                     If Not ret Then
-                        ErrorMessage = "数値の桁数が不正です(値：" + num + ",定義->整数部：" + _beforep.ToString + "桁/小数点以下桁数：" + _afterp.ToString + "桁)"
+                        ErrorMessage = "数値の桁数が不正です(値：" + num + ",整数部：" + _beforep.ToString + "桁・小数点以下：" + _afterp.ToString + "桁の必要があります)"
                         IsValid = False
                     End If
                 Else
