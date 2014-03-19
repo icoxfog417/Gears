@@ -472,6 +472,11 @@ Namespace Gears.DataSource
 
             gSelect(sqlbForResult)
 
+            If gResultSet.Rows.Count = 0 Then '万一SELECT用のビューで検索が失敗した場合、テーブルから読み直す
+                sqlbForResult.DataSource = TargetTable
+                gSelect(sqlbForResult)
+            End If
+
         End Sub
 
         ''' <summary>
