@@ -136,7 +136,9 @@ Namespace Gears.DataSource
             MyBase.New(scon)
 
             If TypeOf scon Is SqlBuilder Then
+                DbServer = CType(scon, SqlBuilder)._dbServer
                 _DataSource = New SqlDataSource(CType(scon, SqlBuilder).DataSource())
+                ItemColExchanger = CType(scon, SqlBuilder).ItemColExchanger
             End If
             If Not withSelectionAndFilter Then
                 Me.Selection.Clear()
