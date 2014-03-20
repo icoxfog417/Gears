@@ -31,6 +31,12 @@ Namespace Gears.Util
         ''' <summary>コントロールのCssClass</summary>
         Property CssClass() As String
 
+        ''' <summary>接続文字列</summary>
+        Property ConnectionName() As String
+
+        ''' <summary>データソースの名称空間</summary>
+        Property DSNamespace() As String
+
         ''' <summary>内部のコントロールを取得する</summary>
         Function getControl() As WebControl
 

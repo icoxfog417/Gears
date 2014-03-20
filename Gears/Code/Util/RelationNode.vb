@@ -59,6 +59,8 @@ Namespace Gears.Util
 
             If targets.Count > 0 Then
                 Return targets.First
+            ElseIf Me.Value = value Then
+                Return Me
             Else
                 Return Nothing
             End If
@@ -182,12 +184,8 @@ Namespace Gears.Util
         ''' <remarks></remarks>
         Public Shared Function makeTreeWithRoot(ByVal relations As Dictionary(Of String, List(Of String))) As RelationNode
             Dim trees As List(Of RelationNode) = makeTree(relations)
-            If trees.Count > 1 Then
-                Dim root As New RelationNode("__ROOT__", trees)
-                Return root
-            Else
-                Return trees.First
-            End If
+            Dim root As New RelationNode("__ROOT__", trees)
+            Return root
         End Function
 
         ''' <summary>

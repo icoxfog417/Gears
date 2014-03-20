@@ -114,11 +114,11 @@ Namespace Gears
         ''' <summary>
         ''' デフォルトの接続文字列/名称空間を受け取りインスタンスを作成する
         ''' </summary>
-        ''' <param name="con"></param>
+        ''' <param name="conName"></param>
         ''' <param name="dsn"></param>
         ''' <remarks></remarks>
-        Public Sub New(ByVal con As String, Optional ByVal dsn As String = "")
-            _connectionName = con
+        Public Sub New(ByVal conName As String, Optional ByVal dsn As String = "")
+            _connectionName = conName
             _dsNameSpace = dsn
         End Sub
 
@@ -169,9 +169,7 @@ Namespace Gears
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function addControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
-
             Return addControl(createGControl(con, isAutoLoadAttr))
-
         End Function
 
         ''' <summary>
@@ -181,11 +179,15 @@ Namespace Gears
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function addControl(ByVal gcon As GearsControl) As GearsControl
-            If Not _gcontrols.ContainsKey(gcon.ControlID) Then
+            If gcon IsNot Nothing AndAlso Not _gcontrols.ContainsKey(gcon.ControlID) Then
                 _gcontrols.Add(gcon.ControlID, gcon)
                 Return gcon
             Else
-                GearsLogStack.setLog(gcon.ControlID + " は既に追加されています。入れ替えたい場合はreplaceControlを使用してください")
+                If gcon Is Nothing Then
+                    GearsLogStack.setLog("追加対象のGearsControlにNothingが設定されています")
+                Else
+                    GearsLogStack.setLog(gcon.ControlID + " は既に追加されています。入れ替えたい場合はreplaceControlを使用してください")
+                End If
                 Return Nothing
             End If
         End Function
@@ -243,6 +245,18 @@ Namespace Gears
                 End If
             End If
 
+        End Sub
+
+        ''' <summary>
+        ''' リレーションを削除する
+        ''' </summary>
+        ''' <remarks></remarks>
+        Public Sub clearRelation(Optional ByVal con As Control = Nothing)
+            If con Is Nothing Then
+                _relations.Clear()
+            Else
+                If GControl(con) IsNot Nothing Then _relations.Remove(GControl(con).ControlID)
+            End If
         End Sub
 
         ''' <summary>
@@ -347,6 +361,9 @@ Namespace Gears
                 If Not String.IsNullOrEmpty(dnsset) Then
                     ds = dnsset
                 End If
+            ElseIf TypeOf con Is IFormItem Then
+                If Not String.IsNullOrEmpty(CType(con, IFormItem).ConnectionName) Then cn = CType(con, IFormItem).ConnectionName
+                If Not String.IsNullOrEmpty(CType(con, IFormItem).DSNamespace) Then ds = CType(con, IFormItem).DSNamespace
             End If
 
             Dim gcon As GearsControl = New GearsControl(con, cn, ds, isAutoLoadAttr)

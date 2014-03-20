@@ -6,7 +6,7 @@ Imports Gears.DataSource
 Namespace GearsTest
 
     <TestFixture()>
-    Public Class ModelValidationTest
+    Public Class GearsModelValidationTest
 
         <Test()>
         Public Sub testAlert()

@@ -239,7 +239,7 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
-        ''' データ抽出処理を行う
+        ''' メソッドチェーンを利用したSelectを実行する
         ''' </summary>
         ''' <param name="selection"></param>
         ''' <returns></returns>
@@ -249,21 +249,21 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
-        ''' データソースからの抽出を行う
+        ''' メソッドチェーンを利用したSelectを実行する
+        ''' </summary>
+        ''' <param name="selection"></param>
+        ''' <remarks></remarks>
+        Public Function gSelect(ByVal selection As List(Of SqlSelectItem)) As gSourceExpression
+            Return gExecute(ActionType.SEL, selection)
+        End Function
+
+        ''' <summary>
+        ''' メソッドチェーンを利用したSelectを実行する
         ''' </summary>
         ''' <param name="cons"></param>
         ''' <remarks></remarks>
         Public Function gSelect(ByVal cons As Control()) As gSourceExpression
             Return gExecute(ActionType.SEL, cons.ToList)
-        End Function
-
-        ''' <summary>
-        ''' データソースからの抽出を行う
-        ''' </summary>
-        ''' <param name="cons"></param>
-        ''' <remarks></remarks>
-        Public Function gSelect(ByVal cons As List(Of Control)) As gSourceExpression
-            Return gExecute(ActionType.SEL, cons)
         End Function
 
         ''' <summary>
@@ -440,7 +440,7 @@ Namespace Gears.DataSource
         End Sub
 
         ''' <summary>
-        ''' データ抽出処理を行う
+        ''' メソッドチェーンを利用したSaveを実行する
         ''' </summary>
         ''' <param name="selection"></param>
         ''' <returns></returns>
@@ -450,7 +450,16 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
-        ''' データソースからの抽出を行う
+        ''' メソッドチェーンを利用したSaveを実行する
+        ''' </summary>
+        ''' <param name="selection"></param>
+        ''' <remarks></remarks>
+        Public Function gSave(ByVal selection As List(Of SqlSelectItem)) As gSourceExpression
+            Return gExecute(ActionType.SAVE, selection)
+        End Function
+
+        ''' <summary>
+        ''' メソッドチェーンを利用したSaveを実行する
         ''' </summary>
         ''' <param name="cons"></param>
         ''' <remarks></remarks>
@@ -459,16 +468,7 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
-        ''' データソースからの抽出を行う
-        ''' </summary>
-        ''' <param name="cons"></param>
-        ''' <remarks></remarks>
-        Public Function gSave(ByVal cons As List(Of Control)) As gSourceExpression
-            Return gExecute(ActionType.SAVE, cons)
-        End Function
-
-        ''' <summary>
-        ''' Expressionを使用した実行を行う
+        ''' メソッドチェーンで処理を行うためのダミーオブジェクト(Expression)を作成する
         ''' </summary>
         ''' <param name="action"></param>
         ''' <param name="selection"></param>
@@ -479,7 +479,7 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
-        ''' Expressionを使用した実行を行う
+        ''' メソッドチェーンで処理を行うためのダミーオブジェクト(Expression)を作成する
         ''' </summary>
         ''' <param name="action"></param>
         ''' <param name="cons"></param>

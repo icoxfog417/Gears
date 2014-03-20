@@ -6,7 +6,7 @@ Imports Gears.Validation.Marker
 Namespace GearsTest
 
     <TestFixture()>
-    Public Class GValidationTest
+    Public Class GearsValidationTest
 
         <Test()>
         Public Sub isByteLengthOk()

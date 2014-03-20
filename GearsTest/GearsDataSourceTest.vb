@@ -328,6 +328,39 @@ Namespace GearsTest
 
         End Sub
 
+        <Test()>
+        Public Sub ExpressionSelectTest()
+
+            Dim ds As New DataSource.EMP(DefaultConnection)
+            Dim conNo As New TestFormItem("TXT", "EMPNO")
+            Dim conName As Control = ControlBuilder.createControl("txtENAME")
+
+            Dim result As DataTable = ds.gSelect({conNo, conName}).Where()
+            Assert.AreEqual(2 + ds.TargetTable.LockCheckColumn.Count, result.Columns.Count)
+
+            conNo.setValue("1000") 'デフォルトインサート済みのデータ
+
+            result = ds.gSelect({conNo, conName}).Where({conNo})
+            Assert.AreEqual(1, result.Rows.Count)
+
+        End Sub
+
+        <Test()>
+        Public Sub ExpressionSaveTest()
+
+            Dim ds As New DataSource.EMP(DefaultConnection)
+            Dim conNo As New TestFormItem("TXT", "EMPNO")
+            Dim conName As Control = ControlBuilder.createControl("txtENAME")
+
+            conNo.setValue(KeyForSave)
+            CType(conName, TextBox).Text = "EXPRESS"
+
+            Dim result As DataTable = ds.gSave({conNo, conName}).Where(SqlBuilder.F("EMPNO").eq(KeyForSave).asKey)
+            Assert.AreEqual(1, result.Rows.Count)
+            Assert.AreEqual("EXPRESS", result.Rows(0)("ENAME"))
+
+        End Sub
+
         Private Function getCount(ByVal key As String) As Integer
             Dim cnt As Integer = SimpleDBA.executeSql(DefaultConnection, "SELECT 1 FROM EMP WHERE EMPNO = :emp", SimpleDBA.makeParameters("emp", key)).Rows.Count
             Return cnt

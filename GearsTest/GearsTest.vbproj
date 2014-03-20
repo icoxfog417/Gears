@@ -110,14 +110,18 @@
     <Compile Include="DataSource\EMP.vb" />
     <Compile Include="DataSource\GROUPN.vb" />
     <Compile Include="DataSource\JOB.vb" />
+    <Compile Include="TestFormItem.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="DataSource\UNITS.vb" />
-    <Compile Include="GBinderTemplateTest.vb" />
+    <Compile Include="GearsDataBinderTest.vb" />
     <Compile Include="GearsDataSourceTest.vb" />
     <Compile Include="GearsAttributeTest.vb" />
+    <Compile Include="GearsExpressionTest.vb" />
     <Compile Include="GearsMediatorTest.vb" />
     <Compile Include="GearsRelationTest.vb" />
-    <Compile Include="GValidationTest.vb" />
-    <Compile Include="ModelValidationTest.vb" />
+    <Compile Include="GearsValidationTest.vb" />
+    <Compile Include="GearsModelValidationTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>

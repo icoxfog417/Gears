@@ -5,6 +5,10 @@ Imports Gears.Validation.Validator
 
 Namespace GearsTest
 
+    ''' <summary>
+    ''' 属性のテストを行う
+    ''' </summary>
+    ''' <remarks></remarks>
     <TestFixture()>
     Public Class GearsAttributeTest
 

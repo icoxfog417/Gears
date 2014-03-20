@@ -161,8 +161,7 @@ Namespace Gears
     End Class
 
     ''' <summary>
-    ''' データ抽出処理を記述するためのダミーオブジェクト(Expression)。<br/>
-    ''' 抽出条件を指定する
+    ''' データ抽出/更新処理を記述するためのダミーオブジェクト(Expression)
     ''' </summary>
     ''' <remarks></remarks>
     Public Class gSourceExpression
@@ -172,7 +171,7 @@ Namespace Gears
         Private _source As GearsDataSource = Nothing
 
         ''' <summary>
-        ''' データソースからの抽出を行う
+        ''' データソース、実行処理タイプ、対象の設定を行う
         ''' </summary>
         ''' <param name="source"></param>
         ''' <param name="selection"></param>
@@ -195,7 +194,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 抽出条件をSqlFilterItemの配列で受け取る
+        ''' 抽出条件をSqlFilterItemのリストで受け取る
         ''' </summary>
         ''' <param name="filter"></param>
         ''' <returns></returns>
@@ -216,7 +215,7 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 抽出条件をControlの配列で受け取る
+        ''' 抽出条件をControlのリストで受け取る
         ''' </summary>
         ''' <param name="cons"></param>
         ''' <returns></returns>
@@ -232,7 +231,7 @@ Namespace Gears
 
 
         ''' <summary>
-        ''' データ抽出処理の実体
+        ''' 実行処理の実体(実際の処理はデータソースのexecuteに委譲)
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
@@ -251,9 +250,6 @@ Namespace Gears
         End Function
 
     End Class
-
-
-  
 
 
 End Namespace

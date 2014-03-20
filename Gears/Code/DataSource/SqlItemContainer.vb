@@ -134,32 +134,26 @@ Namespace Gears.DataSource
         End Sub
 
         ''' <summary>SqlItemを追加する汎用処理</summary>
-        Public Sub Add(ByVal item As SqlItem)
-            If TypeOf item Is SqlSelectItem Then
-                addSelection(item)
-            ElseIf TypeOf item Is SqlFilterItem Then
-                addFilter(item)
-            End If
+        Public Sub Add(ByVal ParamArray items As SqlSelectItem())
+            addSelection(items.ToList)
         End Sub
 
         ''' <summary>SqlItemを追加する汎用処理</summary>
-        Public Sub Add(Of T As SqlItem)(ByVal ParamArray items As T())
-            Add(items.ToList)
+        Public Sub Add(ByVal ParamArray items As SqlFilterItem())
+            addFilter(items.ToList)
         End Sub
 
         ''' <summary>SqlItemを追加する汎用処理</summary>
-        Public Sub Add(Of T As SqlItem)(ByVal items As List(Of T))
-            For Each item In items
-                Add(item)
-            Next
+        Public Sub Add(ByVal items As List(Of SqlSelectItem))
+            addSelection(items)
         End Sub
 
-        ''' <summary>選択情報の追加(単一)</summary>
-        Public Sub addSelection(ByVal item As SqlSelectItem)
-            _selection.Add(item)
+        ''' <summary>SqlItemを追加する汎用処理</summary>
+        Public Sub Add(ByVal items As List(Of SqlFilterItem))
+            addFilter(items)
         End Sub
 
-        ''' <summary>選択情報の追加(任意引数)</summary>
+        ''' <summary>選択情報の追加</summary>
         Public Sub addSelection(ByVal ParamArray items As SqlSelectItem())
             addSelection(items.ToList)
         End Sub
@@ -167,11 +161,6 @@ Namespace Gears.DataSource
         ''' <summary>選択情報の追加(リスト)</summary>
         Public Sub addSelection(ByVal items As List(Of SqlSelectItem))
             items.ForEach(Sub(s) _selection.Add(s))
-        End Sub
-
-        ''' <summary>コントロールによる選択情報の追加(単一)</summary>
-        Public Sub addSelection(ByVal con As Control)
-            addSelection(con.toGControl().toControlInfo().Select(Function(c) c.toSelection).ToList)
         End Sub
 
         ''' <summary>コントロールによる選択情報の追加(任意引数)</summary>
@@ -182,7 +171,7 @@ Namespace Gears.DataSource
         ''' <summary>コントロールによる選択情報の追加(リスト)</summary>
         Public Sub addSelection(ByVal cons As List(Of Control))
             For Each con As Control In cons
-                addSelection(con)
+                addSelection(con.toGControl().toControlInfo().Select(Function(c) c.toSelection).ToList)
             Next
         End Sub
 
@@ -191,12 +180,7 @@ Namespace Gears.DataSource
             _selection.RemoveAll(Function(s) s.Column = column)
         End Sub
 
-        ''' <summary>条件情報の追加(単一)</summary>
-        Public Sub addFilter(ByVal item As SqlFilterItem)
-            _filter.Add(item)
-        End Sub
-
-        ''' <summary>条件情報の追加(任意引数)</summary>
+        ''' <summary>条件情報の追加</summary>
         Public Sub addFilter(ByVal ParamArray items As SqlFilterItem())
             addFilter(items.ToList)
         End Sub
@@ -204,11 +188,6 @@ Namespace Gears.DataSource
         ''' <summary>条件情報の追加(リスト)</summary>
         Public Sub addFilter(ByVal items As List(Of SqlFilterItem))
             items.ForEach(Sub(f) _filter.Add(f))
-        End Sub
-
-        ''' <summary>コントロールによる条件情報の追加(単一)</summary>
-        Public Sub addFilter(ByVal con As Control)
-            addFilter(con.toGControl().toControlInfo().Select(Function(c) c.toFilter).ToList)
         End Sub
 
         ''' <summary>コントロールによる条件情報の追加(任意引数)</summary>
@@ -219,7 +198,7 @@ Namespace Gears.DataSource
         ''' <summary>コントロールによる条件情報の追加(リスト)</summary>
         Public Sub addFilter(ByVal cons As List(Of Control))
             For Each con As Control In cons
-                addFilter(con)
+                addFilter(con.toGControl().toControlInfo().Select(Function(c) c.toFilter).ToList)
             Next
         End Sub
 
