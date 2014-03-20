@@ -162,116 +162,26 @@ Namespace Gears
 
     ''' <summary>
     ''' データ抽出処理を記述するためのダミーオブジェクト(Expression)。<br/>
-    ''' 下記のようにメソッドチェーンで記述するために使用する<br/>
-    ''' <code>
-    ''' GSelect(SqlBuilder.S("count(*)")).From(control).Where(SqlBuilder.F("FLG").eq("X"))
-    ''' </code>
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Class gSelectExpression
-        Private _mediator As GearsMediator = Nothing
-        Private _selection As New List(Of SqlSelectItem)
-
-        ''' <summary>
-        ''' 選択対象と、コントロールを取得するためのGearsMediatorを受け取る
-        ''' </summary>
-        ''' <param name="selection"></param>
-        ''' <param name="mediator"></param>
-        ''' <remarks></remarks>
-        Public Sub New(ByVal selection As List(Of SqlSelectItem), ByVal mediator As GearsMediator)
-            _selection = selection
-            _mediator = mediator
-        End Sub
-
-        ''' <summary>
-        ''' 抽出元をコントロールで指定する
-        ''' </summary>
-        ''' <param name="fromControl"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function From(ByVal fromControl As Control) As gSourceExpression
-            Dim gs As New gSourceExpression(_mediator.GControl(fromControl.ID), _selection)
-            Return gs
-        End Function
-
-        ''' <summary>
-        ''' 抽出元としてDataSourceを直接指定する
-        ''' </summary>
-        ''' <param name="source"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function From(ByVal source As GearsDataSource) As gSourceExpression
-            Dim gs As New gSourceExpression(source, _selection)
-            Return gs
-        End Function
-
-        ''' <summary>
-        ''' 抽出元を文字列(SQL/テーブル名)で指定する
-        ''' </summary>
-        ''' <param name="sourceName"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function From(ByVal sourceName As String) As gSourceExpression
-            Dim gs As New gSourceExpression(_mediator.ConnectionName, sourceName, _selection)
-            Return gs
-        End Function
-
-    End Class
-
-    ''' <summary>
-    ''' データ抽出処理を記述するためのダミーオブジェクト(Expression)。<br/>
     ''' 抽出条件を指定する
     ''' </summary>
     ''' <remarks></remarks>
     Public Class gSourceExpression
-        Private _sourceControl As GearsControl = Nothing
-        Private _source As GearsDataSource = Nothing
-        Private _filter As New List(Of SqlFilterItem)
+        Private _action As ActionType = ActionType.SEL
         Private _selection As New List(Of SqlSelectItem)
+        Private _filter As New List(Of SqlFilterItem)
+        Private _source As GearsDataSource = Nothing
 
         ''' <summary>
-        ''' 抽出元としてControlを使用する
-        ''' </summary>
-        ''' <param name="gcon"></param>
-        ''' <param name="selection"></param>
-        ''' <remarks></remarks>
-        Public Sub New(ByVal gcon As GearsControl, ByVal selection As List(Of SqlSelectItem))
-            _sourceControl = gcon
-            _selection = selection
-        End Sub
-
-        ''' <summary>
-        ''' 抽出元としてデータソースを使用する
+        ''' データソースからの抽出を行う
         ''' </summary>
         ''' <param name="source"></param>
         ''' <param name="selection"></param>
         ''' <remarks></remarks>
-        Public Sub New(ByVal source As GearsDataSource, ByVal selection As List(Of SqlSelectItem))
+        Public Sub New(ByVal source As GearsDataSource, action As ActionType, ByVal selection As List(Of SqlSelectItem))
+            _action = action
             _source = source
             _selection = selection
         End Sub
-
-        ''' <summary>
-        ''' 抽出元として文字列を使用する
-        ''' </summary>
-        ''' <param name="conName"></param>
-        ''' <param name="sourceName"></param>
-        ''' <param name="selection"></param>
-        ''' <remarks></remarks>
-        Public Sub New(ByVal conName As String, ByVal sourceName As String, ByVal selection As List(Of SqlSelectItem))
-            _source = New GearsDataSource(conName, SqlBuilder.DS(sourceName))
-            _selection = selection
-        End Sub
-
-        ''' <summary>
-        ''' 抽出条件をDTOで受け取る
-        ''' </summary>
-        ''' <param name="dto"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function Where(ByVal dto As GearsDTO) As DataTable
-            Return extract(dto)
-        End Function
 
         ''' <summary>
         ''' 抽出条件をSqlFilterItemの配列で受け取る
@@ -281,7 +191,7 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function Where(ByVal ParamArray filter As SqlFilterItem()) As DataTable
             _filter = filter.ToList
-            Return extract()
+            Return execute()
         End Function
 
         ''' <summary>
@@ -292,35 +202,48 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function Where(ByVal filter As List(Of SqlFilterItem)) As DataTable
             _filter = filter.ToList
-            Return extract()
+            Return execute()
         End Function
+
+        ''' <summary>
+        ''' 抽出条件をControlの配列で受け取る
+        ''' </summary>
+        ''' <param name="cons"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function Where(ByVal cons As Control()) As DataTable
+            Return Where(cons.ToList)
+        End Function
+
+        ''' <summary>
+        ''' 抽出条件をControlの配列で受け取る
+        ''' </summary>
+        ''' <param name="cons"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function Where(ByVal cons As List(Of Control)) As DataTable
+            Dim filters As New List(Of SqlFilterItem)
+            For Each con As Control In cons
+                Dim cInfos As List(Of GearsControlInfo) = con.toGControl.toControlInfo
+                filters.AddRange(cInfos.Select(Function(c) c.toFilter).ToList)
+            Next
+            Return Where(filters)
+        End Function
+
 
         ''' <summary>
         ''' データ抽出処理の実体
         ''' </summary>
-        ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Private Function extract(Optional ByVal dto As GearsDTO = Nothing) As DataTable
-            Dim ds As GearsDataSource = Nothing
-            Dim myDto As GearsDTO = Nothing
-            If dto IsNot Nothing Then
-                myDto = New GearsDTO(dto)
-            Else
-                myDto = New GearsDTO(ActionType.SEL)
-            End If
+        Private Function execute() As DataTable
+            Dim myDto As GearsDTO = New GearsDTO(_action)
 
             If _selection IsNot Nothing Then _selection.ForEach(Sub(s) myDto.addSelection(s))
             If _filter IsNot Nothing Then _filter.ForEach(Sub(f) myDto.addFilter(f))
 
-            If _sourceControl IsNot Nothing Then
-                ds = _sourceControl.DataSource
-            ElseIf _source IsNot Nothing Then
-                ds = _source
-            End If
-
-            If ds IsNot Nothing Then
-                Return ds.gSelect(myDto)
+            If _source IsNot Nothing Then
+                Return _source.execute(myDto)
             Else
                 Return Nothing
             End If

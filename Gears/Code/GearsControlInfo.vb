@@ -1,6 +1,7 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Collections.Generic
 Imports System.Web.UI.WebControls
+Imports Gears.DataSource
 
 Namespace Gears
 
@@ -140,6 +141,37 @@ Namespace Gears
             _isFormAttribute = isForm
             _isFilterAttribute = isFilter
             _operatorAttribute = opr
+        End Sub
+
+        ''' <summary>
+        ''' ControlInfoをSqlSelectItemに変換する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function toSelection() As SqlSelectItem
+            Dim s As New SqlSelectItem(DataSourceID)
+            s.setValue(Value)
+            setToSqlItem(s)
+            Return s
+        End Function
+
+        ''' <summary>
+        ''' ControlInfoをSqlFilterItemに変換する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function toFilter() As SqlFilterItem
+            Dim opr As String = If(String.IsNullOrEmpty(OperatorAttribute), SqlFilterItem.TXT_EQUAL, OperatorAttribute)
+            Dim f As SqlFilterItem = SqlBuilder.F(DataSourceID).filterAs(opr, Value, True)
+            setToSqlItem(f)
+            Return f
+        End Function
+
+        ''' <summary>Selection/Filterに共通のプロパティをセットする</summary>
+        ''' <param name="item"></param>
+        ''' <remarks></remarks>
+        Private Sub setToSqlItem(ByRef item As SqlItem)
+            If IsKey Then item.IsKey = True
         End Sub
 
         Public Overrides Function toString() As String

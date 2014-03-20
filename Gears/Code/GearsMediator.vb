@@ -459,7 +459,7 @@ Namespace Gears
             End If
 
             If Not isExcept Then
-                Dim conInfos As List(Of GearsControlInfo) = GControl(control).createControlInfo
+                Dim conInfos As List(Of GearsControlInfo) = GControl(control).toControlInfo
                 For Each c As GearsControlInfo In conInfos
                     dto.addControlInfo(c)
                 Next

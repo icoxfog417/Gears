@@ -368,9 +368,23 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function GGet(ByRef con As Control) As GearsControl
+        Public Function GGet(ByVal con As Control) As GearsControl
             If Not con Is Nothing Then
                 Return GMediator.GControl(con)
+            Else
+                Return Nothing
+            End If
+        End Function
+
+        ''' <summary>
+        ''' 登録済みのコントロールのデータソースを取得する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function GSource(ByVal con As Control) As GearsDataSource
+            If Not GGet(con) Is Nothing Then
+                Return GGet(con).DataSource
             Else
                 Return Nothing
             End If
@@ -417,26 +431,6 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function GRule(ByVal fromCon As Control) As gRuleExpression
             Return New gRuleExpression(fromCon, GMediator)
-        End Function
-
-        ''' <summary>
-        ''' データ抽出処理を行う
-        ''' </summary>
-        ''' <param name="selection"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function GSelect(ByVal ParamArray selection As SqlSelectItem()) As gSelectExpression
-            Return GSelect(selection.ToList)
-        End Function
-
-        ''' <summary>
-        ''' データ抽出処理を行う
-        ''' </summary>
-        ''' <param name="selection"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function GSelect(Optional ByVal selection As List(Of SqlSelectItem) = Nothing) As gSelectExpression
-            Return New gSelectExpression(selection, GMediator)
         End Function
 
         ''' <summary>
@@ -1129,24 +1123,6 @@ Namespace Gears
         End Function
 
     End Class
-
-    ''' <summary>
-    ''' GearsPage内で使用する拡張ユーティリティ
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Module GearsPageExtendModule
-
-        ''' <summary>最初のログを取得する</summary>
-        <Runtime.CompilerServices.Extension()> _
-        Public Function FirstLog(ByVal log As Dictionary(Of String, GearsException)) As GearsException
-            If log IsNot Nothing AndAlso log.Count > 0 Then
-                Return log.First.Value
-            Else
-                Return Nothing
-            End If
-        End Function
-
-    End Module
 
 
 End Namespace

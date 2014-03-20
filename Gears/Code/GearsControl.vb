@@ -328,7 +328,7 @@ Namespace Gears
         ''' </summary>
         ''' <remarks></remarks>
         Private Sub loadDataSource()
-            If ConnectionName <> "" And DataSourceID <> "" Then
+            If Not String.IsNullOrEmpty(ConnectionName) And Not String.IsNullOrEmpty(DataSourceID) Then
                 Try
                     Dim className As String = ""
                     If Not String.IsNullOrEmpty(DsNameSpace) Then '名称空間がある場合
@@ -581,7 +581,7 @@ Namespace Gears
         ''' </summary>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function createControlInfo() As List(Of GearsControlInfo)
+        Public Function toControlInfo() As List(Of GearsControlInfo)
             Dim result As New List(Of GearsControlInfo)
             If TypeOf _control Is GridView Then
                 Dim gView As GridView = CType(_control, GridView)

@@ -82,7 +82,7 @@ Namespace Gears
 
         ''' <summary>Control情報の追加(GearsControlから)</summary>
         Public Sub addControlInfo(ByRef con As GearsControl)
-            Dim list As List(Of GearsControlInfo) = con.createControlInfo
+            Dim list As List(Of GearsControlInfo) = con.toControlInfo
             For Each conf As GearsControlInfo In list
                 addControlInfo(conf)
             Next

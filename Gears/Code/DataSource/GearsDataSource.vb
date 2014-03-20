@@ -239,6 +239,34 @@ Namespace Gears.DataSource
         End Function
 
         ''' <summary>
+        ''' データ抽出処理を行う
+        ''' </summary>
+        ''' <param name="selection"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function gSelect(ByVal ParamArray selection As SqlSelectItem()) As gSourceExpression
+            Return gExecute(ActionType.SEL, selection.ToList)
+        End Function
+
+        ''' <summary>
+        ''' データソースからの抽出を行う
+        ''' </summary>
+        ''' <param name="cons"></param>
+        ''' <remarks></remarks>
+        Public Function gSelect(ByVal cons As Control()) As gSourceExpression
+            Return gExecute(ActionType.SEL, cons.ToList)
+        End Function
+
+        ''' <summary>
+        ''' データソースからの抽出を行う
+        ''' </summary>
+        ''' <param name="cons"></param>
+        ''' <remarks></remarks>
+        Public Function gSelect(ByVal cons As List(Of Control)) As gSourceExpression
+            Return gExecute(ActionType.SEL, cons)
+        End Function
+
+        ''' <summary>
         ''' ページサイズを指定したSelectを行う
         ''' </summary>
         ''' <param name="maximumRows"></param>
@@ -410,6 +438,63 @@ Namespace Gears.DataSource
                 If action = ActionType.UPD Then gUpdate(sqlb)
             End If
         End Sub
+
+        ''' <summary>
+        ''' データ抽出処理を行う
+        ''' </summary>
+        ''' <param name="selection"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function gSave(ByVal ParamArray selection As SqlSelectItem()) As gSourceExpression
+            Return gExecute(ActionType.SAVE, selection.ToList)
+        End Function
+
+        ''' <summary>
+        ''' データソースからの抽出を行う
+        ''' </summary>
+        ''' <param name="cons"></param>
+        ''' <remarks></remarks>
+        Public Function gSave(ByVal ParamArray cons As Control()) As gSourceExpression
+            Return gExecute(ActionType.SAVE, cons.ToList)
+        End Function
+
+        ''' <summary>
+        ''' データソースからの抽出を行う
+        ''' </summary>
+        ''' <param name="cons"></param>
+        ''' <remarks></remarks>
+        Public Function gSave(ByVal cons As List(Of Control)) As gSourceExpression
+            Return gExecute(ActionType.SAVE, cons)
+        End Function
+
+        ''' <summary>
+        ''' Expressionを使用した実行を行う
+        ''' </summary>
+        ''' <param name="action"></param>
+        ''' <param name="selection"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function gExecute(ByVal action As ActionType, ByVal selection As List(Of SqlSelectItem)) As gSourceExpression
+            Return New gSourceExpression(Me, action, selection)
+        End Function
+
+        ''' <summary>
+        ''' Expressionを使用した実行を行う
+        ''' </summary>
+        ''' <param name="action"></param>
+        ''' <param name="cons"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function gExecute(ByVal action As ActionType, ByVal cons As List(Of Control)) As gSourceExpression
+            Dim selection As New List(Of SqlSelectItem)
+            For Each con As Control In cons
+                Dim cInfos As List(Of GearsControlInfo) = con.toGControl.toControlInfo
+                For Each cInfo As GearsControlInfo In cInfos
+                    selection.Add(cInfo.toSelection)
+                Next
+            Next
+            Return gExecute(action, selection)
+        End Function
 
         ''' <summary>
         ''' 更新系処理を行うメソッド
