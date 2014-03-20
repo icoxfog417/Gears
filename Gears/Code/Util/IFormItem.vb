@@ -35,7 +35,7 @@ Namespace Gears.Util
         Property ConnectionName() As String
 
         ''' <summary>データソースの名称空間</summary>
-        Property DSNamespace() As String
+        Property DsNamespace() As String
 
         ''' <summary>内部のコントロールを取得する</summary>
         Function getControl() As WebControl
