@@ -36,6 +36,10 @@ Namespace Gears.Util
 
                 End If
 
+                If IsDBNull(result) Then
+                    result = String.Empty
+                End If
+
             Catch ex As Exception
                 result = Nothing
             End Try

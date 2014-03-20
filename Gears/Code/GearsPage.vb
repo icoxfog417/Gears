@@ -478,7 +478,8 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' フォーム内のキー項目の値で、データベースからレコードをロードし自身に設定する(フォームのリロード)
+        ''' フォーム内のキー項目の値で、データベースからレコードをロードし自身に設定する(フォームのリロード)<br/>
+        ''' DTOを指定した場合、そのDTOでロードが行われる。コントロールにセットされた値は使用されないので注意。
         ''' </summary>
         ''' <param name="form"></param>
         ''' <param name="dto"></param>
@@ -487,10 +488,13 @@ Namespace Gears
         Public Function GLoad(ByVal form As Control, Optional ByVal dto As GearsDTO = Nothing) As Boolean
             'Formコントロール内のキーを使用し、自身の値をリロードする
             Dim loadDto As New GearsDTO(dto)
-            Dim sqlb As SqlBuilder = GPack(form, ActionType.SEL).toSqlBuilder
-            For Each f As SqlFilterItem In sqlb.Filter
-                loadDto.Filter.Add(f)
-            Next
+
+            If dto Is Nothing Then 'DTOの指定がなかった場合、自身に設定された値を使用する
+                Dim sqlb As SqlBuilder = GPack(form, ActionType.SEL).toSqlBuilder
+                For Each f As SqlFilterItem In sqlb.Filter
+                    loadDto.Filter.Add(f)
+                Next
+            End If
 
             Return GSend(loadDto).ToThe(form)
 
