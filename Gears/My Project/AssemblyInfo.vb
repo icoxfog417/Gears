@@ -9,10 +9,10 @@ Imports System.Runtime.InteropServices
 ' アセンブリ属性の値を確認します。
 
 <Assembly: AssemblyTitle("Gears")> 
-<Assembly: AssemblyDescription("")> 
-<Assembly: AssemblyCompany("MITSUI CHEMICALS")> 
+<Assembly: AssemblyDescription("ASP.NET WebForm Framework for Rapid Development")> 
+<Assembly: AssemblyCompany("icoxfog417")> 
 <Assembly: AssemblyProduct("Gears")> 
-<Assembly: AssemblyCopyright("Copyright © MITSUI CHEMICALS 2013")> 
+<Assembly: AssemblyCopyright("icoxfog417")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)>
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' 既定値にすることができます:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("1.0.0.0")> 
-<Assembly: AssemblyFileVersion("1.0.0.0")> 
+<Assembly: AssemblyVersion("2.0.0.0")> 
+<Assembly: AssemblyFileVersion("2.0.0.0")> 
