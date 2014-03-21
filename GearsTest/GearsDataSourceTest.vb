@@ -88,7 +88,7 @@ Namespace GearsTest
             '項目変換マッパー
             Dim mapper As New NameExchangerTemplate()
             mapper.addRule("SHIGOTO", "JOB") '双方変換
-            mapper.addRuleWhenToCol("ONAMAE", "ENAME") '送信時のみ
+            mapper.addRuleWhenToColumn("ONAMAE", "ENAME") '送信時のみ
             mapper.addRuleWhenToItem("EMPNO", "SHAIN_NO") '読取時のみ
 
             '普通にSELECTした結果

@@ -46,37 +46,14 @@ Namespace Gears.DataSource
             End Set
         End Property
 
-        Private _isMultiByte As Boolean = False
-        ''' <summary>
-        ''' マルチバイト対応が必要なデータソースか否か(日本語名テーブルなど)
-        ''' </summary>
-        ''' <value></value>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
+        ''' <summary>マルチバイト対応が必要なデータソースか否か(日本語名テーブルなど)</summary>
         Public Property IsMultiByte() As Boolean
-            Get
-                Return _isMultiByte
-            End Get
-            Set(ByVal value As Boolean)
-                _isMultiByte = value
-            End Set
-        End Property
 
-        Private _modelValidator As AbsModelValidator = Nothing
-        ''' <summary>
-        ''' データソースを検証するためのバリデーションオブジェクト
-        ''' </summary>
-        ''' <value></value>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
+        ''' <summary>ビジネスロジックによるバリデーションを行うためのオブジェクト</summary>
         Public Property ModelValidator() As AbsModelValidator
-            Get
-                Return _modelValidator
-            End Get
-            Set(ByVal value As AbsModelValidator)
-                _modelValidator = value
-            End Set
-        End Property
+
+        ''' <summary>項目変換ルールの設定</summary>
+        Public Property Mapper() As New NameExchangerTemplate
 
         Private _connectionName As String = ""
         ''' <summary>
@@ -93,34 +70,159 @@ Namespace Gears.DataSource
 
         Private _resultSet As New DataTable
 
+        ''' <summary>
+        ''' 実行後の結果セットを取得する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function gResultSet() As System.Data.DataTable Implements IDataSource.gResultSet
+            Return _resultSet
+        End Function
+
+        ''' <summary>
+        ''' 結果セットから指定インデックス/行数の値を取得する
+        ''' </summary>
+        ''' <param name="index"></param>
+        ''' <param name="rowIndex"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function Item(ByVal index As Integer, Optional ByVal rowIndex As Integer = 0) As Object
+            Return DataSetReader.Item(_resultSet, index, rowIndex)
+        End Function
+
+        ''' <summary>
+        ''' 結果セットから指定カラム/行数の値を取得する
+        ''' </summary>
+        ''' <param name="index"></param>
+        ''' <param name="rowIndex"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function Item(ByVal index As String, Optional ByVal rowIndex As Integer = 0) As Object
+            Return DataSetReader.Item(_resultSet, index, rowIndex)
+        End Function
+
+        ''' <summary>
+        ''' 楽観ロック用の列の設定
+        ''' </summary>
+        ''' <param name="colname"></param>
+        ''' <param name="ltype"></param>
+        ''' <remarks></remarks>
+        Public Sub setLockCheckColumn(ByVal colname As String, ByVal ltype As LockType)
+            SelectView.setLockCheckColumn(colname, ltype)
+            TargetTable.setLockCheckColumn(colname, ltype)
+        End Sub
+
+        ''' <summary>
+        ''' SQL実行結果から楽観ロック用列の値を取得する
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function getLockValue() As List(Of SqlFilterItem)
+            Dim param As New List(Of SqlFilterItem)
+            If _resultSet.Rows.Count > 0 Then
+                For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
+                    Dim value As Object = DataSetReader.Item(_resultSet, item.Key)
+                    If Not IsDBNull(value) Then
+                        param.Add(New SqlFilterItem(item.Key).eq(value))
+                    Else
+                        param.Add(New SqlFilterItem(item.Key).eq(String.Empty))
+                    End If
+                Next
+            End If
+
+            Return param
+
+        End Function
+
+        ''' <summary>
+        ''' SQLに楽観ロック列を更新する値をセットする
+        ''' </summary>
+        ''' <param name="sqlb"></param>
+        ''' <remarks></remarks>
+        Protected Sub addLockValue(ByVal sqlb As SqlBuilder)
+            For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
+                '元々設定されていた場合はそちらを優先する
+                If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
+                    sqlb.addSelection(SqlBuilder.S(item.Key).setValue(getLockTypeValue(item.Value)))
+                End If
+            Next
+        End Sub
+
+        ''' <summary>
+        ''' 楽観ロックの各タイプに応じた更新値の取得
+        ''' </summary>
+        ''' <param name="ltype"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function getLockTypeValue(ByVal ltype As LockType) As Object
+            Dim val As Object = ""
+            Dim ndate As Date = Now()
+            Select Case ltype
+                Case LockType.UDATE
+                    val = ndate
+                Case LockType.UDATESTR
+                    val = ndate.ToString("yyyyMMdd")
+                Case LockType.UTIMESTR
+                    val = ndate.ToString("HHmmss")
+                Case LockType.VNUM
+                    val = ndate.ToString("yyyyMMddHHmmss")
+                Case LockType.USER 'HttpContextはGearsDataSourceからかなり遠いが。。。
+                    If Not HttpContext.Current Is Nothing AndAlso Not HttpContext.Current.User Is Nothing AndAlso Not HttpContext.Current.User.Identity Is Nothing Then
+                        val = HttpContext.Current.User.Identity.Name
+                    Else
+                        val = Nothing
+                    End If
+            End Select
+
+            Return val
+
+        End Function
+
+
         Protected Sub New(ByVal conName As String)
             _connectionName = conName
         End Sub
 
-        ''' <summary>
-        ''' 接続文字列と、データソースとなるテーブルを指定しインスタンスを作成する
-        ''' </summary>
-        ''' <param name="conName"></param>
-        ''' <param name="table"></param>
+        ''' <summary>データソースとなるテーブルを指定しインスタンスを作成する</summary>
+        ''' <param name="conName">接続文字列</param>
+        ''' <param name="table">テーブルを示すSqlDataSource</param>
         ''' <remarks></remarks>
         Public Sub New(ByVal conName As String, ByVal table As SqlDataSource)
             Me.New(conName)
             TargetTable = table
         End Sub
 
-        ''' <summary>
-        ''' 接続文字列と、データソースとなるテーブル、ビューを指定しインスタンスを作成する<br/>
-        ''' 更新系処理にはテーブル、選択系処理にはビューが使用される
-        ''' </summary>
-        ''' <param name="conName"></param>
-        ''' <param name="view"></param>
-        ''' <param name="table"></param>
+        ''' <summary>データソースとなるテーブル名を文字列で指定しインスタンスを作成する</summary>
+        ''' <param name="conName">接続文字列</param>
+        ''' <param name="tableName">テーブル名</param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal conName As String, ByVal tableName As String)
+            Me.New(conName)
+            TargetTable = SqlBuilder.DS(tableName)
+        End Sub
+
+        ''' <summary>選択用のビューと更新用のテーブルをそれぞれ指定してインスタンスを作成する</summary>
+        ''' <param name="conName">接続文字列</param>
+        ''' <param name="view">選択用のビュー</param>
+        ''' <param name="table">更新用のテーブル</param>
         ''' <remarks></remarks>
         Public Sub New(ByVal conName As String, ByVal view As SqlDataSource, ByVal table As SqlDataSource)
             Me.New(conName)
             SelectView = view
             TargetTable = table
         End Sub
+
+        ''' <summary>選択用のビューと更新用のテーブルをそれぞれ文字列で指定してインスタンスを作成する</summary>
+        ''' <param name="conName">接続文字列</param>
+        ''' <param name="viewName">選択用のビュー名</param>
+        ''' <param name="tableName">更新用のテーブル名</param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal conName As String, ByVal viewName As String, ByVal tableName As String)
+            Me.New(conName)
+            SelectView = SqlBuilder.DS(viewName)
+            TargetTable = SqlBuilder.DS(tableName)
+        End Sub
+
 
         ''' <summary>
         ''' 選択/更新処理を実行する
@@ -168,14 +270,27 @@ Namespace Gears.DataSource
         Public Overridable Function makeSqlBuilder(ByVal data As GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = Nothing
             Dim dbServer As DbServerType = SqlBuilder.GetDbServerType(ConnectionName)
-            If Not data Is Nothing Then
+
+            'SqlBuilderの作成
+            If data IsNot Nothing Then
                 sqlb = data.toSqlBuilder()
                 sqlb.DbServer = dbServer
             Else
                 sqlb = New SqlBuilder(dbServer, ActionType.SEL)
             End If
-            sqlb.IsMultiByte = _isMultiByte
 
+            'データソースの設定
+            If sqlb Is Nothing OrElse sqlb.Action = ActionType.SEL Then
+                sqlb.DataSource = SelectView
+            Else
+                sqlb.DataSource = TargetTable '更新用のデータソースを設定
+            End If
+
+            'プロパティの設定
+            sqlb.IsMultiByte = _IsMultiByte
+            If sqlb.ItemColExchanger Is Nothing Then sqlb.ItemColExchanger = Mapper
+
+            '楽観ロックの設定
             If SelectView.LockCheckColumn.Count > 0 Then
                 '選択の場合で明確な選択項目がない場合(SELECT * の場合)以外は、楽観ロックカラムを指定(選択)する
                 If Not (data.Action = ActionType.SEL And sqlb.Selection.Where(Function(s) Not s.IsNoSelect).Count = 0) Then
@@ -183,28 +298,9 @@ Namespace Gears.DataSource
                 End If
             End If
 
-            'データソースの設定(下位クラスで実装必須)
-            setDataSource(sqlb)
-
             Return sqlb
 
         End Function
-
-        ''' <summary>
-        ''' SqlBuilderのアクションに応じてデータソースを設定する
-        ''' </summary>
-        ''' <param name="sqlb"></param>
-        ''' <remarks></remarks>
-        Protected Overridable Sub setDataSource(ByVal sqlb As SqlBuilder)
-
-            'デフォルトでセレクト用のデータソースを設定
-            If sqlb Is Nothing OrElse sqlb.Action = ActionType.SEL Then
-                sqlb.DataSource = SelectView
-            Else
-                sqlb.DataSource = TargetTable '更新用のデータソースを設定
-            End If
-
-        End Sub
 
         ''' <summary>
         ''' 実行用のSQLを作成するためのメソッド
@@ -314,8 +410,8 @@ Namespace Gears.DataSource
             If Not conv Is Nothing AndAlso Not dataSet Is Nothing AndAlso dataSet.Columns.Count > 0 Then
                 For Each col As DataColumn In dataSet.Columns
 
-                    If Not String.IsNullOrEmpty(conv.changeColToItem(col.ColumnName)) Then
-                        col.ColumnName = conv.changeColToItem(col.ColumnName)
+                    If Not String.IsNullOrEmpty(conv.changeColumnToItem(col.ColumnName)) Then
+                        col.ColumnName = conv.changeColumnToItem(col.ColumnName)
                     End If
                 Next
             End If
@@ -678,113 +774,6 @@ Namespace Gears.DataSource
 
         End Function
 
-        ''' <summary>
-        ''' 実行後の結果セットを取得する
-        ''' </summary>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function gResultSet() As System.Data.DataTable Implements IDataSource.gResultSet
-            Return _resultSet
-        End Function
-
-        ''' <summary>
-        ''' 結果セットから指定インデックス/行数の値を取得する
-        ''' </summary>
-        ''' <param name="index"></param>
-        ''' <param name="rowIndex"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function Item(ByVal index As Integer, Optional ByVal rowIndex As Integer = 0) As Object
-            Return DataSetReader.Item(_resultSet, index, rowIndex)
-        End Function
-
-        ''' <summary>
-        ''' 結果セットから指定カラム/行数の値を取得する
-        ''' </summary>
-        ''' <param name="index"></param>
-        ''' <param name="rowIndex"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function Item(ByVal index As String, Optional ByVal rowIndex As Integer = 0) As Object
-            Return DataSetReader.Item(_resultSet, index, rowIndex)
-        End Function
-
-        ''' <summary>
-        ''' 楽観ロック用の列の設定
-        ''' </summary>
-        ''' <param name="colname"></param>
-        ''' <param name="ltype"></param>
-        ''' <remarks></remarks>
-        Public Sub setLockCheckColumn(ByVal colname As String, ByVal ltype As LockType)
-            SelectView.setLockCheckColumn(colname, ltype)
-            TargetTable.setLockCheckColumn(colname, ltype)
-        End Sub
-
-        ''' <summary>
-        ''' SQL実行結果から楽観ロック用列の値を取得する
-        ''' </summary>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function getLockValue() As List(Of SqlFilterItem)
-            Dim param As New List(Of SqlFilterItem)
-            If _resultSet.Rows.Count > 0 Then
-                For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
-                    Dim value As Object = DataSetReader.Item(_resultSet, item.Key)
-                    If Not IsDBNull(value) Then
-                        param.Add(New SqlFilterItem(item.Key).eq(value))
-                    Else
-                        param.Add(New SqlFilterItem(item.Key).eq(String.Empty))
-                    End If
-                Next
-            End If
-
-            Return param
-
-        End Function
-
-        ''' <summary>
-        ''' SQLに楽観ロック列を更新する値をセットする
-        ''' </summary>
-        ''' <param name="sqlb"></param>
-        ''' <remarks></remarks>
-        Protected Sub addLockValue(ByVal sqlb As SqlBuilder)
-            For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
-                '元々設定されていた場合はそちらを優先する
-                If sqlb.Selection(item.Key) Is Nothing AndAlso Not getLockTypeValue(item.Value) Is Nothing Then
-                    sqlb.addSelection(SqlBuilder.S(item.Key).setValue(getLockTypeValue(item.Value)))
-                End If
-            Next
-        End Sub
-
-        ''' <summary>
-        ''' 楽観ロックの各タイプに応じた更新値の取得
-        ''' </summary>
-        ''' <param name="ltype"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Function getLockTypeValue(ByVal ltype As LockType) As Object
-            Dim val As Object = ""
-            Dim ndate As Date = Now()
-            Select Case ltype
-                Case LockType.UDATE
-                    val = ndate
-                Case LockType.UDATESTR
-                    val = ndate.ToString("yyyyMMdd")
-                Case LockType.UTIMESTR
-                    val = ndate.ToString("HHmmss")
-                Case LockType.VNUM
-                    val = ndate.ToString("yyyyMMddHHmmss")
-                Case LockType.USER 'HttpContextはGearsDataSourceからかなり遠いが。。。
-                    If Not HttpContext.Current Is Nothing AndAlso Not HttpContext.Current.User Is Nothing AndAlso Not HttpContext.Current.User.Identity Is Nothing Then
-                        val = HttpContext.Current.User.Identity.Name
-                    Else
-                        val = Nothing
-                    End If
-            End Select
-
-            Return val
-
-        End Function
 
     End Class
 

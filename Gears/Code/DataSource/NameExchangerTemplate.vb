@@ -9,18 +9,18 @@ Namespace Gears.DataSource
     Public Class NameExchangerTemplate
         Implements INameExchanger
 
-        Private colToItem As New Dictionary(Of String, String)  'テーブル項目->項目名への変換
-        Private itemToCol As New Dictionary(Of String, String) '項目名->テーブル項目への変換
+        Private columnToItem As New Dictionary(Of String, String)  'テーブル項目->項目名への変換
+        Private itemToColumn As New Dictionary(Of String, String) '項目名->テーブル項目への変換
 
         ''' <summary>
         ''' 指定した画面項目名をデータベースの列項目名に変換するルールを登録する<br/>
         ''' </summary>
         ''' <param name="itemName"></param>
-        ''' <param name="toCol"></param>
+        ''' <param name="toColumn"></param>
         ''' <remarks></remarks>
-        Public Sub addRule(ByVal itemName As String, ByVal toCol As String)
-            addDictionarySafe(itemToCol, itemName, toCol)
-            addDictionarySafe(colToItem, toCol, itemName)
+        Public Sub addRule(ByVal itemName As String, ByVal toColumn As String)
+            addDictionarySafe(itemToColumn, itemName, toColumn)
+            addDictionarySafe(columnToItem, toColumn, itemName)
         End Sub
 
         ''' <summary>
@@ -28,31 +28,31 @@ Namespace Gears.DataSource
         ''' SQLを実行するときは変換をかけるが、結果セット(DataTable)には変換をかけない
         ''' </summary>
         ''' <param name="fromItem"></param>
-        ''' <param name="toCol"></param>
+        ''' <param name="toColumn"></param>
         ''' <remarks></remarks>
-        Public Sub addRuleWhenToCol(ByVal fromItem As String, ByVal toCol As String)
-            addDictionarySafe(itemToCol, fromItem, toCol)
+        Public Sub addRuleWhenToColumn(ByVal fromItem As String, ByVal toColumn As String)
+            addDictionarySafe(itemToColumn, fromItem, toColumn)
         End Sub
 
         ''' <summary>
         ''' 指定したデータベースの列項目名を画面項目名に変換するルールを登録する<br/>
         ''' 結果セット(DataTable)を読み込む際にのみ変換をかける
         ''' </summary>
-        ''' <param name="fromCol"></param>
+        ''' <param name="fromColumn"></param>
         ''' <param name="toItem"></param>
         ''' <remarks></remarks>
-        Public Sub addRuleWhenToItem(ByVal fromCol As String, ByVal toItem As String)
-            addDictionarySafe(colToItem, fromCol, toItem)
+        Public Sub addRuleWhenToItem(ByVal fromColumn As String, ByVal toItem As String)
+            addDictionarySafe(columnToItem, fromColumn, toItem)
         End Sub
 
         ''' <summary>
         ''' 登録されたルールに基づき、列項目名を画面項目名に変換する
         ''' </summary>
-        ''' <param name="col"></param>
+        ''' <param name="column"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function changeColToItem(ByVal col As String) As String Implements INameExchanger.changeColToItem
-            Return getDictionarySafe(colToItem, col)
+        Public Function changeColumnToItem(ByVal column As String) As String Implements INameExchanger.changeColumnToItem
+            Return getDictionarySafe(columnToItem, column)
         End Function
 
         ''' <summary>
@@ -61,8 +61,8 @@ Namespace Gears.DataSource
         ''' <param name="item"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function changeItemToCol(ByVal item As String) As String Implements INameExchanger.changeItemToCol
-            Return getDictionarySafe(itemToCol, item)
+        Public Function changeItemToColumn(ByVal item As String) As String Implements INameExchanger.changeItemToColumn
+            Return getDictionarySafe(itemToColumn, item)
         End Function
 
         ''' <summary>ディクショナリ/キーがNothingの場合も考慮し値を読み出す</summary>

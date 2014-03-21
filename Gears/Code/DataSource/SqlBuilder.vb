@@ -290,8 +290,8 @@ Namespace Gears.DataSource
         Private Function formatColumn(ByVal item As SqlItem, Optional ByVal withAlias As Boolean = False) As String
             Dim result As String = item.Column
 
-            If Not _ItemColExchanger Is Nothing AndAlso Not String.IsNullOrEmpty(_ItemColExchanger.changeItemToCol(result)) Then
-                result = _ItemColExchanger.changeItemToCol(result)
+            If Not _ItemColExchanger Is Nothing AndAlso Not String.IsNullOrEmpty(_ItemColExchanger.changeItemToColumn(result)) Then
+                result = _ItemColExchanger.changeItemToColumn(result)
             End If
 
             If IsMultiByte And Not item.IsFunction Then
