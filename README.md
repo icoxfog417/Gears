@@ -1,4 +1,4 @@
-Gears
+﻿Gears
 =============
 
 Gears Framework(以下Gears)は、ASP.NET WebFormによる開発を高速化するフレームワークです。  
@@ -8,6 +8,11 @@ ASP.NET WebFormは元々こうしたコンセプトに基づいていますが�
 本フレームワークはそれを補完し、 よりこの目的に近い形でのWebアプリケーション作成を実現します。  
 また、企業業務システムの構築に際し必要となる機能を多数実装しています。
 
+[Demo Site](http://gearssite.apphb.com/)  
+[Demo Site Source](https://github.com/icoxfog417/GearsSite)  
+
+[API Document](http://gearssite.apphb.com/document/Help/Index.aspx)  
+[Document](http://gearssite.apphb.com/document/GearsFrameWorkDoc.xls)  
 
 ## Gears Framework Main Features
 
