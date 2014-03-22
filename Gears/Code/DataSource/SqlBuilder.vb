@@ -186,16 +186,6 @@ Namespace Gears.DataSource
             Return New SqlSelectItem(col, pf)
         End Function
 
-        ''' <summary>選択/更新項目(SqlSelectItem)を作成するためのユーティリティ(countなどの関数使用時)</summary>
-        ''' <param name="col"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Shared Function C(ByVal col As String) As SqlSelectItem
-            Dim sl As New SqlSelectItem(col)
-            sl.IsFunction = True
-            Return sl
-        End Function
-
         ''' <summary>条件(SqlFilterItem)を作成するためのユーティリティ</summary>
         ''' <param name="col"></param>
         ''' <param name="pf"></param>
@@ -203,17 +193,6 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Shared Function F(ByVal col As String, Optional ByVal pf As String = "") As SqlFilterItem
             Return New SqlFilterItem(col, pf)
-        End Function
-
-        ''' <summary>結合条件(SqlFilterItem)を作成するためのユーティリティ</summary>
-        ''' <param name="col"></param>
-        ''' <param name="col2"></param>
-        ''' <returns></returns>
-        ''' <remarks></remarks>
-        Public Shared Function J(ByVal col As String, ByVal col2 As String) As SqlFilterItem
-            Dim fl As New SqlFilterItem(col)
-            fl.joinOn(F(col2))
-            Return fl
         End Function
 
         ''' <summary>Table/View(SqlDataSource)を作成するためのユーティリティ</summary>
@@ -294,7 +273,7 @@ Namespace Gears.DataSource
                 result = _ItemColExchanger.changeItemToColumn(result)
             End If
 
-            If IsMultiByte And Not item.IsFunction Then
+            If IsMultiByte And item.IsNeedFormat Then
                 result = String.Format(MULTIBYTE_FORMAT, result)
             End If
 

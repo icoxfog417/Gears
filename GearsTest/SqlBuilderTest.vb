@@ -35,7 +35,7 @@ Namespace GearsTest
 
             sqlbd.addSelection(SqlBuilder.S("COL1", "t").asName("COL1_IS_COLUMN1").inGroup.ASC)
             sqlbd.addSelection(SqlBuilder.S("COL2", "t").inGroup)
-            sqlbd.addSelection(SqlBuilder.C("count(*)").asName("件数"))
+            sqlbd.addSelection(SqlBuilder.S("count(*)").asNoFormat.asName("件数"))
             sqlbd.DataSource = (SqlBuilder.DS("TAB", "t").inSchema("SCHEMA"))
 
             Dim filter As SqlFilterItem = SqlBuilder.F("COL1", "t").eq("xxx")
@@ -146,8 +146,8 @@ Namespace GearsTest
             Dim sql As String = ""
 
             'INNER JOIN
-            Dim ds1 As SqlDataSource = SqlBuilder.DS("TAB_A", "t1").innerJoin("TAB_B", "t2", SqlBuilder.J("JCOL1", "JCOL2"), _
-                                                                                         SqlBuilder.J("JCOL3", "JCOL4"))
+            Dim ds1 As SqlDataSource = SqlBuilder.DS("TAB_A", "t1").innerJoin("TAB_B", "t2", SqlBuilder.F("JCOL1").joinOn("JCOL2"), _
+                                                                                         SqlBuilder.F("JCOL3").joinOn("JCOL4"))
             sqlbd.DataSource = (ds1)
             sql = sqlbd.confirmSql(ActionType.SEL, True)
             Console.WriteLine(sql)
@@ -155,8 +155,8 @@ Namespace GearsTest
 
             'LEFT OUTER JOIN
             Dim ds2 As SqlDataSource = SqlBuilder.DS("TAB_A", "t1").leftOuterJoin( _
-                "TAB_B", "t2", SqlBuilder.J("JCOL1", "JCOL1")).leftOuterJoin( _
-                "TAB_C", "t3", SqlBuilder.J("JCOL2", "JCOL1"))
+                "TAB_B", "t2", SqlBuilder.F("JCOL1").joinOn("JCOL1")).leftOuterJoin( _
+                "TAB_C", "t3", SqlBuilder.F("JCOL2").joinOn("JCOL1"))
 
             sqlbd.DataSource = (ds2)
             sql = sqlbd.confirmSql(ActionType.SEL, True)

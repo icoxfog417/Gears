@@ -201,6 +201,12 @@ Namespace Gears.DataSource
             Return Me
         End Function
 
+        ''' <summary>フォーマット処理を無効にし、設定したColumnをそのまま使用する</summary>
+        Public Function asNoFormat() As SqlFilterItem
+            MyBase.baseAsNoFormat()
+            Return Me
+        End Function
+
         ''' <summary>評価式を設定する(equal)</summary>
         Public Function eq(ByVal value As Object) As SqlFilterItem
             _operand = "="
@@ -219,6 +225,13 @@ Namespace Gears.DataSource
         Public Function joinOn(ByVal target As SqlFilterItem) As SqlFilterItem
             _operand = "=="
             _joinTarget = target
+            Return Me
+        End Function
+
+        ''' <summary>表同士の結合式を設定する(equal)</summary>
+        Public Function joinOn(ByVal target As String) As SqlFilterItem
+            _operand = "=="
+            _joinTarget = New SqlFilterItem(target)
             Return Me
         End Function
 

@@ -105,6 +105,12 @@ Namespace Gears.DataSource
             Return Me
         End Function
 
+        ''' <summary>フォーマット処理を無効にし、設定したColumnをそのまま使用する</summary>
+        Public Function asNoFormat() As SqlSelectItem
+            MyBase.baseAsNoFormat()
+            Return Me
+        End Function
+
         ''' <summary>別名を設定する</summary>
         ''' <param name="colalias"></param>
         ''' <returns></returns>

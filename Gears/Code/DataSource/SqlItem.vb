@@ -26,19 +26,19 @@ Namespace Gears.DataSource
         End Property
 
         ''' <summary>前置詞</summary>
-        Public Property Prefix() As String
+        Public Property Prefix() As String = ""
 
         ''' <summary>キー項目の判定</summary>
-        Public Property IsKey() As Boolean
+        Public Property IsKey() As Boolean = False
 
         ''' <summary>関数か否か</summary>
-        Public Property IsFunction() As Boolean
+        Public Property IsNeedFormat() As Boolean = True
 
         ''' <summary>
         ''' パラメーター名称<br/>
         ''' 実際にフィルタをかけるパラーメータ名(USERID = :pUserというSQLならpUserがパラメーター名)
         ''' </summary>
-        Public Property ParamName() As String
+        Public Property ParamName() As String = ""
 
         Public Sub New()
         End Sub
@@ -47,7 +47,7 @@ Namespace Gears.DataSource
             _column = item.Column
             _Prefix = item.Prefix
             _IsKey = item.IsKey
-            _IsFunction = item.IsFunction
+            _IsNeedFormat = item.IsNeedFormat
             _ParamName = item.ParamName
 
             If Not val Is Nothing Then
@@ -98,6 +98,14 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Protected Sub baseAsKey()
             IsKey = True
+        End Sub
+
+        ''' <summary>
+        ''' マルチバイト対応などのためのフォーマット処理を無効にし、設定したColumnをそのまま使用する
+        ''' </summary>
+        ''' <remarks></remarks>
+        Protected Sub baseAsNoFormat()
+            IsNeedFormat = False
         End Sub
 
     End Class
