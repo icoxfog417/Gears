@@ -1,6 +1,6 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation.Marker
 
     ''' <summary>
     ''' 属性をまとめるためのマーカーであることを示すインタフェース
