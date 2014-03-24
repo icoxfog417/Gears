@@ -62,7 +62,7 @@ Namespace Gears.DataSource
         ''' データベース上のカラムと画面で使用する項目名が一致しない場合、変換をかけるために使用<br/>
         ''' (既存のテーブルを使用する場合など)
         ''' </summary>
-        Public Property ItemColExchanger As INameExchanger = Nothing
+        Public Property Mapper As INameMapper = Nothing
 
         Private _dbServer As DbServerType = DbServerType.Oracle
         ''' <summary>DBサーバーの種別</summary>
@@ -138,7 +138,7 @@ Namespace Gears.DataSource
             If TypeOf scon Is SqlBuilder Then
                 DbServer = CType(scon, SqlBuilder)._dbServer
                 _DataSource = New SqlDataSource(CType(scon, SqlBuilder).DataSource())
-                ItemColExchanger = CType(scon, SqlBuilder).ItemColExchanger
+                Mapper = CType(scon, SqlBuilder).Mapper
             End If
             If Not withSelectionAndFilter Then
                 Me.Selection.Clear()
@@ -269,8 +269,8 @@ Namespace Gears.DataSource
         Private Function formatColumn(ByVal item As SqlItem, Optional ByVal withAlias As Boolean = False) As String
             Dim result As String = item.Column
 
-            If Not _ItemColExchanger Is Nothing AndAlso Not String.IsNullOrEmpty(_ItemColExchanger.changeItemToColumn(result)) Then
-                result = _ItemColExchanger.changeItemToColumn(result)
+            If Not _Mapper Is Nothing AndAlso Not String.IsNullOrEmpty(_Mapper.changeItemToColumn(result)) Then
+                result = _Mapper.changeItemToColumn(result)
             End If
 
             If IsMultiByte And item.IsNeedFormat Then

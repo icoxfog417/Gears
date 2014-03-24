@@ -53,7 +53,7 @@ Namespace Gears.DataSource
         Public Property ModelValidator() As AbsModelValidator
 
         ''' <summary>項目変換ルールの設定</summary>
-        Public Property Mapper() As New NameExchangerTemplate
+        Public Property Mapper() As INameMapper = New NameMapper
 
         Private _connectionName As String = ""
         ''' <summary>
@@ -288,7 +288,7 @@ Namespace Gears.DataSource
 
             'プロパティの設定
             sqlb.IsMultiByte = _IsMultiByte
-            If sqlb.ItemColExchanger Is Nothing Then sqlb.ItemColExchanger = Mapper
+            If sqlb.Mapper Is Nothing Then sqlb.Mapper = Mapper
 
             '楽観ロックの設定
             If SelectView.LockCheckColumn.Count > 0 Then
@@ -406,7 +406,7 @@ Namespace Gears.DataSource
         ''' <param name="sqlb"></param>
         ''' <remarks></remarks>
         Public Sub convertResultSet(ByRef dataSet As DataTable, ByVal sqlb As SqlBuilder)
-            Dim conv As INameExchanger = sqlb.ItemColExchanger
+            Dim conv As INameMapper = sqlb.Mapper
             If Not conv Is Nothing AndAlso Not dataSet Is Nothing AndAlso dataSet.Columns.Count > 0 Then
                 For Each col As DataColumn In dataSet.Columns
 
