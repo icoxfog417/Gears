@@ -621,13 +621,13 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function makeRelationMap(Optional ByVal con As Control = Nothing, Optional ByVal fromcon As GearsControl = Nothing) As List(Of RelationNode)
+        Public Function makeRelationMap(Optional ByVal con As Control = Nothing, Optional ByVal fromcon As Control = Nothing) As List(Of RelationNode)
 
             Dim localRelation As Dictionary(Of String, List(Of String)) = _relations.ToDictionary(Function(i) i.Key, Function(i) i.Value)
             Dim result As List(Of RelationNode)
 
             'フィルタが起点となっている場合、値が一意となる保証がないためフォーム/フィルタのパネルは処理しない(visitListに入れない)
-            If fromcon IsNot Nothing AndAlso fromcon.IsFilterAttribute Then
+            If fromcon IsNot Nothing AndAlso GControl(fromcon).IsFilterAttribute Then
                 Dim tmplocalRelation As New Dictionary(Of String, List(Of String))
                 For Each item As KeyValuePair(Of String, List(Of String)) In localRelation
                     Dim newRelation As New List(Of String)
@@ -670,7 +670,7 @@ Namespace Gears
         ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Private Function bindAndAttach(ByVal fromGCon As GearsControl, ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
+        Private Function bindAndAttach(ByVal fromControl As GearsControl, ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
             Dim log As New Dictionary(Of String, GearsException)
             Dim nodeInProcess As String = ""
 
@@ -680,7 +680,7 @@ Namespace Gears
 
                 '配下/関連先のコントロールに対し値の反映を行う
                 If bindResult And (gcon.Control.HasControls Or _relations.ContainsKey(gcon.ControlID)) Then
-                    Dim visitList As List(Of RelationNode) = makeRelationMap(gcon.Control, fromGCon)
+                    Dim visitList As List(Of RelationNode) = makeRelationMap(gcon.Control, fromControl.Control)
 
                     For Each node As RelationNode In visitList
                         nodeInProcess = node.Value

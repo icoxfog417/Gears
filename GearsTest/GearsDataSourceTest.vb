@@ -86,28 +86,22 @@ Namespace GearsTest
             Dim ds As New DataSource.EMP(DefaultConnection)
 
             '項目変換マッパー
-            Dim mapper As New NameExchangerTemplate()
+            Dim mapper As New NameMapper()
             mapper.addRule("SHIGOTO", "JOB") '双方変換
-            mapper.addRuleWhenToColumn("ONAMAE", "ENAME") '送信時のみ
-            mapper.addRuleWhenToItem("EMPNO", "SHAIN_NO") '読取時のみ
 
             '普通にSELECTした結果
             Dim dbData As DataTable = SimpleDBA.executeSql(DefaultConnection, "SELECT * FROM V_EMP WHERE JOB = 'SALESMAN' AND ENAME LIKE 'DB%' AND EMPNO LIKE '" + TestDataNumberIndex + "%' ORDER BY EMPNO ")
 
             'マッパーをセットしたSELECT
             Dim sql As SqlBuilder = ds.makeSqlBuilder(New GearsDTO(ActionType.SEL))
-            sql.addFilter(SqlBuilder.F("SHIGOTO").eq("SALESMAN")) '送信時の変換を確認
-            sql.addFilter(SqlBuilder.F("ONAMAE").likes("DB%")) '送信時の変換を確認
-            sql.addFilter(SqlBuilder.F("EMPNO").likes("1%"))
+            sql.addFilter(SqlBuilder.F("SHIGOTO").eq("SALESMAN"))
             sql.addSelection(SqlBuilder.S("EMPNO").ASC.asNoSelect)
-            sql.ItemColExchanger = mapper
+            sql.Mapper = mapper
 
             Dim DsData As DataTable = ds.gSelect(sql) '変換のかかったデータテーブル
             Assert.AreEqual(dbData.Rows.Count, DsData.Rows.Count)
 
             Assert.AreEqual(dbData.Rows(0)("JOB"), DsData.Rows(0)("SHIGOTO")) '送信/読み取り双方での変換を確認
-            Assert.AreEqual(dbData.Rows(0)("ENAME"), DsData.Rows(0)("ENAME")) '送信時のみであることを確認
-            Assert.AreEqual(dbData.Rows(0)("EMPNO"), DsData.Rows(0)("SHAIN_NO")) '読み取り時のみであることを確認
 
         End Sub
 

@@ -43,6 +43,43 @@ Namespace GearsTest
 
         End Sub
 
+        ''' <summary>
+        ''' フィルターからのリレーションで、フォームは対象とならないことを確認
+        ''' </summary>
+        ''' <remarks></remarks>
+        <Test()>
+        Public Sub makeBranchByControlFromFilter()
+
+            'コントロールの準備
+            Dim conTree As New Dictionary(Of String, List(Of String))
+            conTree.Add("pnlGFilter", New List(Of String) From {"txtNAME", "ddlDEPT"})
+            conTree.Add("grvDATA", Nothing)
+            conTree.Add("pnlGFORM", Nothing)
+
+            Dim root As Control = ControlBuilder.Build(RelationNode.makeTree(conTree))
+
+            'Mediatorの準備
+            Dim mediator As New GearsMediator(DefaultConnection)
+
+            mediator.addControls(root) 'コントロールの登録
+            mediator.addControl(ControlSearcher.findControl(root, "grvDATA")) 'gridviewを登録
+            'フィルタパネルから一覧、一覧からフォームというよくあるパターン
+            mediator.addRelation("pnlGFilter", "grvDATA")
+            mediator.addRelation("grvDATA", "pnlGFORM")
+
+            '普通のリレーションを作成
+            Dim pnlGFilter As Control = ControlSearcher.findControl(root, "pnlGFilter")
+            Dim relMap As List(Of RelationNode) = mediator.makeRelationMap()
+            relMap.ForEach(Sub(n) Console.WriteLine(n))
+            Assert.IsTrue(relMap(0).findNode("pnlGFORM") IsNot Nothing)
+
+            'pnlGFORMはいないことを確認
+            relMap = mediator.makeRelationMap(Nothing, pnlGFilter) 'フィルタからリレーションを検索する場合、フォームは除かれる
+            Assert.AreEqual(1, relMap.Count)
+            Assert.IsTrue(relMap(0).findNode("pnlGFORM") Is Nothing)
+
+
+        End Sub
 
         ''' <summary>
         ''' 指定されたノードの範囲でブランチを取得する<br/>
