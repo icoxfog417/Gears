@@ -11,14 +11,14 @@ Namespace Gears
     ''' <remarks></remarks>
     Public Class GearsMediator
 
-        Private _dsNameSpace As String = ""
+        Private _dsNamespace As String = ""
         ''' <summary>デフォルトで使用する名称空間</summary>
-        Public Property DsNameSpace() As String
+        Public Property DsNamespace() As String
             Get
-                Return _dsNameSpace
+                Return _dsNamespace
             End Get
             Set(ByVal value As String)
-                _dsNameSpace = value
+                _dsNamespace = value
             End Set
         End Property
 
@@ -516,7 +516,7 @@ Namespace Gears
                 sender = makeDTO(control, control, dto)
             End If
 
-            _log = bindAndAttach(gcon, sender)
+            _log = bindAndAttach(gcon, gcon, sender)
 
             Return _log.Count = 0 'ログが何もなければ成功
 
@@ -590,7 +590,7 @@ Namespace Gears
                         sender = makeDTO(fromControl, toControl, dto)
                     End If
 
-                    Dim log As Dictionary(Of String, GearsException) = bindAndAttach(con, sender)
+                    Dim log As Dictionary(Of String, GearsException) = bindAndAttach(fcon, con, sender)
                     For Each lg As KeyValuePair(Of String, GearsException) In log
                         _log.Add(lg.Key, lg.Value)
                     Next
@@ -621,10 +621,23 @@ Namespace Gears
         ''' <param name="con"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function makeRelationMap(Optional ByVal con As Control = Nothing) As List(Of RelationNode)
+        Public Function makeRelationMap(Optional ByVal con As Control = Nothing, Optional ByVal fromcon As GearsControl = Nothing) As List(Of RelationNode)
 
             Dim localRelation As Dictionary(Of String, List(Of String)) = _relations.ToDictionary(Function(i) i.Key, Function(i) i.Value)
             Dim result As List(Of RelationNode)
+
+            'フィルタが起点となっている場合、値が一意となる保証がないためフォーム/フィルタのパネルは処理しない(visitListに入れない)
+            If fromcon IsNot Nothing AndAlso fromcon.IsFilterAttribute Then
+                Dim tmplocalRelation As New Dictionary(Of String, List(Of String))
+                For Each item As KeyValuePair(Of String, List(Of String)) In localRelation
+                    Dim newRelation As New List(Of String)
+                    For Each rel As String In item.Value
+                        If Not (GControl(rel).IsFilterAttribute Or GControl(rel).IsFormAttribute) Then newRelation.Add(rel)
+                    Next
+                    tmplocalRelation.Add(item.Key, newRelation)
+                Next
+                localRelation = tmplocalRelation
+            End If
 
             If con IsNot Nothing Then
                 '配下のコントロールも含めた関係リストを作成。配下のコントロールは宛先なしの関連として扱う
@@ -657,7 +670,7 @@ Namespace Gears
         ''' <param name="dto"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Private Function bindAndAttach(ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
+        Private Function bindAndAttach(ByVal fromGCon As GearsControl, ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
             Dim log As New Dictionary(Of String, GearsException)
             Dim nodeInProcess As String = ""
 
@@ -667,11 +680,12 @@ Namespace Gears
 
                 '配下/関連先のコントロールに対し値の反映を行う
                 If bindResult And (gcon.Control.HasControls Or _relations.ContainsKey(gcon.ControlID)) Then
-                    Dim visitList As List(Of RelationNode) = makeRelationMap(gcon.Control)
+                    Dim visitList As List(Of RelationNode) = makeRelationMap(gcon.Control, fromGCon)
 
                     For Each node As RelationNode In visitList
                         nodeInProcess = node.Value
                         Dim ncon As GearsControl = GControl(node.Value)
+
                         ncon.dataAttach(gcon.DataSource)
                         If Not node.isLeaf Then '子がある場合、親から子へ情報を伝達、値を設定する
                             node.visitChildren(Function(nv As RelationNode) As String

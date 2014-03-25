@@ -21,19 +21,6 @@ Namespace Gears
         Inherits Page
 
         ''' <summary>
-        ''' 使用するConnectionNameを設定するためのConfig<br/>
-        ''' Master.xxxと設定することで、Masterページのプロパティに設定した値を参照させることができる<br/>
-        ''' 例:Master.ConnectionNameと設定した場合、MasterページのConnectionNameプロパティの値が参照される
-        ''' </summary>
-        Public Const CONFIG_CONNECTION_NAME As String = "GearsConnection"
-
-        ''' <summary>
-        ''' 使用する名称空間を設定するためのConfig<br/>
-        ''' Master.xxxと設定することで、Masterページのプロパティに設定した値を参照させることができる<br/>
-        ''' </summary>
-        Public Const CONFIG_DSNAMESPACE As String = "GearsDsNameSpace"
-
-        ''' <summary>
         ''' ListItemのAttributeがPostBack時に消えてしまうため、これをViewStateに補完するためのキー<br/>
         ''' http://stackoverflow.com/questions/8157363/is-it-possible-to-maintain-added-attributes-on-a-listitem-while-posting-back
         ''' </summary>
@@ -123,8 +110,9 @@ Namespace Gears
                                End Function
 
             'Config設定を読み込む
-            Dim conInfo As String = Trim(ConfigurationManager.AppSettings(CONFIG_CONNECTION_NAME))
-            Dim dnsInfo As String = Trim(ConfigurationManager.AppSettings(CONFIG_DSNAMESPACE))
+            Dim env As GearsSection = GearsSection.Read()
+            Dim conInfo As String = Trim(env.DefaultConnection)
+            Dim dnsInfo As String = Trim(env.DefaultNamespace)
 
             '設定
             If String.IsNullOrEmpty(pageConName) Then pageConName = conInfo
@@ -272,7 +260,8 @@ Namespace Gears
         ''' <remarks></remarks>
         Public Function IsLoggingMode() As Boolean
             Dim isLogging As String = QueryValue(Q_GEARS_IS_LOG_OUT)
-            If Not String.IsNullOrEmpty(isLogging) AndAlso (isLogging.ToLower = "true") Then
+            Dim isDebug As Boolean = GearsSection.Read.isDebug
+            If isDebug And (Not String.IsNullOrEmpty(isLogging) AndAlso (isLogging.ToLower = "true")) Then
                 Return True
             Else
                 Return False
@@ -289,7 +278,7 @@ Namespace Gears
         Protected Sub setUpPageControls()
 
             If GMediator Is Nothing Then
-                Throw New GearsException("ページの初期化が行われていません", "web.configの" + CONFIG_CONNECTION_NAME + "等の設定を確認して下さい")
+                Throw New GearsException("ページの初期化が行われていません", "web.configのgears sectionの設定を確認して下さい")
             End If
 
             'コントロールを管理するGearsMediatorへコントロールを追加する

@@ -100,7 +100,7 @@ Namespace Gears
         ''' <summary>
         ''' データソースクラスの名称空間
         ''' </summary>
-        Public Property DsNameSpace() As String
+        Public Property DsNamespace() As String
 
         ''' <summary>コントロールに設定されたIDをID_SEPARATORでSplitしたもの</summary>
         Private _idAttributes As ArrayList = New ArrayList()
