@@ -574,7 +574,9 @@ Namespace Gears
 
             If toControl Is Nothing Then
                 '指定がない場合、リレーションを使用する
-                _relations(fcon.ControlID).ForEach(Sub(r) tcons.Add(GControl(r)))
+                If _relations.ContainsKey(fcon.ControlID) Then
+                    _relations(fcon.ControlID).ForEach(Sub(r) tcons.Add(GControl(r)))
+                End If
             Else
                 '具体的な指定がある場合はそれを使用する(リレーションの有無は問わない)
                 tcons = New List(Of GearsControl) From {GControl(toControl)}
