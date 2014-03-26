@@ -386,8 +386,8 @@ Namespace Gears
                                                       ids.Add(control.ID)
                                                   End Sub,
                                         Function(control As Control) As Boolean
-                                            'コントロールが範囲内にあり、登録済み
-                                            If Not control.ID Is Nothing AndAlso isRegisteredControl(control) AndAlso Not ControlSearcher.findControl(target, control.ID) Is Nothing Then
+                                            'コントロールが範囲内にあり、登録済み。
+                                            If Not control.ID Is Nothing AndAlso isRegisteredControl(control) Then
                                                 Return True
                                             Else
                                                 Return False
