@@ -45,6 +45,17 @@ Namespace Gears.DataSource
             End Get
         End Property
 
+        Private _sqlElapsedTime As Long = 0
+        ''' <summary>SQL実行時間(ミリ秒)を取得する</summary>
+        Public Function SqlElapsedTime() As Long
+            Return _sqlElapsedTime
+        End Function
+
+        Public Function SqlElapsedTime(ByVal scale As Long, Optional ByVal round As Integer = 3) As String
+            Dim scaled As Decimal = _sqlElapsedTime / scale
+            Return Math.Round(scaled, round).ToString
+        End Function
+
         Private _connection As DbConnection = Nothing
 
         Public Sub New(ByVal conName As String)
@@ -57,7 +68,7 @@ Namespace Gears.DataSource
         ''' <param name="conName"></param>
         ''' <remarks></remarks>
         Private Sub initConnection(ByVal conName As String)
-            
+
             '各種情報をセット
             _connectionName = conName
             _dbType = GetConnectionString(conName).ProviderName.ToString()
@@ -171,6 +182,9 @@ Namespace Gears.DataSource
             Dim gex As GearsSqlException = Nothing
 
             Try
+                Dim sw As New Diagnostics.Stopwatch '実行時間を計測
+                sw.Start()
+
                 _connection.Open()
                 com = createSqlCommand(sql, ActionType.SEL) 'SELECTのコマンドを明示
                 Using reader As DbDataReader = com.ExecuteReader()
@@ -183,6 +197,9 @@ Namespace Gears.DataSource
                         col.ReadOnly = False
                     Next
                 End If
+
+                sw.Stop()
+                _sqlElapsedTime = sw.ElapsedMilliseconds
 
             Catch ex As Exception
                 gex = New GearsSqlException(ActionType.SEL, "データベースの読み込みに失敗しました", ex)
@@ -212,10 +229,15 @@ Namespace Gears.DataSource
             Dim resultCount As Integer = 0
 
             Try
+                Dim sw As New Diagnostics.Stopwatch '実行時間を計測
+                sw.Start()
 
                 _connection.Open()
                 com = createSelectCount(sql)
                 resultCount = CType(com.ExecuteScalar(), Integer)
+
+                sw.Stop()
+                _sqlElapsedTime = sw.ElapsedMilliseconds
 
             Catch ex As Exception
                 gex = New GearsSqlException(ActionType.SEL, "データベースの読み込み(件数カウント)に失敗しました", ex)
@@ -247,9 +269,15 @@ Namespace Gears.DataSource
                 Dim gex As GearsSqlException = Nothing
 
                 Try
+                    Dim sw As New Diagnostics.Stopwatch '実行時間を計測
+                    sw.Start()
+
                     _connection.Open()
                     com = createSqlCommand(sql)
                     com.ExecuteNonQuery()
+
+                    sw.Stop()
+                    _sqlElapsedTime = sw.ElapsedMilliseconds
 
                 Catch ex As Exception
                     gex = New GearsSqlException(sql.Action, "データベースの更新に失敗しました ", ex)
@@ -282,6 +310,9 @@ Namespace Gears.DataSource
             Dim index As Integer = 0
 
             Try
+                Dim sw As New Diagnostics.Stopwatch '実行時間を計測
+                sw.Start()
+
                 _connection.Open()
                 transaction = _connection.BeginTransaction()
 
@@ -292,6 +323,10 @@ Namespace Gears.DataSource
                 Next
 
                 transaction.Commit()
+
+                sw.Stop() 'Open/Commitまでにかかる時間を計測(ラップを計測してもいいかもしれないが)
+                _sqlElapsedTime = sw.ElapsedMilliseconds
+
             Catch ex As Exception
                 Try
                     transaction.Rollback()

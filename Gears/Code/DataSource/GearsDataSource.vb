@@ -385,13 +385,13 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Overridable Function gSelect(ByVal sqlb As SqlBuilder) As System.Data.DataTable
 
-            GearsLogStack.setLog(GearsDTO.ActionToString(ActionType.SEL) + "処理を実行します", sqlb.confirmSql(ActionType.SEL))
-
             Try
                 Dim executor As New GearsSqlExecutor(ConnectionName)
                 _resultSet = executor.load(sqlb)
                 convertResultSet(_resultSet, sqlb)
+                LogMessage(sqlb, executor)
             Catch ex As Exception
+                LogMessage(sqlb, Nothing)
                 Throw
             End Try
 
@@ -425,8 +425,6 @@ Namespace Gears.DataSource
         ''' <remarks></remarks>
         Public Function gSelectCount(ByVal data As GearsDTO) As Integer Implements IDataSource.gSelectCount
             Dim sqlb As SqlBuilder = makeSqlBuilder(data)
-            GearsLogStack.setLog(GearsDTO.ActionToString(ActionType.SEL) + "処理を実行します", sqlb.confirmSql(ActionType.SEL))
-
             Return gSelectCount(sqlb)
 
         End Function
@@ -443,7 +441,10 @@ Namespace Gears.DataSource
             Try
                 Dim executor As New GearsSqlExecutor(ConnectionName)
                 count = executor.count(sqlb)
+                LogMessage(sqlb, executor)
+
             Catch ex As Exception
+                LogMessage(sqlb, Nothing)
                 Throw
             End Try
 
@@ -605,15 +606,15 @@ Namespace Gears.DataSource
             Try
                 Dim executor As New GearsSqlExecutor(ConnectionName)
 
-                GearsLogStack.setLog(sqlb.DataSource.Name + "へ" + GearsDTO.ActionToString(sqlb.Action) + "処理を行います")
-
                 'Saveの場合、ActionTypeはINS/UPDのどちらかに編集されていることを前提とする
                 executor.execute(sqlb)
+                LogMessage(sqlb, executor)
 
                 '実行結果を読み込む
                 loadExecuted(sqlb)
 
             Catch ex As Exception
+                LogMessage(sqlb, Nothing)
                 Throw
             End Try
 
@@ -773,6 +774,18 @@ Namespace Gears.DataSource
             Return result
 
         End Function
+
+        ''' <summary>SQL実行のメッセージをログに書き込む</summary>
+        ''' <param name="sqlb"></param>
+        ''' <param name="executor"></param>
+        ''' <remarks></remarks>
+        Private Sub LogMessage(ByVal sqlb As SqlBuilder, ByVal executor As GearsSqlExecutor)
+            If executor IsNot Nothing Then
+                GearsLogStack.setLog(GearsDTO.ActionToString(sqlb.Action) + "処理を実行しました(" + executor.SqlElapsedTime(1000) + "sec)", 3, sqlb.confirmSql(sqlb.Action))
+            Else
+                GearsLogStack.setLog(GearsDTO.ActionToString(sqlb.Action) + "処理を実行します", 3, sqlb.confirmSql(sqlb.Action))
+            End If
+        End Sub
 
 
     End Class

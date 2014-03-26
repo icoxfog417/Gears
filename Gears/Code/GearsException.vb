@@ -6,17 +6,6 @@ Imports System.Runtime.Serialization
 Namespace Gears
 
     ''' <summary>
-    ''' エラーのレベルを表すEnum型
-    ''' </summary>
-    ''' <remarks></remarks>
-    Public Enum ExceptionLevel
-        ''' <summary>通常のエラー</summary>
-        Critical
-        ''' <summary>警告</summary>
-        Alert
-    End Enum
-
-    ''' <summary>
     ''' Gearsフレームワーク内の例外を管轄するクラス
     ''' </summary>
     ''' <remarks></remarks>
@@ -157,6 +146,26 @@ Namespace Gears
                 End If
 
             End If
+        End Sub
+
+    End Class
+
+    ''' <summary>ログメッセージ用の例外</summary>
+    ''' <remarks></remarks>
+    Public Class GearsLog
+        Inherits GearsException
+
+        Public Sub New()
+            MyBase.New()
+        End Sub
+
+        Public Sub New(message As String, ByVal innerException As Exception)
+            MyBase.New(message, innerException)
+
+        End Sub
+
+        Public Sub New(message As String, ByVal ParamArray detail() As String)
+            MyBase.New(message, detail)
         End Sub
 
     End Class

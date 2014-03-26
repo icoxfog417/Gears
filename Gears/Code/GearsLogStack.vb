@@ -69,22 +69,26 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' ログを書き込む
+        ''' メッセージログを書き込む(通常のメッセージで、エラーとしては扱われない)
         ''' </summary>
         ''' <param name="msg"></param>
         ''' <param name="msgDetail"></param>
         ''' <remarks></remarks>
         Public Shared Sub setLog(ByVal msg As String, ByVal ParamArray msgDetail() As String)
-            Dim logStore As GearsLogStack = getLogStackItem()
+            Dim log As New GearsLog(msg, msgDetail)
+            log.setLocalSource(2)
+            setLog(log)
+        End Sub
 
-            If Not logStore Is Nothing Then
-
-                Dim log As New GearsException(msg, msgDetail)
-                log.setLocalSource(2)
-                logStore.addLog(log)
-
-            End If
-
+        ''' <summary>呼出階層を指定してメッセージを書き込み</summary>
+        ''' <param name="msg"></param>
+        ''' <param name="depth">通常は、呼出元メソッド>setLogメソッドで2階層。ログ出力用の関数などを使用している場合は、さらに+1する</param>
+        ''' <param name="msgDetail"></param>
+        ''' <remarks></remarks>
+        Public Shared Sub setLog(ByVal msg As String, ByVal depth As Integer, ByVal ParamArray msgDetail() As String)
+            Dim log As New GearsLog(msg, msgDetail)
+            log.setLocalSource(depth)
+            setLog(log)
         End Sub
 
         ''' <summary>
@@ -136,7 +140,7 @@ Namespace Gears
                 For Each item As GearsException In logTemp
                     Dim tempStr As String = ""
 
-                    tempStr += "<tr>"
+                    tempStr += "<tr " + If(Not TypeOf item Is GearsLog, "class=""g-msg-error""", "") + ">" 'エラーの場合、スタイルを設定
                     'No
                     tempStr += "<td>" + i.ToString + "</td>"
 
