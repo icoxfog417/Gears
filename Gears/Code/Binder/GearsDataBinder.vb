@@ -23,13 +23,16 @@ Namespace Gears.Binder
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function isBindable(ByRef con As Control) As Boolean Implements IDataBinder.isBindable
+            Dim result As Boolean = False
 
-            If TypeOf con Is ListControl Or _
-                TypeOf con Is CompositeDataBoundControl Then
-                Return True
-            Else
-                Return False
+            If TypeOf con Is ListControl Then
+                result = True
+            ElseIf TypeOf con Is CompositeDataBoundControl AndAlso String.IsNullOrEmpty(CType(con, CompositeDataBoundControl).DataSourceID) Then
+                'DataSourceIDを持つ場合は、そちらに任せる(DataSourceIDとDataSourceを2つ使うことはできない)
+                result = True
             End If
+
+            Return result
 
         End Function
 
@@ -141,6 +144,7 @@ Namespace Gears.Binder
         Protected Overridable Function compositBind(ByRef dbound As CompositeDataBoundControl, ByRef dset As System.Data.DataTable) As Boolean
             Dim result As Boolean = True
             Try
+
                 dbound.DataSource = dset
                 dbound.DataBind()
 
