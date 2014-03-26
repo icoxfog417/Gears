@@ -174,7 +174,7 @@ Namespace Gears.Binder
                             Dim row As DataRow = dset.Rows(0)
                             Dim keyValues As New ArrayList
                             For Each k As String In CType(con, GridView).DataKeyNames
-                                keyValues.Add(row(k))
+                                If dset.Columns.Contains(k) Then keyValues.Add(row(k))
                             Next
                             key = GearsControl.serializeValue(keyValues)
                         End If
@@ -321,8 +321,9 @@ Namespace Gears.Binder
                             Exit For
                         End If
                     Next
-
-                    CType(con, GridView).SelectedIndex = index
+                    If index > -1 Then
+                        CType(con, GridView).SelectedIndex = index
+                    End If
 
                 End If
 

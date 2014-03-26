@@ -691,7 +691,7 @@ Namespace Gears
                             node.visitChildren(Function(nv As RelationNode) As String
                                                    Dim p As GearsControl = GControl(nv.Parent.Value) '子をたどっているため、親がないのはありえない
                                                    Dim c As GearsControl = GControl(nv.Value)
-                                                   Dim ptoc As GearsDTO = makeDTO(p.Control, Nothing, Nothing)
+                                                   Dim ptoc As GearsDTO = makeDTO(p.Control, c.Control, Nothing)
                                                    c.dataBind(ptoc) '親の値を子に通知
                                                    c.dataAttach(gcon.DataSource) '大元のデータソースの値を設定
                                                    Return nv.Value
