@@ -46,6 +46,30 @@
         End Sub
 
         ''' <summary>
+        ''' 与えられたコントロールに対し、親コントロールの探索を実施する(※自身は含まれないため注意)<br/>
+        ''' isTargetの判定がTrueになるものに対し、callbackが実行される
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="callback"></param>
+        ''' <param name="isTarget"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
+        Public Shared Sub fetchParents(ByVal con As Control, ByVal callback As fetchControl, ByVal isTarget As isFetchTgt, Optional ByRef dto As GearsDTO = Nothing)
+
+            '自身の親がexcept対象であるか否かを確認する
+            Dim parent As Control = con.Parent
+            While Not parent Is Nothing
+                If isTarget Is Nothing OrElse isTarget(parent) Then
+                    callback(parent, dto)
+                ElseIf TypeOf parent Is Page Then
+                    parent = Nothing 'ページコントロールは画面に1つしか存在しないため、Pageに達したら抜ける(無限ループの保険)
+                End If
+                If parent IsNot Nothing Then parent = parent.Parent
+            End While
+
+        End Sub
+
+        ''' <summary>
         ''' 指定されたコントロールを検索する
         ''' </summary>
         ''' <param name="con">検索対象コントロール</param>

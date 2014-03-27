@@ -135,21 +135,23 @@ Namespace Gears
             '親コントロールを探索し、配下のコントロールのうち対象であるものを登録する
             ControlSearcher.fetchControls(parent, _
                             Sub(control As Control, ByRef dto As GearsDTO)
-                                Dim gcon As GearsControl = createGControl(control, isAutoLoadAttr)
+                                If Not isIgnoreType(control) Then
+                                    Dim gcon As GearsControl = createGControl(control, isAutoLoadAttr)
 
-                                If Not isOtherTarget(control) Then
-                                    addControl(gcon)
-                                Else
-                                    Select Case TypeOf control Is Control
-                                        Case TypeOf control Is Panel
-                                            If gcon.IsFormAttribute Or gcon.IsFilterAttribute Then
-                                                addControl(gcon)
-                                            End If
-                                        Case TypeOf control Is CompositeDataBoundControl
-                                            If gcon.DataSource IsNot Nothing Then
-                                                addControl(gcon)
-                                            End If
-                                    End Select
+                                    If Not isOtherTarget(control) Then
+                                        addControl(gcon)
+                                    Else
+                                        Select Case TypeOf control Is Control
+                                            Case TypeOf control Is Panel
+                                                If gcon.IsFormAttribute Or gcon.IsFilterAttribute Then
+                                                    addControl(gcon)
+                                                End If
+                                            Case TypeOf control Is CompositeDataBoundControl
+                                                If gcon.DataSource IsNot Nothing Then
+                                                    addControl(gcon)
+                                                End If
+                                        End Select
+                                    End If
                                 End If
                             End Sub,
                             Function(control As Control) As Boolean
@@ -382,17 +384,18 @@ Namespace Gears
         Private Function getRegisterdSubControlIds(ByVal target As Control) As List(Of String)
 
             Dim ids As New List(Of String)
-            ControlSearcher.fetchControls(target, Sub(control As Control, ByRef dto As GearsDTO)
-                                                      ids.Add(control.ID)
-                                                  End Sub,
-                                        Function(control As Control) As Boolean
-                                            'コントロールが範囲内にあり、登録済み。
-                                            If Not control.ID Is Nothing AndAlso isRegisteredControl(control) Then
-                                                Return True
-                                            Else
-                                                Return False
-                                            End If
-                                        End Function)
+            ControlSearcher.fetchControls(target,
+                                          Sub(control As Control, ByRef dto As GearsDTO)
+                                              ids.Add(control.ID)
+                                          End Sub,
+                                          Function(control As Control) As Boolean
+                                              'コントロールが範囲内にあり、登録済み。
+                                              If Not control.ID Is Nothing AndAlso isRegisteredControl(control) Then
+                                                  Return True
+                                              Else
+                                                  Return False
+                                              End If
+                                          End Function)
             Return ids
 
         End Function
@@ -451,8 +454,11 @@ Namespace Gears
         ''' <param name="dto"></param>
         ''' <remarks></remarks>
         Private Sub fetchControlInfo(ByVal control As Control, ByRef dto As GearsDTO)
-            '除外対象のものは収集しない
+
             Dim isExcept As Boolean = False
+
+            '無視対象のものは処理しない
+            isExcept = isIgnoreType(control)
 
             '表示専用のコントロールは、SELECT以外の場合除外する
             If GControl(control) IsNot Nothing AndAlso (GControl(control).IsDisplayOnly And dto.Action <> ActionType.SEL) Then isExcept = True
@@ -718,6 +724,26 @@ Namespace Gears
         End Function
 
         ''' <summary>
+        ''' 処理対象とならないコントロールの判定を行う
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function isIgnoreType(ByVal control As Control) As Boolean
+            Dim ignore As Boolean = False
+            '親コントロールが入力用コントロールで登録済みの場合、配下のコントロールは対象としない(AjaxControlToolkit対策)
+            ControlSearcher.fetchParents(control,
+                                         Sub(con As Control, ByRef dto As GearsDTO) ignore = True,
+                                         AddressOf Me.isInputControl)
+
+            'ユーザーコントロールは対象外とする。ただし、ページ元となるMasterPageと入力用コントロールを処理するIFormItem、対象を明示的に示すIGearsTargetを除く
+            If Not ignore Then ignore = TypeOf control Is UserControl AndAlso Not (TypeOf control Is MasterPage Or TypeOf control Is IFormItem Or TypeOf control Is IGearsTarget)
+
+            Return ignore
+
+        End Function
+
+        ''' <summary>
         ''' 入力用フォームコントロールか否かを判定する。ただし、ネーミングルールに沿わないものは除外する。
         ''' </summary>
         ''' <param name="control"></param>
@@ -823,7 +849,7 @@ Namespace Gears
         End Function
 
         Public Overrides Function toString() As String
-            Dim result As String = ConnectionName + "/" + DsNameSpace
+            Dim result As String = ConnectionName + "/" + DsNamespace
             Return result
         End Function
 
