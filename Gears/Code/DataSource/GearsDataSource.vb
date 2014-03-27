@@ -726,13 +726,17 @@ Namespace Gears.DataSource
                 If keyFilter.Count > 0 Then 'キー選択がある場合、フィルタとしてそのまま追加
                     Dim isKeyUpdateOccur As Boolean = False
                     keyFilter.ForEach(Sub(f)
-                                          selSqlb.addFilter(f)
-                                          If sqlb.Selection(f.Column) IsNot Nothing AndAlso f.Value <> sqlb.Selection(f.Column).Value Then isKeyUpdateOccur = True
+                                          If sqlb.Selection(f.Column) IsNot Nothing AndAlso f.Value <> sqlb.Selection(f.Column).Value Then
+                                              isKeyUpdateOccur = True
+                                              selSqlb.addFilter(sqlb.Selection(f.Column).toFilter) '更新対象先を検索するよう差し替え
+                                          Else
+                                              selSqlb.addFilter(f)
+                                          End If
                                       End Sub)
 
                     'キーを更新するUpdateは、許可されている場合のみOK
                     If isKeyUpdateOccur And Not sqlb.IsPermitOtherKeyUpdate Then
-                        Throw New GearsSqlException("キーを更新する処理は許可されていません(PermitOtherKeyUpdate:False)")
+                        Throw New GearsSqlException("キーの変更処理は許可されていません(PermitOtherKeyUpdate:False)")
                     End If
 
                 ElseIf keySelection.Count > 0 Then 'キー選択がなく、キーの更新がある場合それをフィルタとして設定
