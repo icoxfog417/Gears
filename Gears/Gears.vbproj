@@ -83,6 +83,7 @@
     <Compile Include="Code\GearsExpressions.vb" />
     <Compile Include="Code\GearsExtensions.vb" />
     <Compile Include="Code\GearsSection.vb" />
+    <Compile Include="Code\IGearsTarget.vb" />
     <Compile Include="Code\Util\ControlSearcher.vb" />
     <Compile Include="Code\Util\DataSetReader.vb" />
     <Compile Include="Code\Util\IFormItem.vb" />

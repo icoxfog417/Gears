@@ -82,6 +82,74 @@ Namespace GearsTest
         End Sub
 
         ''' <summary>
+        ''' コントロール内での、リレーション循環が発生しないことを確認
+        ''' </summary>
+        ''' <remarks></remarks>
+        <Test()>
+        Public Sub makeRelationLoop()
+
+            'コントロールの準備
+            Dim conTree As New Dictionary(Of String, List(Of String))
+            conTree.Add("pnlGFORM", New List(Of String) From {"txtNAME__KEY", "ddlDEPT"}) 'フォーム
+            conTree.Add("grvDATA", Nothing) '一覧
+
+            Dim root As Control = ControlBuilder.Build(RelationNode.makeTree(conTree))
+
+            'Mediatorの準備
+            Dim mediator As New GearsMediator(DefaultConnection)
+
+            mediator.addControls(root) 'コントロールの登録
+            mediator.addControl(ControlSearcher.findControl(root, "grvDATA")) 'gridviewを登録
+            '一覧からフォームにリレーションをはり、フォーム内のtxtNAMEからもフォームにリレーションを張る
+            mediator.addRelation("grvDATA", "pnlGFORM")
+            mediator.addRelation("txtNAME__KEY", "pnlGFORM")
+
+            'grvDATAから始まる処理で、grvDATA->pnlGFORM->txtNAME__KEY->pnlGFORM の循環が発生しないことを確認する
+            Dim relMap As List(Of RelationNode) = mediator.makeRelationMap(ControlSearcher.findControl(root, "pnlGFORM"), ControlSearcher.findControl(root, "grvDATA"))
+            relMap.ForEach(Sub(n) Console.WriteLine(n))
+
+
+            Assert.IsTrue(relMap(0).findNode("pnlGFORM") Is Nothing)
+
+        End Sub
+
+        ''' <summary>
+        ''' ユーザーコントロール、また入力用コントロール配下のコントロールが除外されることを確認
+        ''' </summary>
+        ''' <remarks></remarks>
+        <Test()>
+        Public Sub makeRelationWithoutUserControl()
+
+            'コントロールの準備
+            Dim root As New MasterPage 'マスターページはなぜかUserControlを継承しているが、これは除外されないことを確認
+            root.ID = "mstPage"
+            Dim user As New UserControl
+            user.Controls.Add(ControlBuilder.createControl("txtID"))
+            user.Controls.Add(ControlBuilder.createControl("txtID_TXT"))
+            Dim combineTxt As New TextBox
+            combineTxt.ID = "txtYMD_BEGIN"
+            combineTxt.Controls.Add(ControlBuilder.createControl("txtYMD_END")) 'txtbox配下のこのコントロールは除外対象とならない
+
+            root.Controls.Add(user)
+            root.Controls.Add(combineTxt)
+            root.Controls.Add(ControlBuilder.createControl("ddlDEPT")) 'これは除外対象とならない
+
+            'Mediatorの準備
+            Dim mediator As New GearsMediator(DefaultConnection)
+            mediator.addControls(root) 'コントロールの登録
+
+            Dim relMap As List(Of RelationNode) = mediator.makeRelationMap(root)
+            relMap.ForEach(Sub(n) Console.WriteLine(n))
+
+            Assert.AreEqual(2, relMap.Count) 'ddlDEPT.txtYMD_BEGINのみ
+            relMap.ForEach(Sub(n) Assert.IsTrue(n.findNode("ddlDEPT") IsNot Nothing Or n.findNode("txtYMD_BEGIN") IsNot Nothing))
+
+            Dim dto As GearsDTO = mediator.makeDTO(root, Nothing, Nothing)
+            Assert.AreEqual(2, dto.ControlInfo.Count)
+
+        End Sub
+
+        ''' <summary>
         ''' 指定されたノードの範囲でブランチを取得する<br/>
         ''' 例:A-B-Cというブランチがあり、Bが指定された場合B-Cを返却する
         ''' </summary>

@@ -631,7 +631,7 @@ Namespace Gears
             Dim result As List(Of RelationNode)
 
             'コントロールが指定されている場合、除外対象のリレーションの処理を行う
-            If con IsNot Nothing Then
+            If con IsNot Nothing Or fromcon IsNot Nothing Then
                 Dim tmplocalRelation As New Dictionary(Of String, List(Of String))
 
                 For Each item As KeyValuePair(Of String, List(Of String)) In localRelation
@@ -639,7 +639,7 @@ Namespace Gears
                     For Each rel As String In item.Value
                         Dim ignore As Boolean = False
                         '対象が指定コントロール(con)、または起点となったコントロール(fromcon)の場合、循環が発生するため処理しない
-                        ignore = (rel = con.ID Or rel = If(fromcon IsNot Nothing, fromcon.ID, String.Empty))
+                        ignore = (rel = If(con IsNot Nothing, con.ID, String.Empty) Or rel = If(fromcon IsNot Nothing, fromcon.ID, String.Empty))
 
                         'フィルタが起点となっている場合、値が一意となる保証がないためフォーム/フィルタのパネルは処理しない(visitListに入れない)
                         If Not ignore And fromcon IsNot Nothing Then

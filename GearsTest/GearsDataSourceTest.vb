@@ -282,6 +282,28 @@ Namespace GearsTest
         End Sub
 
         <Test()>
+        Public Sub gExecuteSaveKeyChange()
+            '事前に登録しておく
+            insertRow(KeyForSave)
+
+            Dim ds As New DataSource.EMP(DefaultConnection)
+
+            Dim saveDto As New GearsDTO(ActionType.SAVE)
+            saveDto.addFilter(SqlBuilder.F("EMPNO").eq(KeyForSave).asKey) '元の値と異なるキーを処理
+            saveDto.Add(SqlBuilder.S("EMPNO").setValue(KeyForInsert))
+            saveDto.Add(SqlBuilder.S("SAL").setValue("9999"))
+            saveDto.Add(SqlBuilder.S("HIREDATE").setValue("1000-01-01"))
+
+            ds.execute(saveDto)
+
+            Assert.IsTrue(compareDataSet(KeyForInsert, ds.gResultSet)) 'インサートしたデータが取得されているか確認
+
+            deleteRow(KeyForSave)
+            deleteRow(KeyForInsert)
+
+        End Sub
+
+        <Test()>
         Public Sub ExceptionOptimisticLock()
             '事前に消しておく
             deleteRow(KeyForException)
