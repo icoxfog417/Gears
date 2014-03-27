@@ -135,28 +135,27 @@ Namespace Gears
             '親コントロールを探索し、配下のコントロールのうち対象であるものを登録する
             ControlSearcher.fetchControls(parent, _
                             Sub(control As Control, ByRef dto As GearsDTO)
-                                If Not isIgnoreType(control) Then
-                                    Dim gcon As GearsControl = createGControl(control, isAutoLoadAttr)
+                                Dim gcon As GearsControl = createGControl(control, isAutoLoadAttr)
 
-                                    If Not isOtherTarget(control) Then
-                                        addControl(gcon)
-                                    Else
-                                        Select Case TypeOf control Is Control
-                                            Case TypeOf control Is Panel
-                                                If gcon.IsFormAttribute Or gcon.IsFilterAttribute Then
-                                                    addControl(gcon)
-                                                End If
-                                            Case TypeOf control Is CompositeDataBoundControl
-                                                If gcon.DataSource IsNot Nothing Then
-                                                    addControl(gcon)
-                                                End If
-                                        End Select
-                                    End If
+                                If Not isOtherTarget(control) Then
+                                    addControl(gcon)
+                                Else
+                                    Select Case TypeOf control Is Control
+                                        Case TypeOf control Is Panel
+                                            If gcon.IsFormAttribute Or gcon.IsFilterAttribute Then
+                                                addControl(gcon)
+                                            End If
+                                        Case TypeOf control Is CompositeDataBoundControl
+                                            If gcon.DataSource IsNot Nothing Then
+                                                addControl(gcon)
+                                            End If
+                                    End Select
                                 End If
                             End Sub,
                             Function(control As Control) As Boolean
                                 Return isInputControl(control) Or isOtherTarget(control)
-                            End Function
+                            End Function,
+                            AddressOf Me.isFetchTarget
                         )
 
             Return result
@@ -389,7 +388,7 @@ Namespace Gears
                                               ids.Add(control.ID)
                                           End Sub,
                                           Function(control As Control) As Boolean
-                                              'コントロールが範囲内にあり、登録済み。
+                                              'コントロールが範囲内にあり、登録済み(登録済みターゲットのみ扱うため、isFetchは不要)
                                               If Not control.ID Is Nothing AndAlso isRegisteredControl(control) Then
                                                   Return True
                                               Else
@@ -421,7 +420,7 @@ Namespace Gears
                 If TypeOf fromControl Is GridView Then 'サポート対象の特殊コントロール
                     fetchControlInfo(fromControl, message)
                 ElseIf fromControl.HasControls Then 'その他複合コントロール
-                    ControlSearcher.fetchControls(fromControl, AddressOf Me.fetchControlInfo, AddressOf Me.isRegisteredAsInput, message)
+                    ControlSearcher.fetchControls(fromControl, AddressOf Me.fetchControlInfo, AddressOf Me.isRegisteredAsInput, AddressOf Me.isFetchTarget, message)
                 ElseIf isRegisteredAsInput(fromControl) Then
                     fetchControlInfo(fromControl, message)
                 End If
@@ -456,9 +455,6 @@ Namespace Gears
         Private Sub fetchControlInfo(ByVal control As Control, ByRef dto As GearsDTO)
 
             Dim isExcept As Boolean = False
-
-            '無視対象のものは処理しない
-            isExcept = isIgnoreType(control)
 
             '表示専用のコントロールは、SELECT以外の場合除外する
             If GControl(control) IsNot Nothing AndAlso (GControl(control).IsDisplayOnly And dto.Action <> ActionType.SEL) Then isExcept = True
@@ -634,13 +630,23 @@ Namespace Gears
             Dim localRelation As Dictionary(Of String, List(Of String)) = _relations.ToDictionary(Function(i) i.Key, Function(i) i.Value)
             Dim result As List(Of RelationNode)
 
-            'フィルタが起点となっている場合、値が一意となる保証がないためフォーム/フィルタのパネルは処理しない(visitListに入れない)
-            If fromcon IsNot Nothing AndAlso GControl(fromcon).IsFilterAttribute Then
+            'コントロールが指定されている場合、除外対象のリレーションの処理を行う
+            If con IsNot Nothing Then
                 Dim tmplocalRelation As New Dictionary(Of String, List(Of String))
+
                 For Each item As KeyValuePair(Of String, List(Of String)) In localRelation
                     Dim newRelation As New List(Of String)
                     For Each rel As String In item.Value
-                        If Not (GControl(rel).IsFilterAttribute Or GControl(rel).IsFormAttribute) Then newRelation.Add(rel)
+                        Dim ignore As Boolean = False
+                        '対象が指定コントロール(con)、または起点となったコントロール(fromcon)の場合、循環が発生するため処理しない
+                        ignore = (rel = con.ID Or rel = If(fromcon IsNot Nothing, fromcon.ID, String.Empty))
+
+                        'フィルタが起点となっている場合、値が一意となる保証がないためフォーム/フィルタのパネルは処理しない(visitListに入れない)
+                        If Not ignore And fromcon IsNot Nothing Then
+                            ignore = GControl(fromcon).IsFilterAttribute And (GControl(rel).IsFilterAttribute Or GControl(rel).IsFormAttribute)
+                        End If
+
+                        If Not ignore Then newRelation.Add(rel)
                     Next
                     tmplocalRelation.Add(item.Key, newRelation)
                 Next
@@ -724,22 +730,20 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 処理対象とならないコントロールの判定を行う
+        ''' 以後検索を行わないコントロールの判定を行う
         ''' </summary>
         ''' <param name="control"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function isIgnoreType(ByVal control As Control) As Boolean
+        Public Function isFetchTarget(ByVal control As Control) As Boolean
             Dim ignore As Boolean = False
-            '親コントロールが入力用コントロールで登録済みの場合、配下のコントロールは対象としない(AjaxControlToolkit対策)
-            ControlSearcher.fetchParents(control,
-                                         Sub(con As Control, ByRef dto As GearsDTO) ignore = True,
-                                         AddressOf Me.isInputControl)
+            '入力用コントロールとして登録された場合、以後配下のコントロールは対象としない(AjaxControlToolkit対策)
+            ignore = isInputControl(control)
 
             'ユーザーコントロールは対象外とする。ただし、ページ元となるMasterPageと入力用コントロールを処理するIFormItem、対象を明示的に示すIGearsTargetを除く
             If Not ignore Then ignore = TypeOf control Is UserControl AndAlso Not (TypeOf control Is MasterPage Or TypeOf control Is IFormItem Or TypeOf control Is IGearsTarget)
 
-            Return ignore
+            Return Not ignore
 
         End Function
 
@@ -754,7 +758,7 @@ Namespace Gears
 
             If isIdNamingMatch(control.ID) Then
                 Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GCON)
-                If Not isGconDeclare Then GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GDISP)
+                If Not isGconDeclare Then isGconDeclare = GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GDISP)
 
                 If _
                     TypeOf control Is ListControl Or _

@@ -46,6 +46,32 @@
         End Sub
 
         ''' <summary>
+        ''' 与えられたコントロールに対し、子コントロールの探索を実施する(※自身は含まれないため注意)<br/>
+        ''' isFetchがTrueのもののみ検索を行い、isTargetの判定がTrueになるものに対しcallbackが実行される
+        ''' </summary>
+        ''' <param name="parent"></param>
+        ''' <param name="callback"></param>
+        ''' <param name="isTarget"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
+        Public Shared Sub fetchControls(ByVal parent As Control, ByVal callback As fetchControl, ByVal isTarget As isFetchTgt, ByVal isFetch As isFetchTgt, Optional ByRef dto As GearsDTO = Nothing)
+
+            If parent IsNot Nothing AndAlso parent.HasControls() Then
+                Dim child As Control
+                For Each child In parent.Controls()
+                    If isTarget Is Nothing OrElse isTarget(child) Then '対象と判定されたもののみ、Fetchする(ない場合All True)
+                        callback(child, dto)
+                    End If
+                    If isFetch Is Nothing OrElse isFetch(child) Then
+                        fetchControls(child, callback, isTarget, isFetch, dto)
+                    End If
+                Next
+            End If
+
+        End Sub
+
+
+        ''' <summary>
         ''' 与えられたコントロールに対し、親コントロールの探索を実施する(※自身は含まれないため注意)<br/>
         ''' isTargetの判定がTrueになるものに対し、callbackが実行される
         ''' </summary>
