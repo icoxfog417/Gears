@@ -639,8 +639,9 @@ Namespace Gears.DataSource
 
             If sqlb.Action = ActionType.INS Then
                 'INSERTの場合フィルタ値がないため、設定値をフィルタ値に変換してセット
+                sqlbForResult.Filter.Clear()
                 For Each selection As SqlSelectItem In sqlb.Selection
-                    If selection.IsKey And sqlbForResult.Filter(selection.Column) Is Nothing Then
+                    If selection.IsKey Then
                         sqlbForResult.addFilter(selection.toFilter)
                     End If
                 Next
