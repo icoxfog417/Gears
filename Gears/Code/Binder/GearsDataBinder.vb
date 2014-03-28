@@ -67,7 +67,24 @@ Namespace Gears.Binder
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function dataBind(ByRef con As Control, ByRef dset As System.Data.DataTable) As Boolean Implements IDataBinder.dataBind
+
+            'ダミーのGearsControlを作成
+            Dim gcon As New GearsControl(con, String.Empty, Nothing)
+            Return dataBind(gcon, dset)
+
+        End Function
+
+        ''' <summary>
+        ''' データのバインド処理を行う
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function dataBind(ByRef gcon As GearsControl, ByRef dset As DataTable) As Boolean Implements IDataBinder.dataBind
             Dim result As Boolean = True
+            Dim con As Control = gcon.Control
+
             Try
                 If isBindable(con) Then
                     Select Case TypeOf con Is Control
@@ -163,7 +180,23 @@ Namespace Gears.Binder
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function dataAttach(ByRef con As Control, ByRef dset As System.Data.DataTable) As Boolean Implements IDataBinder.dataAttach
+            'ダミーのGearsControlを作成
+            Dim gcon As New GearsControl(con, String.Empty, Nothing)
+            Return dataAttach(gcon, dset)
+        End Function
+
+        ''' <summary>
+        ''' コントロールに値を設定する
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function dataAttach(ByRef gcon As GearsControl, ByRef dset As System.Data.DataTable) As Boolean Implements IDataBinder.dataAttach
+
             Dim result As Boolean = True
+            Dim con As Control = gcon.Control
+
             Try
                 If Not dset Is Nothing AndAlso dset.Rows.Count > 0 Then
                     If TypeOf con Is ListControl Then
@@ -178,12 +211,12 @@ Namespace Gears.Binder
                             Next
                             key = GearsControl.serializeValue(keyValues)
                         End If
-                        setValue(con, key)
+                        gcon.setValue(key)
                     Else
 
                         Dim value As Object = DataSetReader.Item(dset, GearsControl.extractDataSourceid(con.ID))
                         If Not value Is Nothing Then 'Nothing = データテーブルに該当項目がない
-                            setValue(con, value)
+                            gcon.setValue(value)
                         End If
                     End If
                 End If
@@ -196,6 +229,7 @@ Namespace Gears.Binder
             Return result
 
         End Function
+
 
         ''' <summary>
         ''' リストコントロールに値をセットする

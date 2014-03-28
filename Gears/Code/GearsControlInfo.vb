@@ -2,6 +2,7 @@
 Imports System.Collections.Generic
 Imports System.Web.UI.WebControls
 Imports Gears.DataSource
+Imports Gears.Validation
 
 Namespace Gears
 
@@ -33,11 +34,11 @@ Namespace Gears
             End Get
         End Property
 
-        Private _value As String = ""
+        Private _value As Object = ""
         ''' <summary>
         ''' コントロールの値
         ''' </summary>
-        Public ReadOnly Property Value() As String
+        Public ReadOnly Property Value() As Object
             Get
                 Return _value
             End Get
@@ -96,7 +97,7 @@ Namespace Gears
         End Property
 
         ''' <summary>前回ロードされた値</summary>
-        Public Property LoadedValue As String = ""
+        Public Property LoadedValue As Object = ""
 
         ''' <summary>
         ''' 最低限の情報をセットするコンストラクタ
@@ -117,8 +118,9 @@ Namespace Gears
         ''' <param name="gcon"></param>
         ''' <remarks></remarks>
         Public Sub New(ByRef gcon As GearsControl)
-            Me.New(gcon.ControlID, gcon.DataSourceID, gcon.getValue, gcon.LoadedValue, _
+            Me.New(gcon.ControlID, gcon.DataSourceID, gcon.getAsObject, gcon.LoadedAsObject, _
                    gcon.IsKey, gcon.IsFormAttribute, gcon.IsFilterAttribute, gcon.OperatorAttribute)
+
         End Sub
 
         ''' <summary>
@@ -131,7 +133,7 @@ Namespace Gears
                    cInfo.IsKey, cInfo.IsFormAttribute, cInfo.IsFilterAttribute, cInfo.OperatorAttribute)
         End Sub
 
-        Private Sub New(ByVal conId As String, ByVal dsId As String, ByVal value As String, ByVal lvalue As String, _
+        Private Sub New(ByVal conId As String, ByVal dsId As String, ByVal value As Object, ByVal lvalue As Object, _
                ByVal isKey As Boolean, ByVal isForm As Boolean, ByVal isFilter As Boolean, ByVal opr As String)
             _controlId = conId
             _dataSourceId = dsId

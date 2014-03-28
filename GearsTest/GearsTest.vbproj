@@ -110,6 +110,7 @@
     <Compile Include="DataSource\EMP.vb" />
     <Compile Include="DataSource\GROUPN.vb" />
     <Compile Include="DataSource\JOB.vb" />
+    <Compile Include="GearsControlTest.vb" />
     <Compile Include="TestFormItem.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>

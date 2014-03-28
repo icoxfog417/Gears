@@ -17,6 +17,8 @@ Namespace Gears.Validation.Marker
         ''' <remarks></remarks>
         Protected Const DATE_CSS As String = "gs-date"
 
+        Public Property DoCast As Boolean = False Implements IAttributeMarker.DoCast
+
         ''' <summary>
         ''' コンストラクタで数値属性共通の値をセット
         ''' </summary>

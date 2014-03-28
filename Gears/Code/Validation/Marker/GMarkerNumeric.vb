@@ -25,6 +25,8 @@ Namespace Gears.Validation.Marker
             CssClass = NUMBER_CSS
         End Sub
 
+        Public Property DoCast As Boolean = False Implements IAttributeMarker.DoCast
+
     End Class
 
 End Namespace

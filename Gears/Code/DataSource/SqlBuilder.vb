@@ -22,7 +22,7 @@ Namespace Gears.DataSource
     ''' </summary>
     ''' <remarks></remarks>
     Public Enum LockType As Integer
-        ''' <summary>日付型(※未実装)</summary>
+        ''' <summary>日付型</summary>
         UDATE
         ''' <summary>日付文字列型(20110101など)</summary>
         UDATESTR

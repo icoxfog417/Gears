@@ -19,6 +19,15 @@ Namespace Gears.Binder
         Function dataBind(ByRef con As Control, ByRef dset As DataTable) As Boolean
 
         ''' <summary>
+        ''' データのバインド処理を行う
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Function dataBind(ByRef gcon As GearsControl, ByRef dset As DataTable) As Boolean
+
+        ''' <summary>
         ''' バインド対象か否かの判定を行う
         ''' </summary>
         ''' <param name="con"></param>
@@ -34,6 +43,15 @@ Namespace Gears.Binder
         ''' <returns></returns>
         ''' <remarks></remarks>
         Function dataAttach(ByRef con As Control, ByRef dset As DataTable) As Boolean
+
+        ''' <summary>
+        ''' 値を設定する処理を行う
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <param name="dset"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Function dataAttach(ByRef gcon As GearsControl, ByRef dset As DataTable) As Boolean
 
         ''' <summary>
         ''' コントロールから値を取得する処理

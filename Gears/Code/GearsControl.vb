@@ -231,6 +231,10 @@ Namespace Gears
         ''' <summary>ロード時の値</summary>
         Public Property LoadedValue As String = ""
 
+        Public Function LoadedAsObject() As Object
+            Return valueToObject(LoadedValue)
+        End Function
+
         ''' <summary>
         ''' コンストラクタ<br/>
         ''' Controlと接続文字列を受け取り、ControlのIDからデータソースクラスを判定し設定する
@@ -498,7 +502,7 @@ Namespace Gears
             Dim valueNow As String = Me.getValue
 
             Try
-                result = DataBinder.dataBind(_control, dset)
+                result = DataBinder.dataBind(Me, dset)
             Catch ex As Exception
                 Throw
             End Try
@@ -540,7 +544,7 @@ Namespace Gears
             End If
 
             Try
-                DataBinder.dataAttach(_control, dataResource)
+                DataBinder.dataAttach(Me, dataResource)
             Catch ex As Exception
                 Throw
             End Try
@@ -568,12 +572,59 @@ Namespace Gears
         End Function
 
         ''' <summary>
+        ''' Attributeに応じた変換などをかけた値を取得する。<br/>
+        ''' SqlBuilderなど、データベース問合せ時にはこちらを使用した方が良い。
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function getAsObject() As Object
+            Return valueToObject(getValue())
+        End Function
+
+        Private Function valueToObject(ByVal value As String) As Object
+
+            Dim obj As Object = value
+
+            If GAttribute IsNot Nothing Then
+                'Markerに応じたキャスト処理を行う
+                If GAttribute.hasMarker(GetType(Marker.GMarkerDate)) Then
+                    Dim dateValidator As Validator.GDate = GAttribute.ListUp().Where(Function(a) TypeOf a Is Validator.GDate).FirstOrDefault()
+                    If dateValidator.DoCast Then
+                        'DateTime型の場合、指定フォーマットで変換できる場合はDateTime型へ変換
+                        If dateValidator.isValidateOk(getValue) Then
+                            obj = dateValidator.ParsedDate
+                        End If
+                    End If
+
+                End If
+            End If
+
+            Return obj
+
+        End Function
+
+        ''' <summary>
         ''' コントロールへ値をセットする
         ''' </summary>
         ''' <param name="value"></param>
         ''' <remarks></remarks>
         Public Sub setValue(ByVal value As Object)
-            DataBinder.setValue(_control, value)
+            Dim convValue As Object = value
+
+            'Attributeに応じた処理
+            If GAttribute IsNot Nothing Then
+                If GAttribute.hasMarker(GetType(Marker.GMarkerDate)) Then
+                    Dim dateValidator As Validator.GDate = GAttribute.ListUp().Where(Function(a) TypeOf a Is Validator.GDate).FirstOrDefault()
+                    If TypeOf value Is DateTime And Not String.IsNullOrEmpty(dateValidator.Format) Then
+                        'DateTime型の場合、指定フォーマットでStringにする
+                        convValue = CType(value, DateTime).ToString(dateValidator.Format)
+                    End If
+
+                End If
+            End If
+
+            DataBinder.setValue(_control, convValue)
+
         End Sub
 
         ''' <summary>

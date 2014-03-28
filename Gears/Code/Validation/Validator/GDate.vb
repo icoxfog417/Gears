@@ -24,6 +24,13 @@ Namespace Gears.Validation.Validator
             End Set
         End Property
 
+        Private _parsedDate As DateTime = DateTime.MinValue
+        Public ReadOnly Property ParsedDate As DateTime
+            Get
+                Return _parsedDate
+            End Get
+        End Property
+
         Protected Overrides Sub Validate()
 
             Dim dateFormat As New List(Of String)
@@ -36,13 +43,13 @@ Namespace Gears.Validation.Validator
             End If
 
             Try
-                Dim d As DateTime
+
                 If ValidateeValue <> "" Then
                     '通常パース検証
-                    If _format = "" And DateTime.TryParse(ValidateeValue, d) Then 'フォーマット指定がある場合は行わない
+                    If _format = "" And DateTime.TryParse(ValidateeValue, _parsedDate) Then 'フォーマット指定がある場合は行わない
                         IsValid = True
                     Else
-                        d = DateTime.ParseExact(ValidateeValue, dateFormat.ToArray, _
+                        _parsedDate = DateTime.ParseExact(ValidateeValue, dateFormat.ToArray, _
                                                             System.Globalization.DateTimeFormatInfo.InvariantInfo,
                                                             System.Globalization.DateTimeStyles.None)
                     End If
