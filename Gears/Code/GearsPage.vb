@@ -10,6 +10,7 @@ Imports System.Reflection
 Imports Gears.Validation
 Imports Gears.DataSource
 Imports Gears.Util
+Imports Gears.JS
 
 Namespace Gears
 
@@ -59,6 +60,9 @@ Namespace Gears
 
         ''' <summary>警告を無視するか否かを設定したhiddenフィールド</summary>
         Const CS_ALERT_IS_IGNORE_FLG As String = "GearsYesAlertIgnore"
+
+        ''' <summary>JavaScript変数の宣言を行うためのスクリプト名</summary>
+        Const CS_JS_VARIABLE_BLOCK As String = "GearsJsObjectBlock"
 
         ''' <summary>ViewStateに値を設定する際の区切り文字</summary>
         Protected Const VIEW_STATE_SEPARATOR As String = "/"
@@ -122,7 +126,7 @@ Namespace Gears
             pageDsNspace = readProperty(pageDsNspace)
 
             '未作成か、設定値が異なる場合更新
-            If GMediator Is Nothing OrElse (GMediator.ConnectionName <> pageConName Or GMediator.DsNameSpace <> pageDsNspace) Then
+            If GMediator Is Nothing OrElse (GMediator.ConnectionName <> pageConName Or GMediator.DsNamespace <> pageDsNspace) Then
                 GMediator = New GearsMediator(pageConName, pageDsNspace)
             End If
 
@@ -174,6 +178,7 @@ Namespace Gears
         Protected Overrides Sub OnLoadComplete(e As System.EventArgs)
             MyBase.OnLoadComplete(e)
 
+            'ログの書き出し
             If IsLoggingMode() Then
                 '記録されたログを書き出し
                 If Me.FindControl(Q_GEARS_IS_LOG_OUT) Is Nothing Then
@@ -189,6 +194,9 @@ Namespace Gears
             End If
 
             GearsLogStack.traceEnd()
+
+            'JavaScript変数定義スクリプトの書き出し
+            JsVariableWrite()
 
         End Sub
 
@@ -1014,43 +1022,54 @@ Namespace Gears
         ''' <param name="label"></param>
         ''' <remarks></remarks>
         Public Sub LogToLabel(ByVal result As Boolean, ByRef label As Label)
-            Dim desc As KeyValuePair(Of String, String) = LogToLabel(result)
-            label.CssClass = desc.Key
-            label.Text = desc.Value
+
+            Dim emsg As String = ""
+            If GLog.Count > 0 Then
+                emsg = GLog.FirstLog.Message
+                If IsLoggingMode() Then 'ログモードの場合詳細を出力
+                    If Not GLog.FirstLog.InnerException Is Nothing Then
+                        emsg += " (" + GLog.FirstLog.InnerException.Message + ")"
+                    ElseIf Not String.IsNullOrEmpty(GLog.FirstLog.MessageDetail()) Then
+                        emsg += " (" + GLog.FirstLog.MessageDetail() + ")"
+                    End If
+                End If
+            End If
+            LogToLabel(result, "処理は正常に行われました", emsg, label)
 
         End Sub
 
         ''' <summary>
-        ''' エラーログをスタイル付きで出力する
+        ''' 指定されたラベルに対し、メッセージをセットします<br/>
+        ''' labelのCssClassが、resultに応じ g-msg-success か g-msg-errorに変化します(それ以外のCssClassを指定していた場合はそれが消えることはありません)<br/>
+        ''' result=trueの場合は引数で指定されたsuccessMsgがセットされます。<br/>
+        ''' result=falseの場合は発生したエラーがGLogから取得され、そのメッセージがセットされます。<br/>
         ''' </summary>
-        ''' <param name="result"></param>
-        ''' <returns></returns>
+        ''' <param name="label">メッセージをセットするラベル</param>
+        ''' <param name="successMsg">成功時メッセージ</param>
+        ''' <param name="result">処理結果のBoolean</param>
         ''' <remarks></remarks>
-        Protected Overridable Function LogToLabel(ByVal result As Boolean) As KeyValuePair(Of String, String)
-            Dim desc As KeyValuePair(Of String, String) = Nothing
-            Dim msg As String
-            If GLog.Count > 0 Then
-                msg = GLog.FirstLog.Message
-                If IsLoggingMode() Then
-                    If Not GLog.FirstLog.InnerException Is Nothing Then
-                        msg += "　詳細：" + GLog.FirstLog.InnerException.Message
-                    ElseIf Not String.IsNullOrEmpty(GLog.FirstLog.MessageDetail()) Then
-                        msg += "　詳細：" + GLog.FirstLog.MessageDetail()
-                    End If
-                End If
+        Protected Sub LogToLabel(ByVal result As Boolean, ByVal successMsg As String, ByVal errorMsg As String, ByRef label As Label)
+            Dim css As String = label.CssClass
 
-                If result Then
-                    msg = "【警告】" + msg
-                    desc = New KeyValuePair(Of String, String)("g-msg-warning", msg)
+            '既存スタイルを消去
+            css = RegularExpressions.Regex.Replace(css, "g-msg-success|g-msg-error|g-msg-warning", "")
+            label.CssClass = Trim(css)
+
+            'resultに応じメッセージをセット
+            If result Then
+                If GLog.Count = 0 Then
+                    label.Text = successMsg
+                    label.CssClass += " g-msg-success"
                 Else
-                    msg = "【エラー】" + msg
-                    desc = New KeyValuePair(Of String, String)("g-msg-error", msg)
+                    label.Text = errorMsg
+                    label.CssClass += " g-msg-warning"
                 End If
             Else
-                desc = New KeyValuePair(Of String, String)("g-msg-success", "【成功】処理は正常に実行されました")
+                label.Text = errorMsg
+                label.CssClass += " g-msg-error"
             End If
-            Return desc
-        End Function
+
+        End Sub
 
         ''' <summary>
         ''' クエリ引数を取得する
@@ -1115,7 +1134,48 @@ Namespace Gears
 
         End Function
 
-    End Class
+        ''' <summary>
+        ''' GearsJsAttributeが指定されたプロパティを、ページのscriptブロックに書き込む<br/>
+        ''' </summary>
+        ''' <remarks></remarks>
+        Protected Sub JsVariableWrite()
 
+            Dim jsProps = From p As PropertyInfo In Me.GetType.GetProperties
+                          Let jsAttr As JSVariableAttribute = Attribute.GetCustomAttribute(p, GetType(JSVariableAttribute))
+                          Where jsAttr IsNot Nothing
+                          Select p, jsAttr
+
+            Dim cs As ClientScriptManager = Me.ClientScript
+
+            If (Not cs.IsClientScriptBlockRegistered(Me.GetType, CS_JS_VARIABLE_BLOCK)) Then
+                Dim script As New StringBuilder
+                Dim vars As New Dictionary(Of String, String)
+                Dim serializer As New Web.Script.Serialization.JavaScriptSerializer
+                For Each item In jsProps
+                    Dim name As String = If(String.IsNullOrEmpty(item.jsAttr.Name), item.p.Name, item.jsAttr.Name)
+                    Dim value As String = serializer.Serialize(item.p.GetValue(Me, Nothing))
+                    vars.Add(name, value)
+                Next
+
+                If vars.Count > 0 Then
+                    script.Append("var gears; " + vbCrLf)
+                    script.Append("if (typeof gears == ""undefined"") { gears = {}; } " + vbCrLf)
+                    script.Append("if (typeof gears.v == ""undefined"") { gears.v = {}; } " + vbCrLf)
+                    script.Append("(function(){ var GV = gears.v;" + vbCrLf)
+
+                    For Each item As KeyValuePair(Of String, String) In vars
+                        script.Append(" GV." + item.Key + " = " + item.Value + ";")
+                    Next
+
+                    script.Append("})() ")
+
+                    cs.RegisterClientScriptBlock(Me.GetType, CS_JS_VARIABLE_BLOCK, script.ToString, True)
+
+                End If
+            End If
+
+        End Sub
+
+    End Class
 
 End Namespace
