@@ -48,7 +48,7 @@ Namespace Gears.DataSource
         ''' マルチバイトカラムを使用する際のエスケープ文字列<br/>
         ''' Oracleの場合、マルチバイトのカラム(日本語名の列など)は""で囲う必要がある
         ''' </summary>
-        Private MULTIBYTE_FORMAT As String = ""
+        Private MULTIBYTE_FORMAT As String = "{0}"
 
         ''' <summary>
         ''' ページングを行う際に使用する副問合せ表の名前(SqlServerで無名表が許されないため)
@@ -84,14 +84,14 @@ Namespace Gears.DataSource
                         PARAM_HEAD = "@"
                         MULTIBYTE_FORMAT = "[{0}]"
                     Case DbServerType.MySQL '未検証
-                        PARAM_HEAD = "?"
-                        MULTIBYTE_FORMAT = ""
+                        PARAM_HEAD = "@"
+                        MULTIBYTE_FORMAT = "`{0}`" 'バッククウォート
                     Case DbServerType.PostgreSQL '未検証
                         PARAM_HEAD = ":"
-                        MULTIBYTE_FORMAT = ""
+                        MULTIBYTE_FORMAT = """{0}"""
                     Case DbServerType.SQLite
                         PARAM_HEAD = ":"
-                        MULTIBYTE_FORMAT = "" 'マルチバイト対応なしと思われる
+                        MULTIBYTE_FORMAT = "[{0}]" 'マルチバイト対応なしと思われる
 
                 End Select
             End Set
