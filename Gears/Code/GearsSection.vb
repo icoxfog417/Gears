@@ -2,6 +2,10 @@
 
 Namespace Gears
 
+    ''' <summary>
+    ''' Gearsの設定をするための構成セクションの定義
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsSection
         Inherits ConfigurationSection
 
