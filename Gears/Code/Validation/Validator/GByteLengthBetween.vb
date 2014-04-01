@@ -1,33 +1,43 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 項目長が指定されたバイト長の範囲に収まっているかを検証する属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GByteLengthBetween
         Inherits GByteLength
 
-        Private _minLength As Integer = -1
-
         Public Sub New()
-            MyBase.new()
+            MyBase.New()
         End Sub
 
+        ''' <summary>最大長を指定し作成</summary>
+        ''' <param name="len"></param>
+        ''' <remarks></remarks>
         Public Sub New(len As Integer)
             MyBase.New(len)
         End Sub
 
+        ''' <summary>最小～最大の範囲を指定して作成</summary>
+        ''' <param name="min"></param>
+        ''' <param name="max"></param>
+        ''' <remarks></remarks>
         Public Sub New(min As Integer, max As Integer)
             MyBase.New()
             Length = max
             MinLength = min
         End Sub
 
+        Private _minLength As Integer = -1
+        ''' <summary>バイト長の最小値</summary>
         Public Property MinLength() As Integer
             Get
                 Return _minLength
             End Get
             Set(ByVal value As Integer)
                 _minLength = value
-                CssClass = CSS_STYLE + "_" + Length.ToString + "_" + _minLength.ToString
             End Set
         End Property
 

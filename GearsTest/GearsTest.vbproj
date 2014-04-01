@@ -61,6 +61,14 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.SQLite, Version=1.0.66.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\System.Data.SQLite.DLL</HintPath>
+    </Reference>
+    <Reference Include="System.Data.SQLite.Linq, Version=2.0.38.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\System.Data.SQLite.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
@@ -102,13 +110,19 @@
     <Compile Include="DataSource\EMP.vb" />
     <Compile Include="DataSource\GROUPN.vb" />
     <Compile Include="DataSource\JOB.vb" />
+    <Compile Include="GearsControlTest.vb" />
+    <Compile Include="TestFormItem.vb">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="DataSource\UNITS.vb" />
-    <Compile Include="GBinderTemplateTest.vb" />
-    <Compile Include="GDSTemplateTest.vb" />
+    <Compile Include="GearsDataBinderTest.vb" />
+    <Compile Include="GearsDataSourceTest.vb" />
     <Compile Include="GearsAttributeTest.vb" />
+    <Compile Include="GearsExpressionTest.vb" />
     <Compile Include="GearsMediatorTest.vb" />
-    <Compile Include="GValidationTest.vb" />
-    <Compile Include="ModelValidationTest.vb" />
+    <Compile Include="GearsRelationTest.vb" />
+    <Compile Include="GearsValidationTest.vb" />
+    <Compile Include="GearsModelValidationTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>

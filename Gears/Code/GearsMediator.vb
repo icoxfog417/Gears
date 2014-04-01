@@ -1,32 +1,29 @@
 ﻿Imports Microsoft.VisualBasic
 Imports System.Collections.Generic
+Imports Gears.DataSource
+Imports Gears.Util
 
 Namespace Gears
 
+    ''' <summary>
+    ''' コントロール間の関連を管理するクラス
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GearsMediator
 
-        Public Const GCON_TARGET As String = "GCON"
-        Public Const DS_NAMESPACE As String = "DSNAMESPACE"
-        Public Const DS_CONNECTION_NAME As String = "DSCONNECTIONNAME"
-        Public Const RELATION_STORE_KEY As String = "RELATION_STORE_KEY"
-        Public Const PARENT_CONTROL_KEY As String = "+PARENT_CONTROL_KEY+" 'controlとして設定不可能な文字列
-        Public Const CONTROL_ID_SEPARATOR As String = "/"
-
-        'デリゲート処理定義
-        Public Delegate Sub fetchControl(ByRef control As Control, ByRef dto As GearsDTO)
-        Public Delegate Function isFetchTgt(ByRef control As Control) As Boolean
-
-        'プロパティ
-        Private _dsNameSpace As String = ""
-        Public Property DsNameSpace() As String
+        Private _dsNamespace As String = ""
+        ''' <summary>デフォルトで使用する名称空間</summary>
+        Public Property DsNamespace() As String
             Get
-                Return _dsNameSpace
+                Return _dsNamespace
             End Get
             Set(ByVal value As String)
-                _dsNameSpace = value
+                _dsNamespace = value
             End Set
         End Property
+
         Private _connectionName As String = ""
+        ''' <summary>デフォルトで使用する接続文字列</summary>
         Public Property ConnectionName() As String
             Get
                 Return _connectionName
@@ -37,11 +34,23 @@ Namespace Gears
         End Property
 
         Private _gcontrols As New Dictionary(Of String, GearsControl)
+        ''' <summary>画面コントロールをGearsControl化し登録したリスト</summary>
         Public ReadOnly Property GControls() As Dictionary(Of String, GearsControl)
             Get
                 Return _gcontrols
             End Get
         End Property
+
+        Public Function GControl(ByVal con As Control) As GearsControl
+            Dim econ As Control = GearsControl.extractControl(con)
+            If econ IsNot Nothing Then
+                Return GControl(econ.ID)
+            Else
+                Return Nothing
+            End If
+        End Function
+
+        ''' <summary>指定したIDのGearsControlを取得する</summary>
         Public Function GControl(ByVal id As String) As GearsControl
             If Not id Is Nothing AndAlso _gcontrols.ContainsKey(id) Then
                 Return _gcontrols(id)
@@ -51,73 +60,311 @@ Namespace Gears
         End Function
 
         Private _relations As New Dictionary(Of String, List(Of String))
-        Private _sendEscapes As New Dictionary(Of String, List(Of String))
-        Private _receiveEscapes As New Dictionary(Of String, List(Of String))
+        ''' <summary>
+        ''' 登録されたコントロール間の関連を取得する
+        ''' </summary>
+        ''' <param name="conid"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function Relation(ByVal conid As String) As List(Of GearsControl)
+            Dim root As RelationNode = RelationNode.makeTreeWithRoot(_relations)
+            Dim targetNode As RelationNode = root.findNode(conid)
+            Dim result As New List(Of GearsControl)
 
-        Private log As New Dictionary(Of String, GearsException)
+            If targetNode IsNot Nothing Then
+                targetNode.visitChildren(Function(n As RelationNode) As String
+                                             If _gcontrols.ContainsKey(n.Value) Then result.Add(_gcontrols(n.Value))
+                                             Return String.Empty
+                                         End Function)
+            End If
 
+            Return result
+        End Function
 
-        Public Sub New(ByVal con As String, Optional ByVal dsn As String = "")
-            _connectionName = con
+        Public Function Relation(ByVal con As Control) As List(Of GearsControl)
+            Return Relation(GearsControl.extractControl(con).ID)
+        End Function
+
+        Private _log As New Dictionary(Of String, GearsException)
+        ''' <summary>処理結果ログ</summary>
+        Public ReadOnly Property GLog As Dictionary(Of String, GearsException)
+            Get
+                Return _log
+            End Get
+        End Property
+
+        Private Const LOCK_WHEN_SEND_KEY As String = "+LOCK_WHEN_SEND+"
+
+        ''' <summary>
+        ''' makeDTOで使用する<br/>
+        ''' Delegateで引数として渡すdto内にこのキーで送信元/送信先のコントロールを格納することで、除外対象として指定されたコントロールを特定する
+        ''' </summary>
+        ''' <remarks></remarks>
+        Private Const RELATION_STORE_KEY As String = "+RELATION_STORE_KEY+"
+
+        ''' <summary>
+        ''' makeDTOで使用する<br/>
+        ''' 除外対象を指定する際、fromとtoのコントロールIDを区切るためのセパレータ
+        ''' </summary>
+        ''' <remarks></remarks>
+        Private Const CONTROL_ID_SEPARATOR As String = "/"
+
+        Private _excepts As New Dictionary(Of String, List(Of String))
+
+        ''' <summary>
+        ''' デフォルトの接続文字列/名称空間を受け取りインスタンスを作成する
+        ''' </summary>
+        ''' <param name="conName"></param>
+        ''' <param name="dsn"></param>
+        ''' <remarks></remarks>
+        Public Sub New(ByVal conName As String, Optional ByVal dsn As String = "")
+            _connectionName = conName
             _dsNameSpace = dsn
         End Sub
 
-        'コントロールの探索
-        '各コントロールに対する処理、及び対処か否かの判定処理を引数にして処理を行うメソッド
-        '判定処理が単純な場合、また判定後のキャストなどがある場合処理が重複するので構成要検討(対象か否かの判定が"横断的関心"として有用ならこれもありか))
-        Public Sub fetchControls(ByRef parent As Control, ByVal callback As fetchControl, ByVal isFetch As isFetchTgt, Optional ByRef dto As GearsDTO = Nothing)
+        ''' <summary>
+        ''' 与えられたコントロール配下のコントロールを自身に登録する
+        ''' </summary>
+        ''' <param name="parent"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function addControls(ByVal parent As Control, Optional isAutoLoadAttr As Boolean = True) As List(Of GearsControl)
+            Dim result As New List(Of GearsControl)
 
-            If parent.HasControls() Then
-                Dim child As Control
-                For Each child In parent.Controls()
-                    If isFetch Is Nothing OrElse isFetch(child) Then '対象と判定されたもののみ、Fetchする(ない場合All True)
-                        callback(child, dto)
-                    End If
-                    fetchControls(child, callback, isFetch, dto)
-                Next
-            End If
+            '親コントロールを探索し、配下のコントロールのうち対象であるものを登録する
+            ControlSearcher.fetchControls(parent, _
+                            Sub(control As Control, ByRef dto As GearsDTO)
+                                Dim gcon As GearsControl = createGControl(control, isAutoLoadAttr)
 
-        End Sub
-
-        Public Function addGControls(ByRef parent As Control, Optional isAutoLoadAttr As Boolean = True) As Boolean
-            Dim result As Boolean = True
-            For Each gcon As GearsControl In createGControls(parent, isAutoLoadAttr)
-                If result And Not addGControl(gcon) Then
-                    result = False
-                End If
-            Next
+                                If Not isOtherTarget(control) Then
+                                    addControl(gcon)
+                                Else
+                                    Select Case TypeOf control Is Control
+                                        Case TypeOf control Is Panel
+                                            If gcon.IsFormAttribute Or gcon.IsFilterAttribute Then
+                                                addControl(gcon)
+                                            End If
+                                        Case TypeOf control Is CompositeDataBoundControl
+                                            If gcon.DataSource IsNot Nothing Then
+                                                addControl(gcon)
+                                            End If
+                                    End Select
+                                End If
+                            End Sub,
+                            Function(control As Control) As Boolean
+                                Return isInputControl(control) Or isOtherTarget(control)
+                            End Function,
+                            AddressOf Me.isFetchTarget
+                        )
 
             Return result
 
         End Function
-        Public Function addGControl(ByRef con As Control, Optional isAutoLoadAttr As Boolean = True) As Boolean
 
-            Return addGControl(createGControl(con, isAutoLoadAttr))
-
+        ''' <summary>
+        ''' 単一のコントロールを自身に登録する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function addControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
+            Return addControl(createGControl(con, isAutoLoadAttr))
         End Function
-        Public Function addGControl(ByRef gcon As GearsControl) As Boolean
-            If Not containsKeySafe(_gcontrols, gcon.ControlID) Then
+
+        ''' <summary>
+        ''' 単一のコントロールを自身に登録する
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function addControl(ByVal gcon As GearsControl) As GearsControl
+            If gcon IsNot Nothing AndAlso Not _gcontrols.ContainsKey(gcon.ControlID) Then
                 _gcontrols.Add(gcon.ControlID, gcon)
-                Return True
+                Return gcon
             Else
-                GearsLogStack.setLog(gcon.ControlID + " はすでにGearsControlとして追加されています")
-                Return False
+                If gcon Is Nothing Then
+                    GearsLogStack.setLog("追加対象のGearsControlにNothingが設定されています")
+                Else
+                    GearsLogStack.setLog(gcon.ControlID + " は既に追加されています。入れ替えたい場合はreplaceControlを使用してください")
+                End If
+                Return Nothing
             End If
         End Function
-        Public Function createGControl(ByRef con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
+
+        ''' <summary>
+        ''' 登録済みのコントロールを交換する
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <remarks></remarks>
+        Public Sub replaceControl(ByVal gcon As GearsControl)
+            If _gcontrols.ContainsKey(gcon.ControlID) Then
+                _gcontrols(gcon.ControlID) = gcon
+            End If
+        End Sub
+
+        ''' <summary>
+        ''' コントロール同士の関連を登録する(文字列でIDを指定)
+        ''' </summary>
+        ''' <param name="fromControlId"></param>
+        ''' <param name="toControlId"></param>
+        ''' <remarks></remarks>
+        Public Sub addRelation(ByVal fromControlId As String, ByVal toControlId As String)
+
+            If Not GControl(fromControlId) Is Nothing And Not GControl(toControlId) Is Nothing Then
+                addRelation(GControl(fromControlId).Control, GControl(toControlId).Control)
+            End If
+
+        End Sub
+
+        Public Sub addRelation(ByVal fromControl As GearsControl, ByVal toControl As GearsControl)
+            addRelation(fromControl.ControlID, toControl.ControlID)
+        End Sub
+
+        ''' <summary>
+        ''' コントロール同士の関連を登録する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <remarks></remarks>
+        Public Sub addRelation(ByVal fromControl As Control, ByVal toControl As Control)
+
+            Dim templateString As String = "{0} はまだGearsMediatorに登録されていません"
+            If GControl(fromControl) Is Nothing Then
+                Throw New GearsException(String.Format(templateString, fromControl.ID))
+            ElseIf GControl(toControl) Is Nothing Then
+                Throw New GearsException(String.Format(templateString, toControl.ID))
+            ElseIf GControl(fromControl).ControlID = GControl(toControl).ControlID Then
+                Throw New GearsException("自分自身への関連は登録できません(" + fromControl.ID + ")")
+            Else
+                Dim fcon As GearsControl = GControl(fromControl)
+                If Not _relations.ContainsKey(fcon.ControlID) Then
+                    _relations.Add(fcon.ControlID, New List(Of String) From {GControl(toControl).ControlID})
+                Else
+                    _relations(fcon.ControlID).Add(GControl(toControl).ControlID)
+                End If
+            End If
+
+        End Sub
+
+        ''' <summary>
+        ''' リレーションを削除する
+        ''' </summary>
+        ''' <remarks></remarks>
+        Public Sub clearRelation(Optional ByVal con As Control = Nothing)
+            If con Is Nothing Then
+                _relations.Clear()
+            Else
+                If GControl(con) IsNot Nothing Then _relations.Remove(GControl(con).ControlID)
+            End If
+        End Sub
+
+        ''' <summary>
+        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="excepts"></param>
+        ''' <remarks></remarks>
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal excepts As List(Of Control))
+
+            Dim exceptIds As New List(Of String)
+            excepts.ForEach(Sub(c) If c IsNot Nothing AndAlso Not String.IsNullOrEmpty(c.ID) Then exceptIds.Add(GearsControl.extractControl(c).ID))
+            addExcept(fromControl, toControl, exceptIds)
+
+        End Sub
+
+        ''' <summary>
+        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する(除外を文字列指定)
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="excepts"></param>
+        ''' <remarks></remarks>
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ByVal excepts As List(Of String))
+            Dim key As String = makeFromToKey(fromControl, toControl)
+
+            If Not _excepts.ContainsKey(key) Then
+                _excepts.Add(key, excepts)
+            Else
+                _excepts(key).AddRange(excepts)
+            End If
+        End Sub
+
+        ''' <summary>
+        ''' 特定のコントロールからDTOを作成する際、除外するコントロールを指定する(ParamArray渡し用)
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="excepts"></param>
+        ''' <remarks></remarks>
+        Public Sub addExcept(ByVal fromControl As Control, ByVal toControl As Control, ParamArray excepts As Control())
+            addExcept(fromControl, toControl, excepts.ToList)
+        End Sub
+
+        ''' <summary>
+        ''' 除外指定を解除する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <remarks></remarks>
+        Public Sub clearExcept(Optional ByVal fromControl As Control = Nothing, Optional ByVal toControl As Control = Nothing)
+            If fromControl Is Nothing And toControl Is Nothing Then
+                _excepts.Clear()
+            ElseIf fromControl IsNot Nothing Then
+                Dim key As String = makeFromToKey(fromControl, toControl)
+                If _excepts.ContainsKey(key) Then
+                    _excepts.Remove(key)
+                End If
+            End If
+
+        End Sub
+
+        ''' <summary>
+        ''' 除外対象を管理するためのキーを作成する
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function makeFromToKey(ByVal fromControl As Control, ByVal toControl As Control) As String
+            Dim fromToKey As String = ""
+            Dim fCon As Control = GearsControl.extractControl(fromControl)
+            If Not toControl Is Nothing Then
+                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + GearsControl.extractControl(toControl).ID
+            Else
+                fromToKey = fCon.ID + CONTROL_ID_SEPARATOR + fCon.ID 'デフォルト自分自身
+            End If
+            Return fromToKey
+
+        End Function
+
+        ''' <summary>
+        ''' 自身の持つデフォルトの接続文字列/名称空間を使用しGearsControlを作成する
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <param name="isAutoLoadAttr"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function createGControl(ByVal con As Control, Optional isAutoLoadAttr As Boolean = True) As GearsControl
 
             Dim cn = ConnectionName
             Dim ds = DsNameSpace
             Dim addedControl As New List(Of String)
 
             If TypeOf con Is WebControl Then 'コントロールに名称空間/データソース接続の直接指定があればそちらを優先
-                Dim wcon As WebControl = CType(con, WebControl)
-                If Not String.IsNullOrEmpty(wcon.Attributes(DS_CONNECTION_NAME)) Then
-                    cn = wcon.Attributes(DS_CONNECTION_NAME)
+                Dim conset As String = GearsControl.getControlAttribute(con, GearsControl.ATTR_DS_CONNECTION_NAME)
+                Dim dnsset As String = GearsControl.getControlAttribute(con, GearsControl.ATTR_DS_NAMESPACE)
+                If Not String.IsNullOrEmpty(conset) Then
+                    cn = conset
                 End If
-                If Not String.IsNullOrEmpty(wcon.Attributes(DS_NAMESPACE)) Then
-                    ds = wcon.Attributes(DS_NAMESPACE)
+                If Not String.IsNullOrEmpty(dnsset) Then
+                    ds = dnsset
                 End If
+            ElseIf TypeOf con Is IFormItem Then
+                If Not String.IsNullOrEmpty(CType(con, IFormItem).ConnectionName) Then cn = CType(con, IFormItem).ConnectionName
+                If Not String.IsNullOrEmpty(CType(con, IFormItem).DSNamespace) Then ds = CType(con, IFormItem).DSNamespace
             End If
 
             Dim gcon As GearsControl = New GearsControl(con, cn, ds, isAutoLoadAttr)
@@ -125,222 +372,102 @@ Namespace Gears
             Return gcon
 
         End Function
-        Public Function createGControls(ByRef con As Control, Optional isAutoLoadAttr As Boolean = True) As List(Of GearsControl)
-            Dim gcons As New List(Of GearsControl)
 
-            fetchControls(con, Sub(ByRef control As Control, ByRef dto As GearsDTO)
-                                   gcons.Add(createGControl(control, isAutoLoadAttr))
-                               End Sub,
-                      AddressOf Me.isTargetControl)
+        ''' <summary>
+        ''' 指定されたコントロール内にあり、かつ登録済みのコントロールをリスト化し返却する<br/>
+        ''' なお、ここのコントロールにはIFormItemであるコントロールは含まない(内部のコントロールは取り出す)
+        ''' </summary>
+        ''' <param name="target"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function getRegisterdSubControlIds(ByVal target As Control) As List(Of String)
 
-            Return gcons
-        End Function
-        Public Sub addRelation(ByRef conF As Control, ByRef conT As Control)
-            Dim templateString As String = "{0} はまだフレームワークに登録されていません。addRelationを行う前に、registerMyControlを使用し、コントロールの登録を行ってください"
-            If GControl(conF.ID) Is Nothing Then
-                Throw New GearsException(String.Format(templateString, conF.ID))
-            ElseIf GControl(conT.ID) Is Nothing Then
-                Throw New GearsException(String.Format(templateString, conT.ID))
-            Else
-                If Not _relations.ContainsKey(conF.ID) Then
-                    Dim newCon As New List(Of String)
-                    newCon.Add(conT.ID)
-                    _relations.Add(conF.ID, newCon)
-                Else
-                    _relations(conF.ID).Add(conT.ID)
-                End If
-            End If
-
-        End Sub
-        Public Sub addRelation(ByVal conF As String, ByVal conT As String)
-
-            If Not GControl(conF) Is Nothing And Not GControl(conT) Is Nothing Then
-                addRelation(GControl(conF).getControl, GControl(conT).getControl)
-            End If
-
-        End Sub
-
-        Public Sub setEscapesWhenSend(ByRef fromControl As Control, ByRef toControl As Control, ByVal ParamArray escapes() As String)
-            setEscapes(fromControl, toControl, escapes, isSend:=True)
-        End Sub
-        Public Sub setEscapesWhenReceive(ByRef fromControl As Control, ByRef toControl As Control, ByVal ParamArray escapes() As String)
-            setEscapes(fromControl, toControl, escapes, isSend:=False)
-        End Sub
-
-        Public Sub resetEscapesWhenSend(ByRef fromControl As Control, ByRef toControl As Control)
-            resetEscape(fromControl, toControl, isSend:=True)
-        End Sub
-        Public Sub resetEscapesWhenReceive(ByRef fromControl As Control, ByRef toControl As Control)
-            resetEscape(fromControl, toControl, isSend:=False)
-        End Sub
-        Private Sub setEscapes(ByRef fromControl As Control, ByRef toControl As Control, ByVal escapes As String(), ByVal isSend As Boolean)
-            Dim key As String = makeFromToKey(fromControl, toControl)
-            Dim list As Dictionary(Of String, List(Of String))
-
-            If isSend Then
-                list = _sendEscapes
-            Else
-                list = _receiveEscapes
-            End If
-
-            Dim escapelist As New List(Of String)
-            Dim isExist As Boolean = False
-
-            If list.ContainsKey(key) Then
-                escapelist = list(key)
-                isExist = True
-            End If
-
-            For Each target As String In escapes
-                escapelist.Add(target)
-            Next
-
-            If Not isExist Then
-                list.Add(key, escapelist)
-            End If
-
-        End Sub
-        Private Sub resetEscape(ByRef fromControl As Control, ByRef toControl As Control, ByVal isSend As Boolean)
-            Dim key As String = makeFromToKey(fromControl, toControl)
-            Dim list As Dictionary(Of String, List(Of String))
-
-            If isSend Then
-                list = _sendEscapes
-            Else
-                list = _receiveEscapes
-            End If
-
-            If list.ContainsKey(key) Then
-                list.Remove(key)
-            End If
-
-        End Sub
-
-
-        Public Function extractRelation(ByVal conid As String) As List(Of GearsControl)
-            If _relations.ContainsKey(conid) Then
-                Dim gconlist As New List(Of GearsControl)
-
-                For Each id As String In _relations(conid)
-                    If _gcontrols.ContainsKey(id) Then
-                        gconlist.Add(_gcontrols(id))
-                    End If
-                Next
-
-                Return gconlist
-            Else
-                Return Nothing
-            End If
-        End Function
-
-        Private Function extractRootsInArea(ByVal controlArea As Control) As List(Of String)
-            Dim hasParent As Boolean = True
-            Dim inArea As Boolean = True
-            Dim visitorControl As String = ""
-
-            Dim controlsInArea As List(Of String) = getControlsInArea(controlArea)
-            Dim rootControl As New List(Of String)
-
-            For Each conId As String In controlsInArea
-
-                Dim isRoot As Boolean = isRootNode(conId, controlsInArea)
-                If isRoot Then
-                    rootControl.Add(conId)
-                End If
-
-            Next
-
-            Return rootControl
-
-        End Function
-        Private Function isRootNode(ByVal conId As String, Optional ByVal controlArea As List(Of String) = Nothing) As Boolean
-            Dim hasParent As Boolean = False
-
-            '指定範囲内に親(ただし同名でない)が存在する場合、ROOTでない
-            For Each relation As KeyValuePair(Of String, List(Of String)) In _relations
-                If relation.Value.Contains(conId) And relation.Key <> conId Then '指定コントロール子とするリレーションが存在する
-                    If controlArea Is Nothing OrElse _
-                        (Not controlArea Is Nothing And controlArea.Contains(relation.Key)) Then 'リレーションの親が指定範囲内に存在する
-                        hasParent = True
-                        Exit For
-                    End If
-                End If
-            Next
-
-            Return Not hasParent
+            Dim ids As New List(Of String)
+            ControlSearcher.fetchControls(target,
+                                          Sub(control As Control, ByRef dto As GearsDTO)
+                                              ids.Add(control.ID)
+                                          End Sub,
+                                          Function(control As Control) As Boolean
+                                              'コントロールが範囲内にあり、登録済み(登録済みターゲットのみ扱うため、isFetchは不要)
+                                              If Not control.ID Is Nothing AndAlso isRegisteredControl(control) Then
+                                                  Return True
+                                              Else
+                                                  Return False
+                                              End If
+                                          End Function)
+            Return ids
 
         End Function
 
-        Private Function getControlsInArea(ByVal controlArea As Control) As List(Of String)
+        ''' <summary>
+        ''' fromのコントロール情報からDTOを作成し、toのコントロールに送信する。<br/>
+        ''' toコントロールは受け取ったDTOを自身のデータソースクラスに渡し、データベースの抽出/更新処理を実行する<br/>
+        ''' ※データベースに対しどのような処理が行われるかは、DTOのActionにより決定される
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl">Nothing可。除外対象を明示的に使用したい場合に指定</param>
+        ''' <param name="fromDto">Nothing可。予め用意したDTOに追加したい場合に指定</param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function makeDTO(ByVal fromControl As Control, ByVal toControl As Control, ByVal fromDto As GearsDTO) As GearsDTO
 
-            Dim controlInArea As New List(Of String)
-            fetchControls(controlArea, Sub(ByRef control As Control, ByRef dto As GearsDTO)
-                                           controlInArea.Add(control.ID)
-                                       End Sub,
-                                        Function(ByRef control As Control) As Boolean
-                                            'コントロールが範囲内にあり、登録済み
-                                            If Not control.ID Is Nothing AndAlso isRegisteredControl(control) AndAlso Not GFindControl(controlArea, control.ID) Is Nothing Then
-                                                Return True
-                                            Else
-                                                Return False
-                                            End If
-                                        End Function)
-            Return controlInArea
-
-        End Function
-        Public Function GFindControl(ByRef con As Control, ByVal conid As String) As Control
-            Dim findout As Control = Nothing
-            fetchControls(con,
-                           Sub(ByRef control As Control, ByRef dto As GearsDTO)
-                               findout = control
-                           End Sub,
-                           Function(ByRef control As Control) As Boolean
-                               Return control.ID = conid
-                           End Function)
-            Return findout
-        End Function
-
-
-        Public Function makeSendMessage(ByRef fromControl As Control, ByRef toControl As Control, ByRef fromDto As GearsDTO) As GearsDTO
-
-            If isRegisteredControl(fromControl) Then
+            If fromControl IsNot Nothing AndAlso Not String.IsNullOrEmpty(fromControl.ID) Then
                 Dim fromToKey As String = makeFromToKey(fromControl, toControl)
 
                 Dim message As GearsDTO = New GearsDTO(fromDto)
-                message.addAttrInfo(RELATION_STORE_KEY, fromToKey)
-
-                Dim parentInfo As New GearsControlInfo(PARENT_CONTROL_KEY, PARENT_CONTROL_KEY, "")
-                parentInfo.IsFormAttribute = GControl(fromControl.ID).IsFormAttribute
-                parentInfo.IsFilterAttribute = GControl(fromControl.ID).IsFilterAttribute
-                message.addControlInfo(parentInfo)
+                message.addAttrInfo(RELATION_STORE_KEY, fromToKey) 'from->toで送りたくないコントロールが設定されている場合、その検索に使用
 
                 If TypeOf fromControl Is GridView Then 'サポート対象の特殊コントロール
-                    fetchControlValue(fromControl, message)
+                    fetchControlInfo(fromControl, message)
                 ElseIf fromControl.HasControls Then 'その他複合コントロール
-                    fetchControls(fromControl, AddressOf Me.fetchControlValue, AddressOf Me.isRegisteredAsTarget, message)
-                ElseIf isRegisteredAsTarget(fromControl) Then
-                    fetchControlValue(fromControl, message)
+                    ControlSearcher.fetchControls(fromControl, AddressOf Me.fetchControlInfo, AddressOf Me.isRegisteredAsInput, AddressOf Me.isFetchTarget, message)
+                ElseIf isRegisteredAsInput(fromControl) Then
+                    fetchControlInfo(fromControl, message)
                 End If
 
                 '開放
-                message.removeControlInfo(PARENT_CONTROL_KEY)
                 message.removeAttrInfo(RELATION_STORE_KEY)
+
+                'フォームコントロールの場合、フォーム属性を付与
+                For Each info As KeyValuePair(Of String, List(Of GearsControlInfo)) In message.ControlInfo
+                    For Each conInfo As GearsControlInfo In info.Value
+                        If (GControl(fromControl) IsNot Nothing AndAlso GControl(fromControl).IsFormAttribute) Then '登録されているコントロール
+                            conInfo.IsFormAttribute = True
+                        ElseIf GearsControl.isIdAttributeExist(fromControl.ID, GearsControl.ID_ATTR_FORM) Then
+                            conInfo.IsFormAttribute = True
+                        End If
+                    Next
+                Next
 
                 Return message
             Else
-                Return Nothing
+                Throw New GearsException("指定されたコントロールがNothingか、IDが設定されていません")
             End If
         End Function
-        Private Sub fetchControlValue(ByRef control As Control, ByRef dto As GearsDTO)
-            '除外対象のものは収集しない
-            Dim isEscape As Boolean = False
-            If Not dto.getAttrInfo(RELATION_STORE_KEY) Is Nothing AndAlso _sendEscapes.ContainsKey(dto.getAttrInfo(RELATION_STORE_KEY)) Then
-                Dim escapeList As List(Of String) = _sendEscapes(dto.getAttrInfo(RELATION_STORE_KEY))
 
+        ''' <summary>
+        ''' 指定ControlをControlInfoに変換し、DTOに格納する<br/>
+        ''' 除外指定が行われているか、DisplayOnlyであるコントロールの場合、これを対象としない
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
+        Private Sub fetchControlInfo(ByVal control As Control, ByRef dto As GearsDTO)
+
+            Dim isExcept As Boolean = False
+
+            '表示専用のコントロールは、SELECT以外の場合除外する
+            If GControl(control) IsNot Nothing AndAlso (GControl(control).IsDisplayOnly And dto.Action <> ActionType.SEL) Then isExcept = True
+
+            '除外対象である場合は、どんな場合でも除外する
+            If Not isExcept AndAlso _excepts.ContainsKey(dto.AttrInfo(RELATION_STORE_KEY)) Then
+                Dim excepts As List(Of String) = _excepts(dto.AttrInfo(RELATION_STORE_KEY))
+
+                '自身の親がexcept対象であるか否かを確認する
                 Dim now As Control = control
-                While Not now Is Nothing '自身のルートがescape対象でないか確認する。(なお、いつかは親がNothingになるはず)
-                    If escapeList.Contains(now.ID) Then
-                        isEscape = True
+                While Not now Is Nothing
+                    If excepts.Contains(now.ID) Then
+                        isExcept = True
                         Exit While
                     ElseIf TypeOf now Is Page Then 'ページコントロールは画面に1つしか存在しないため、Pageに達したら抜ける(無限ループの保険)
                         Exit While
@@ -350,170 +477,372 @@ Namespace Gears
 
             End If
 
-            If Not isEscape Then
-                Dim conInfos As List(Of GearsControlInfo) = GControl(control.ID).createControlInfo
-                If Not conInfos Is Nothing Then
-                    For Each cf As GearsControlInfo In conInfos
-                        If Not dto.getControlInfo(PARENT_CONTROL_KEY) Is Nothing Then
-                            If dto.getControlInfo(PARENT_CONTROL_KEY).Item(0).IsFormAttribute Then
-                                cf.IsFormAttribute = True
-                            ElseIf dto.getControlInfo(PARENT_CONTROL_KEY).Item(0).IsFilterAttribute Then
-                                cf.IsFilterAttribute = True
-                            End If
-                        End If
-                        dto.addControlInfo(cf)
-                    Next
-                End If
+            If Not isExcept Then
+                Dim conInfos As List(Of GearsControlInfo) = GControl(control).toControlInfo
+                For Each c As GearsControlInfo In conInfos
+                    dto.addControlInfo(c)
+                Next
             Else
                 GearsLogStack.setLog(control.ID + " は除外対象として登録されているため、送信対象に含まれません")
             End If
 
         End Sub
 
-        Public Function executeBehavior(ByRef fromControl As Control, ByRef toControl As Control, ByRef gto As GearsDTO, Optional ByVal isGatherInfo As Boolean = True) As Boolean
-            Dim result As Boolean = True
+        ''' <summary>
+        ''' executeの引数省略版
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="aType"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function execute(ByVal control As Control, Optional ByVal aType As ActionType = ActionType.SAVE) As Boolean
+            Return execute(control, New GearsDTO(aType))
+        End Function
 
-            log.Clear()
-            If _relations.ContainsKey(fromControl.ID) Then
-                For Each conKey As String In _relations(fromControl.ID)
-                    '対象コントロールの場合のみ処理
-                    If Not toControl Is Nothing AndAlso conKey <> toControl.ID Then
-                        Continue For
-                    End If
-
-                    '影響を及ぼす相手先の各コントロール(relations(controlid))に対して、値を通知
-                    GearsLogStack.setLog(fromControl.ID + " から " + conKey + " への処理を開始します")
-
-                    Dim gcon As GearsControl = GControl(conKey)
-                    Dim sender As GearsDTO = Nothing
-                    If Not isGatherInfo And Not gto Is Nothing Then
-                        sender = New GearsDTO(gto)
-                    Else
-                        sender = makeSendMessage(fromControl, toControl, gto)
-                    End If
-
-                    Try
-                        Dim bindResult As Boolean = gcon.behave(sender)
-                        '配下のコントロールへの展開を開始(パネル型の場合)
-                        If bindResult Then
-                            '探索用リストを作成
-                            Dim visitedList As New VisitedList(fromControl.ID, _
-                                                               makeFromToKey(fromControl, GControl(conKey).getControl), _
-                                                               getControlsInArea(gcon.getControl))
-                            attachData(gcon, visitedList)
-                        End If
-
-                    Catch ex As GearsException
-                        addItemSafe(log, New KeyValuePair(Of String, GearsException)(gcon.ControlID, ex))
-                        GearsLogStack.setLog(ex)
-                        result = False
-
-                    Catch ex As Exception
-                        Dim gex As New GearsException(gcon.ControlID + "の処理中に例外が発生しました", ex)
-                        addItemSafe(log, New KeyValuePair(Of String, GearsException)(gcon.ControlID, gex))
-                        GearsLogStack.setLog(gex)
-                        result = False
-                    End Try
-                Next
+        ''' <summary>
+        ''' 与えられたコントロールに対して、指定されたアクションを実行する<br/>
+        ''' この処理では、自身から作成したDTOを自身のデータソースに送信する。
+        ''' フォーム等で更新を行う場合はこのような処理となる
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function execute(ByVal control As Control, ByVal dto As GearsDTO) As Boolean
+            _log.Clear()
+            Dim gcon As GearsControl = GControl(control)
+            Dim sender As GearsDTO = Nothing
+            If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then
+                sender = New GearsDTO(dto)
             Else
-                GearsLogStack.setLog(fromControl.ID + " に対し関連が登録されていないため、更新処理は行われません。")
+                sender = makeDTO(control, control, dto)
             End If
-            Return result
+
+            _log = bindAndAttach(gcon, gcon, sender)
+
+            Return _log.Count = 0 'ログが何もなければ成功
 
         End Function
 
-        '指定コントロール内のリレーションをたどり、取得した値をセットしていく 例外はスローして外でキャッチ
-        Private Sub attachData(ByRef gcon As GearsControl, ByRef visitedList As VisitedList, Optional ByRef ds As GearsDataSource = Nothing)
-            Dim outerRelation As List(Of String) = getValueSafe(_relations, gcon.ControlID)
-            Dim innerRelation As List(Of String) = extractRootsInArea(gcon.getControl)
-            Dim dsData As GearsDataSource = Nothing
-            Dim isIgnore As Boolean = False
+        ''' <summary>
+        ''' 関連する全てのコントロールに対し、自身から生成したDTOを指定されたActionで送信する。
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="aType"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function send(ByVal fromControl As Control, Optional ByVal aType As ActionType = ActionType.SEL) As Boolean
+            Return send(fromControl, Nothing, New GearsDTO(aType))
+        End Function
 
-            If ds Is Nothing Then '初回実行
-                dsData = gcon.getDataSource
-                GearsLogStack.setLog("データアタッチの開始", gcon.ControlID + " のデータソース " + TypeName(gcon.getDataSource).ToUpper + " を配下のコントロールへアタッチします ", visitedList.ToString)
-            Else
-                If _receiveEscapes.ContainsKey(visitedList.Relation) AndAlso _receiveEscapes(visitedList.Relation).Contains(gcon.ControlID) Then
-                    GearsLogStack.setLog("データアタッチ中", "コントロール " + gcon.ControlID + " は除外対象として設定されているため、アタッチは行われません(配下のコントロールも同様です) ", visitedList.ToString)
-                    isIgnore = True
-                Else
-                    GearsLogStack.setLog("データアタッチ中", "データソース " + TypeName(ds).ToUpper + " を " + gcon.ControlID + "アタッチしています... ", visitedList.ToString)
-                    gcon.dataAttach(ds)
+        ''' <summary>
+        ''' 関連する全てのコントロールに対し、自身から生成したDTOを送信する。<br/>
+        ''' DTOは、引数で指定されたDTOをベースとしそこに追加する形で作成する。
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function send(ByVal fromControl As Control, ByVal dto As GearsDTO) As Boolean
+            Return send(fromControl, Nothing, dto)
+        End Function
+
+        ''' <summary>
+        ''' 相手先を明示的に指定し、自身から生成したDTOを指定されたActionで送信する。
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="aType"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function send(ByVal fromControl As Control, ByVal toControl As Control, Optional ByVal aType As ActionType = ActionType.SEL) As Boolean
+            Return send(fromControl, toControl, New GearsDTO(aType))
+        End Function
+
+        ''' <summary>
+        ''' 相手先を明示的に指定し、自身から生成したDTOを送信する。<br/>
+        ''' DTOは、引数で指定されたDTOをベースとしそこに追加する形で作成する。
+        ''' </summary>
+        ''' <param name="fromControl"></param>
+        ''' <param name="toControl"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function send(ByVal fromControl As Control, ByVal toControl As Control, ByVal dto As GearsDTO) As Boolean
+            _log.Clear()
+
+            Dim fcon As GearsControl = GControl(fromControl)
+            Dim tcons As New List(Of GearsControl)
+
+            If toControl Is Nothing Then
+                '指定がない場合、リレーションを使用する
+                If _relations.ContainsKey(fcon.ControlID) Then
+                    _relations(fcon.ControlID).ForEach(Sub(r) tcons.Add(GControl(r)))
                 End If
-                dsData = ds
-
+            Else
+                '具体的な指定がある場合はそれを使用する(リレーションの有無は問わない)
+                tcons = New List(Of GearsControl) From {GControl(toControl)}
             End If
 
-            visitedList.Add(gcon.ControlID)
-            If isIgnore Then '除外対象の場合、以降の処理をスキップ
-                Exit Sub
-            End If
+            If tcons IsNot Nothing Then
+                For Each con As GearsControl In tcons
 
-            '内部リレーションの更新
-            If Not innerRelation Is Nothing Then
-                For Each rRoot As String In innerRelation
-                    If Not visitedList.isVisited(rRoot) Then 'ルートノードで未到達
-                        Dim childTree As New VisitedList(visitedList) '内部リレーションに、これまでの到達コントロールの履歴を渡す
-                        childTree.Add(rRoot)
-                        attachData(GControl(rRoot), childTree, dsData)
+                    Dim sender As GearsDTO = Nothing
+                    If Not String.IsNullOrEmpty(dto.AttrInfo(LOCK_WHEN_SEND_KEY)) Then 'ロックがかけられている場合追加しない
+                        sender = New GearsDTO(dto)
+                    Else
+                        sender = makeDTO(fromControl, toControl, dto)
                     End If
+
+                    Dim log As Dictionary(Of String, GearsException) = bindAndAttach(fcon, con, sender)
+                    For Each lg As KeyValuePair(Of String, GearsException) In log
+                        _log.Add(lg.Key, lg.Value)
+                    Next
                 Next
+
+            Else
+                GearsLogStack.setLog(fromControl.ID + "の関連先がないため、send処理は行われません")
             End If
 
-            '外部リレーションへの伝達
-            If Not outerRelation Is Nothing Then
-                For Each rel As String In outerRelation
-                    'ルートノード未到達かつターゲットコントロール(パネルやビューなどは連鎖リレーション解決の対象にしない)
-                    If Not visitedList.isVisited(rel) And visitedList.isNeighbor(GControl(rel).ControlID) Then
-                        GControl(rel).behave(makeSendMessage(gcon.getControl, Nothing, Nothing))
-                        attachData(GControl(rel), visitedList, dsData)
-                    ElseIf Not visitedList.isNeighbor(GControl(rel).ControlID) Then
-                        GearsLogStack.setLog("関連先 " + rel + " は、派生元 " + visitedList.Visiter + " に含まれないため、処理されません")
 
-                    End If
-                Next
-            End If
+            Return _log.Count = 0 'ログが何もなければ成功
 
+        End Function
+
+        ''' <summary>
+        ''' DTOをロックし、その後の処理で値が追加されないようにする
+        ''' </summary>
+        ''' <param name="dto"></param>
+        ''' <remarks></remarks>
+        Public Sub lockDtoWhenSend(ByRef dto As GearsDTO)
+            dto.addAttrInfo(LOCK_WHEN_SEND_KEY, "X")
         End Sub
 
-        Public Function isTargetControl(ByRef control As Control) As Boolean
-            Dim result As Boolean = False
+        ''' <summary>
+        ''' 指定されたコントロール内にある処理対象コントロールと関連をリスト化する。<br/>
+        ''' これを元にdataAttachを実行していく。
+        ''' </summary>
+        ''' <param name="con"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function makeRelationMap(Optional ByVal con As Control = Nothing, Optional ByVal fromcon As Control = Nothing) As List(Of RelationNode)
 
-            If Not control.ID Is Nothing Then
-                If control.ID.Length >= 4 Then
-                    Dim prefix As String = control.ID.Substring(0, 4)
-                    '小文字3文字+大文字～で始まるかチェック(例：txtHOGEなど)
-                    If System.Text.RegularExpressions.Regex.IsMatch(prefix, "^[a-z]{3}[A-Z]") Then
-                        Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GCON_TARGET)
-                        If _
-                            TypeOf control Is ListControl Or _
-                            (TypeOf control Is RadioButton And Not TypeOf control.Parent Is RadioButtonList) Or _
-                            (TypeOf control Is CheckBox And Not TypeOf control.Parent Is CheckBoxList) Or _
-                            TypeOf control Is TextBox Or _
-                            TypeOf control Is HiddenField Or _
-                            (TypeOf control Is Label And isGconDeclare) Or _
-                            (TypeOf control Is Literal And isGconDeclare) Then
-                            result = True
+            Dim localRelation As Dictionary(Of String, List(Of String)) = _relations.ToDictionary(Function(i) i.Key, Function(i) i.Value)
+            Dim result As List(Of RelationNode)
 
+            'コントロールが指定されている場合、除外対象のリレーションの処理を行う
+            If con IsNot Nothing Or fromcon IsNot Nothing Then
+                Dim tmplocalRelation As New Dictionary(Of String, List(Of String))
+
+                For Each item As KeyValuePair(Of String, List(Of String)) In localRelation
+                    Dim newRelation As New List(Of String)
+                    For Each rel As String In item.Value
+                        Dim ignore As Boolean = False
+                        '対象が指定コントロール(con)、または起点となったコントロール(fromcon)の場合、循環が発生するため処理しない
+                        ignore = (rel = If(con IsNot Nothing, con.ID, String.Empty) Or rel = If(fromcon IsNot Nothing, fromcon.ID, String.Empty))
+
+                        'フィルタが起点となっている場合、値が一意となる保証がないためフォーム/フィルタのパネルは処理しない(visitListに入れない)
+                        If Not ignore And fromcon IsNot Nothing Then
+                            ignore = GControl(fromcon).IsFilterAttribute And (GControl(rel).IsFilterAttribute Or GControl(rel).IsFormAttribute)
                         End If
 
-                    End If
+                        If Not ignore Then newRelation.Add(rel)
+                    Next
+                    tmplocalRelation.Add(item.Key, newRelation)
+                Next
+                localRelation = tmplocalRelation
+            End If
+
+            If con IsNot Nothing Then
+                '配下のコントロールも含めた関係リストを作成。配下のコントロールは宛先なしの関連として扱う
+                Dim nodes As New List(Of String)
+                If con.HasControls Then
+                    nodes = getRegisterdSubControlIds(con)
+                    For Each scon As String In nodes
+                        If Not localRelation.ContainsKey(scon) Then localRelation.Add(scon, Nothing)
+                    Next
+                Else
+                    nodes.Add(con.ID)
+                End If
+
+                Dim root As RelationNode = RelationNode.makeTreeWithRoot(localRelation)
+                result = root.getBranches(nodes)
+
+            Else
+                result = RelationNode.makeTree(localRelation)
+            End If
+
+            Return result
+
+        End Function
+
+        ''' <summary>
+        ''' DTOの受信処理と、それにより更新された内容を関連/サブコントロールに対し送信する処理を行う。<br/>
+        ''' 具体的には、更新されたDataSourceの結果セット(DataTable)の値を配下のコントロールへ反映するために、関連を考慮しながらdataBind/dataAttachを実行していく。
+        ''' </summary>
+        ''' <param name="gcon"></param>
+        ''' <param name="dto"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function bindAndAttach(ByVal fromControl As GearsControl, ByVal gcon As GearsControl, ByVal dto As GearsDTO) As Dictionary(Of String, GearsException)
+            Dim log As New Dictionary(Of String, GearsException)
+            Dim nodeInProcess As String = ""
+
+            Try
+
+                Dim bindResult As Boolean = gcon.dataBind(dto)
+
+                '配下/関連先のコントロールに対し値の反映を行う
+                If bindResult And (gcon.Control.HasControls Or _relations.ContainsKey(gcon.ControlID)) Then
+                    Dim visitList As List(Of RelationNode) = makeRelationMap(gcon.Control, fromControl.Control)
+
+                    For Each node As RelationNode In visitList
+                        nodeInProcess = node.Value
+                        Dim ncon As GearsControl = GControl(node.Value)
+
+                        ncon.dataAttach(gcon.DataSource)
+                        If Not node.isLeaf Then '子がある場合、親から子へ情報を伝達、値を設定する
+                            node.visitChildren(Function(nv As RelationNode) As String
+                                                   Dim p As GearsControl = GControl(nv.Parent.Value) '子をたどっているため、親がないのはありえない
+                                                   Dim c As GearsControl = GControl(nv.Value)
+                                                   Dim ptoc As GearsDTO = makeDTO(p.Control, c.Control, Nothing)
+                                                   c.dataBind(ptoc) '親の値を子に通知
+                                                   c.dataAttach(gcon.DataSource) '大元のデータソースの値を設定
+                                                   Return nv.Value
+                                               End Function)
+                        End If
+                    Next
+
+                End If
+
+            Catch ex As GearsException
+                If Not String.IsNullOrEmpty(nodeInProcess) Then ex.addDetail("位置:" + nodeInProcess)
+                log.Add(gcon.ControlID, ex)
+                GearsLogStack.setLog(ex)
+            Catch ex As Exception
+                Dim gex As New GearsException(gcon.ControlID + "の処理中に例外が発生しました(位置:" + nodeInProcess + ")", ex)
+                log.Add(gcon.ControlID, gex)
+                GearsLogStack.setLog(gex)
+            End Try
+
+            Return log
+
+        End Function
+
+        ''' <summary>
+        ''' 以後検索を行わないコントロールの判定を行う
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function isFetchTarget(ByVal control As Control) As Boolean
+            Dim ignore As Boolean = False
+            '入力用コントロールとして登録された場合、以後配下のコントロールは対象としない(AjaxControlToolkit対策)
+            ignore = isInputControl(control)
+
+            'ユーザーコントロールは対象外とする。ただし、ページ元となるMasterPageと入力用コントロールを処理するIFormItem、対象を明示的に示すIGearsTargetを除く
+            If Not ignore Then ignore = TypeOf control Is UserControl AndAlso Not (TypeOf control Is MasterPage Or TypeOf control Is IFormItem Or TypeOf control Is IGearsTarget)
+
+            Return Not ignore
+
+        End Function
+
+        ''' <summary>
+        ''' 入力用フォームコントロールか否かを判定する。ただし、ネーミングルールに沿わないものは除外する。
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function isInputControl(ByVal control As Control) As Boolean
+            Dim result As Boolean = False
+
+            If isIdNamingMatch(control.ID) Then
+                Dim isGconDeclare As Boolean = GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GCON)
+                If Not isGconDeclare Then isGconDeclare = GearsControl.isIdAttributeExist(control.ID, GearsControl.ID_ATTR_GDISP)
+
+                If _
+                    TypeOf control Is ListControl Or _
+                    (TypeOf control Is RadioButton And Not TypeOf control.Parent Is RadioButtonList) Or _
+                    (TypeOf control Is CheckBox And Not TypeOf control.Parent Is CheckBoxList) Or _
+                    TypeOf control Is TextBox Or _
+                    TypeOf control Is HiddenField Or _
+                    (TypeOf control Is Label And isGconDeclare) Or _
+                    (TypeOf control Is Literal And isGconDeclare) Then
+                    result = True
+
+                End If
+
+            End If
+
+            Return result
+
+        End Function
+
+        ''' <summary>
+        ''' 入力用コントロール以外に、対象の候補となるコントロールを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Function isOtherTarget(ByVal control As Control) As Boolean
+            Dim result As Boolean = False
+
+            If isIdNamingMatch(control.ID) Then
+                If TypeOf control Is Panel Then
+                    result = True
+                ElseIf TypeOf control Is CompositeDataBoundControl Then
+                    result = True
                 End If
             End If
 
             Return result
 
         End Function
-        Public Function isRegisteredControl(ByRef control As Control) As Boolean
-            If Not control Is Nothing AndAlso containsKeySafe(_gcontrols, control.ID) Then
+
+        ''' <summary>
+        ''' コントロールIDのネーミングルールをチェックする
+        ''' </summary>
+        ''' <param name="id"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Private Shared Function isIdNamingMatch(ByVal id As String) As Boolean
+            Dim result As Boolean = False
+
+            If Not String.IsNullOrEmpty(id) AndAlso id.Length >= 4 Then
+                Dim prefix As String = id.Substring(0, 4)
+                '小文字3文字+大文字～で始まるかチェック(例：txtHOGEなど)
+                If System.Text.RegularExpressions.Regex.IsMatch(prefix, "^[a-z]{3}[A-Z]") Then
+                    result = True
+                End If
+            End If
+
+            Return result
+
+        End Function
+
+        ''' <summary>
+        ''' GearsMediatorに登録済みのコントロールか否かを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function isRegisteredControl(ByVal control As Control) As Boolean
+            If (control IsNot Nothing AndAlso control.ID IsNot Nothing) AndAlso _gcontrols.ContainsKey(control.ID) Then
                 Return True
             Else
                 Return False
             End If
         End Function
-        Public Function isRegisteredAsTarget(ByRef control As Control) As Boolean
+
+        ''' <summary>
+        ''' 登録済みかつ入力用フォームコントロールであることを判定する
+        ''' </summary>
+        ''' <param name="control"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function isRegisteredAsInput(ByVal control As Control) As Boolean
             If isRegisteredControl(control) Then
-                If isTargetControl(GControl(control.ID).getControl) Then
+                If isInputControl(control) Then
                     Return True
                 Else
                     Return False
@@ -523,145 +852,10 @@ Namespace Gears
             End If
         End Function
 
-        Protected Function containsKeySafe(Of T, K)(ByVal dic As Dictionary(Of T, K), ByVal key As T) As Boolean
-            Dim result As Boolean = False
-            If Not getValueSafe(dic, key) Is Nothing Then
-                result = True
-            End If
+        Public Overrides Function toString() As String
+            Dim result As String = ConnectionName + "/" + DsNamespace
             Return result
         End Function
-
-        Protected Function addItemSafe(Of T, K)(ByVal dic As Dictionary(Of T, K), ByVal item As KeyValuePair(Of T, K)) As Boolean
-
-            If Not containsKeySafe(dic, item.Key) Then
-                dic.Add(item.Key, item.Value)
-                Return True
-            Else
-                Return False
-            End If
-
-        End Function
-
-        Protected Function getValueSafe(Of T, K)(ByVal dic As Dictionary(Of T, K), ByVal key As T) As K
-            If Not key Is Nothing Then
-                If Not dic Is Nothing AndAlso dic.ContainsKey(key) Then
-                    Return dic(key)
-                Else
-                    Return Nothing
-                End If
-            Else
-                Return Nothing
-
-            End If
-        End Function
-
-
-        Public Overrides Function toString() As String
-            Dim str As String = ""
-            For Each item As KeyValuePair(Of String, List(Of String)) In _relations
-                Dim temp As String = item.Key + " : "
-                For Each relate As String In item.Value
-                    temp += relate + ","
-                Next
-                temp += vbCrLf
-                str += temp
-            Next
-            Return str
-
-        End Function
-        Private Function makeFromToKey(ByVal fromControl As Control, ByVal toControl As Control) As String
-            Dim fromToKey As String = ""
-            If Not toControl Is Nothing Then
-                fromToKey = fromControl.ID + CONTROL_ID_SEPARATOR + toControl.ID
-            Else
-                fromToKey = fromControl.ID + CONTROL_ID_SEPARATOR + fromControl.ID 'デフォルト自分自身
-            End If
-            Return fromToKey
-
-        End Function
-
-        Public Function getLog() As Dictionary(Of String, GearsException)
-            Return log
-        End Function
-
-        'コントロールアタッチ用 インナークラス
-        Public Class VisitedList
-
-            Private _visiter As String
-            Public ReadOnly Property Visiter() As String
-                Get
-                    Return _visiter
-                End Get
-            End Property
-
-            Private _relation As String
-            Public Property Relation() As String
-                Get
-                    Return _relation
-                End Get
-                Set(ByVal value As String)
-                    _relation = value
-                End Set
-            End Property
-
-            Private _vlist As New List(Of String)
-            Public ReadOnly Property VList() As List(Of String)
-                Get
-                    Return _vlist
-                End Get
-            End Property
-
-            Private _neighbor As List(Of String)
-            Protected ReadOnly Property Neighbor() As List(Of String)
-                Get
-                    Return _neighbor
-                End Get
-            End Property
-
-            Public Sub Add(ByVal visit As String)
-                _vlist.Add(visit)
-            End Sub
-
-            Public Function isVisited(ByVal visit As String) As Boolean
-                Return _vlist.Contains(visit)
-            End Function
-
-            Public Function isNeighbor(ByVal target As String) As Boolean
-                Return _neighbor.Contains(target)
-            End Function
-
-            Public Sub New(ByVal visiter As String, ByVal relation As String, Optional ByVal neighbor As List(Of String) = Nothing)
-                _visiter = visiter
-                _relation = relation
-                If Not neighbor Is Nothing Then
-                    _neighbor = neighbor
-                End If
-
-            End Sub
-
-            Public Sub New(ByRef vl As VisitedList)
-                _relation = vl.Relation
-                _visiter = vl.Visiter
-                _vlist = New List(Of String)(vl.VList)
-                _neighbor = vl.Neighbor '共用
-
-            End Sub
-
-
-            Public Overrides Function ToString() As String
-                Dim result As String = ""
-                For i As Integer = 0 To VList.Count - 1
-                    If i = 0 Then
-                        result += VList(i)
-                    Else
-                        result += " > " + VList(i)
-                    End If
-                Next
-                Return result
-            End Function
-
-        End Class
-
 
     End Class
 

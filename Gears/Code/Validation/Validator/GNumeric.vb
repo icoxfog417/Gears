@@ -1,11 +1,20 @@
 ﻿Imports Microsoft.VisualBasic
+Imports Gears.Validation.Marker
 
-Namespace Gears
+Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 値が単純に数値であるかを検証する属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GNumeric
-        Inherits MarkerNumeric
+        Inherits GMarkerNumeric
 
         Private _withSign As Boolean = False
+        ''' <summary>+-の符号を認めるか否か</summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Property WithSign() As Boolean
             Get
                 Return _withSign
@@ -14,7 +23,6 @@ Namespace Gears
                 _withSign = value
             End Set
         End Property
-
 
         Protected Overrides Sub Validate()
             initProperty()

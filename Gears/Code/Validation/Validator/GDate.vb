@@ -1,18 +1,20 @@
 ﻿Imports Microsoft.VisualBasic
+Imports Gears.Validation.Marker
 
-Namespace Gears
+Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 日付を検証するための属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GDate
-        Inherits GearsAttribute
-
-        Protected Const CSS_STYLE As String = "gs-date"
-
-        Public Sub New()
-            MyBase.new()
-            CssClass = CSS_STYLE
-        End Sub
+        Inherits GMarkerDate
 
         Private _format As String = ""
+        ''' <summary>日付フォーマットを指定する(指定がなくても一般的な書式はカバーされる)</summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Property Format() As String
             Get
                 Return _format
@@ -20,6 +22,13 @@ Namespace Gears
             Set(ByVal value As String)
                 _format = value
             End Set
+        End Property
+
+        Private _parsedDate As DateTime = DateTime.MinValue
+        Public ReadOnly Property ParsedDate As DateTime
+            Get
+                Return _parsedDate
+            End Get
         End Property
 
         Protected Overrides Sub Validate()
@@ -34,13 +43,13 @@ Namespace Gears
             End If
 
             Try
-                Dim d As DateTime
+
                 If ValidateeValue <> "" Then
                     '通常パース検証
-                    If _format = "" And DateTime.TryParse(ValidateeValue, d) Then 'フォーマット指定がある場合は行わない
+                    If _format = "" And DateTime.TryParse(ValidateeValue, _parsedDate) Then 'フォーマット指定がある場合は行わない
                         IsValid = True
                     Else
-                        d = DateTime.ParseExact(ValidateeValue, dateFormat.ToArray, _
+                        _parsedDate = DateTime.ParseExact(ValidateeValue, dateFormat.ToArray, _
                                                             System.Globalization.DateTimeFormatInfo.InvariantInfo,
                                                             System.Globalization.DateTimeStyles.None)
                     End If

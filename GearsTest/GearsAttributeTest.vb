@@ -1,8 +1,14 @@
 ﻿Imports NUnit.Framework
 Imports Gears
+Imports Gears.Validation
+Imports Gears.Validation.Validator
 
 Namespace GearsTest
 
+    ''' <summary>
+    ''' 属性のテストを行う
+    ''' </summary>
+    ''' <remarks></remarks>
     <TestFixture()>
     Public Class GearsAttributeTest
 
@@ -51,7 +57,6 @@ Namespace GearsTest
             Assert.IsFalse(attr.isValidateOk("123454.56"))
             Assert.IsFalse(attr.isValidateOk("23456.456"))
 
-            Assert.AreEqual("gs-number gs-vlength_9", attr.CssClass)
 
         End Sub
 

@@ -1,9 +1,15 @@
 ﻿Imports Microsoft.VisualBasic
+Imports Gears.Validation
+Imports Gears.Validation.Marker
 
-Namespace Gears
+Namespace Gears.Validation.Validator
 
+    ''' <summary>
+    ''' 整数(小数点なし)であるかを検証する属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GNumber
-        Inherits MarkerNumeric
+        Inherits GMarkerNumeric
 
         Protected Overrides Sub Validate()
             initProperty()

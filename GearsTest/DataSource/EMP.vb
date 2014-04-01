@@ -1,16 +1,16 @@
 ﻿Imports Microsoft.VisualBasic
 Imports Gears
+Imports Gears.DataSource
 
 Namespace DataSource
 
     Public Class EMP
-        Inherits GDSTemplate
+        Inherits GearsDataSource
 
         Public Sub New(ByVal conStr As String)
-            MyBase.New(conStr, SqlBuilder.newDataSource("V_EMP"), SqlBuilder.newDataSource("EMP"))
-            If GExecutor.getDbServerType = DbServerType.OLEDB Then
-                setViewAndTarget(SqlBuilder.newDataSource("[EMP$]"))
-            End If
+            MyBase.New(conStr, SqlBuilder.DS("V_EMP"), SqlBuilder.DS("EMP"))
+            setLockCheckColumn("UPD_YMD", LockType.UDATESTR)
+            setLockCheckColumn("UPD_HMS", LockType.UTIMESTR)
         End Sub
 
     End Class

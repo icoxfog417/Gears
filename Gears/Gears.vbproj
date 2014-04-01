@@ -72,23 +72,28 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Code\Common\IViewItemAndColumnMapper.vb" />
-    <Compile Include="Code\Common\ViewItemAndColumnMapperTemplete.vb" />
-    <Compile Include="Code\DataSourceTemplete\GBinderTemplate.vb" />
-    <Compile Include="Code\DataSourceTemplete\GDSTemplate.vb" />
-    <Compile Include="Code\Exception\GearsDataAccessException.vb" />
-    <Compile Include="Code\Exception\GearsDataAttachException.vb" />
-    <Compile Include="Code\Exception\GearsDataBindException.vb" />
-    <Compile Include="Code\Exception\GearsDataIntegrityException.vb" />
-    <Compile Include="Code\Exception\GearsDataValidationException.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsMultipleTargetExist.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsOptimisticLockCheckInvalid.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsRequestedActionInvalid.vb" />
-    <Compile Include="Code\Exception\Integrity\GearsTargetIsAlreadyExist.vb" />
-    <Compile Include="Code\Exception\Validation\GearsModelValidationException.vb" />
+    <Compile Include="Code\DataSource\AbsKeyValueSource.vb" />
+    <Compile Include="Code\DataSource\INameMapper.vb" />
+    <Compile Include="Code\DataSource\NameMapper.vb" />
+    <Compile Include="Code\DataSource\SqlItemContainer.vb" />
+    <Compile Include="Code\Binder\GearsDataBinder.vb" />
+    <Compile Include="Code\DataSource\GearsSqlException.vb" />
+    <Compile Include="Code\Binder\GearsDataAttachException.vb" />
+    <Compile Include="Code\Binder\GearsDataBindException.vb" />
+    <Compile Include="Code\GearsExpressions.vb" />
+    <Compile Include="Code\GearsExtensions.vb" />
+    <Compile Include="Code\GearsSection.vb" />
+    <Compile Include="Code\IGearsTarget.vb" />
+    <Compile Include="Code\JS\JSVariableAttribute.vb" />
+    <Compile Include="Code\Util\ButtonListAdapter.vb" />
+    <Compile Include="Code\Util\ControlSearcher.vb" />
+    <Compile Include="Code\Util\DataSetReader.vb" />
+    <Compile Include="Code\Util\IFormItem.vb" />
+    <Compile Include="Code\DataSource\GearsOptimisticLockException.vb" />
+    <Compile Include="Code\Validation\GearsModelValidationException.vb" />
     <Compile Include="Code\GearsControl.vb" />
     <Compile Include="Code\GearsControlInfo.vb" />
-    <Compile Include="Code\GearsDataSource.vb" />
+    <Compile Include="Code\DataSource\GearsDataSource.vb" />
     <Compile Include="Code\GearsDTO.vb" />
     <Compile Include="Code\GearsException.vb" />
     <Compile Include="Code\GearsLogStack.vb" />
@@ -96,9 +101,12 @@
     <Compile Include="Code\GearsPage.vb">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Code\GearsSqlExecutor.vb" />
-    <Compile Include="Code\IDataBinder.vb" />
-    <Compile Include="Code\IDataSource.vb" />
+    <Compile Include="Code\DataSource\GearsSqlExecutor.vb" />
+    <Compile Include="Code\Binder\IDataBinder.vb" />
+    <Compile Include="Code\DataSource\IDataSource.vb" />
+    <Compile Include="Code\Validation\GearsValidationException.vb" />
+    <Compile Include="Code\Validation\Marker\GMarkerDate.vb" />
+    <Compile Include="Code\Validation\Validator\GCompare.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -114,11 +122,11 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="Code\SqlBuilder\SqlBuilder.vb" />
-    <Compile Include="Code\SqlBuilder\SqlDataSource.vb" />
-    <Compile Include="Code\SqlBuilder\SqlFilterItem.vb" />
-    <Compile Include="Code\SqlBuilder\SqlItem.vb" />
-    <Compile Include="Code\SqlBuilder\SqlSelectItem.vb" />
+    <Compile Include="Code\DataSource\SqlBuilder.vb" />
+    <Compile Include="Code\DataSource\SqlDataSource.vb" />
+    <Compile Include="Code\DataSource\SqlFilterItem.vb" />
+    <Compile Include="Code\DataSource\SqlItem.vb" />
+    <Compile Include="Code\DataSource\SqlSelectItem.vb" />
     <Compile Include="Code\Validation\AbsModelValidator.vb" />
     <Compile Include="Code\Validation\GAttributeHolderTemplate.vb" />
     <Compile Include="Code\Validation\GearsAttribute.vb" />
@@ -128,17 +136,16 @@
     <Compile Include="Code\Validation\ValidationResult.vb" />
     <Compile Include="Code\Validation\Validator\GByteLength.vb" />
     <Compile Include="Code\Validation\Validator\GByteLengthBetween.vb" />
-    <Compile Include="Code\Validation\Validator\GComp.vb" />
     <Compile Include="Code\Validation\Validator\GDate.vb" />
-    <Compile Include="Code\Validation\Validator\GMarkerNumeric.vb" />
+    <Compile Include="Code\Validation\Marker\GMarkerNumeric.vb" />
     <Compile Include="Code\Validation\Validator\GMatch.vb" />
     <Compile Include="Code\Validation\Validator\GNumber.vb" />
     <Compile Include="Code\Validation\Validator\GNumeric.vb" />
     <Compile Include="Code\Validation\Validator\GPeriodPositionOk.vb" />
     <Compile Include="Code\Validation\Validator\GRequired.vb" />
     <Compile Include="Code\Validation\Validator\GStartWith.vb" />
-    <Compile Include="Code\Validation\Validator\IAttributeMarker.vb" />
-    <Compile Include="Code\Validation\Validator\MarkerNumeric.vb" />
+    <Compile Include="Code\Validation\Marker\IAttributeMarker.vb" />
+    <Compile Include="Code\Util\RelationNode.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">
@@ -159,11 +166,7 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Code\Exception\DataAccess\" />
-    <Folder Include="Code\Exception\DataAttach\" />
-    <Folder Include="Code\Exception\DataBind\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,23 +1,21 @@
 ﻿Imports Microsoft.VisualBasic
 Imports Gears
+Imports Gears.DataSource
 
-Namespace DataSource.Groups
+Namespace DataSource
+
     Public Class AREA
-        Inherits GDSTemplate
+        Inherits GearsDataSource
 
         Public Sub New(ByVal conStr As String)
-            MyBase.New(conStr, SqlBuilder.newDataSource("AREA"))
-            If GExecutor.getDbServerType = DbServerType.OLEDB Then
-                setViewAndTarget(SqlBuilder.newDataSource("[AREA$]"))
-            End If
-
+            MyBase.New(conStr, SqlBuilder.DS("AREA"))
         End Sub
 
-        Public Overrides Function makeSqlBuilder(ByRef data As Gears.GearsDTO) As SqlBuilder
+        Public Overrides Function makeSqlBuilder(ByVal data As Gears.GearsDTO) As SqlBuilder
             Dim sqlb As SqlBuilder = MyBase.makeSqlBuilder(data)
 
-            sqlb.addSelection(SqlBuilder.newSelect("AREA").ASC)
-            sqlb.addSelection(SqlBuilder.newSelect("AREANAME"))
+            sqlb.addSelection(SqlBuilder.S("AREA").ASC)
+            sqlb.addSelection(SqlBuilder.S("AREANAME"))
 
             Return sqlb
 

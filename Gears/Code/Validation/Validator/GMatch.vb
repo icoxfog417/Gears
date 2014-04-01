@@ -1,6 +1,11 @@
 ﻿Imports Microsoft.VisualBasic
 
-Namespace Gears
+Namespace Gears.Validation.Validator
+
+    ''' <summary>
+    ''' 指定された正規表現の値と一致するか検証する属性
+    ''' </summary>
+    ''' <remarks></remarks>
     Public Class GMatch
         Inherits GearsAttribute
 
@@ -8,12 +13,15 @@ Namespace Gears
 
         End Sub
 
-        Public Sub New(p As String, Optional ByVal wm As Boolean = True)
+        Public Sub New(p As String)
             _pattern = p
-            _whenMatch = wm
         End Sub
 
         Private _pattern As String = ""
+        ''' <summary>正規表現パターン</summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
         Public Property Pattern() As String
             Get
                 Return _pattern
@@ -23,30 +31,19 @@ Namespace Gears
             End Set
         End Property
 
-        Private _whenMatch As Boolean = True
-        Public Property WhenMatch() As Boolean
-            Get
-                Return _whenMatch
-            End Get
-            Set(ByVal value As Boolean)
-                _whenMatch = value
-            End Set
-        End Property
-
-
         Protected Overrides Sub Validate()
             initProperty()
             Dim regex As New System.Text.RegularExpressions.Regex(Pattern)
             Dim result As Boolean = regex.IsMatch(ValidateeValue)
 
-            If _whenMatch = (Not result) Then
+            If Not result Then
                 ErrorMessage = "値が指定されたパターンにマッチしません"
                 IsValid = False
             End If
 
         End Sub
 
-
     End Class
+
 End Namespace
 

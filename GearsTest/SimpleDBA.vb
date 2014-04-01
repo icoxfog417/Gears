@@ -6,7 +6,7 @@ Namespace GearsTest
     Public Class SimpleDBA
 
         '簡単なDB実行用ファンクション
-        Public Shared Function executeSql(ByVal con As String, ByVal sql As String, Optional ByVal params As Dictionary(Of String, String) = Nothing) As DataTable
+        Public Shared Function executeSql(ByVal con As String, ByVal sql As String, Optional ByVal params As Dictionary(Of String, Object) = Nothing) As DataTable
             Dim dbprovider As DbProviderFactory = DbProviderFactories.GetFactory(ConfigurationManager.ConnectionStrings(con).ProviderName)
             Dim dbcon As DbConnection = dbprovider.CreateConnection
             dbcon.ConnectionString = ConfigurationManager.ConnectionStrings(con).ConnectionString
@@ -32,7 +32,7 @@ Namespace GearsTest
             Dim command As DbCommand = dbcon.CreateCommand
             command.CommandText = sql
             If Not params Is Nothing Then
-                For Each item As KeyValuePair(Of String, String) In params
+                For Each item As KeyValuePair(Of String, Object) In params
                     Dim param As DbParameter = command.CreateParameter()
                     param.ParameterName = item.Key
                     param.Value = item.Value
@@ -55,8 +55,8 @@ Namespace GearsTest
 
         End Function
 
-        Public Shared Function makeParameters(ParamArray params As String()) As Dictionary(Of String, String)
-            Dim dic As New Dictionary(Of String, String)
+        Public Shared Function makeParameters(ParamArray params As String()) As Dictionary(Of String, Object)
+            Dim dic As New Dictionary(Of String, Object)
             If params.Length > 0 And params.Length Mod 2 = 0 Then '0以上で偶数子の場合処理(param/valueの順で打ち込んでいく)
 
                 For i As Integer = 0 To params.Length - 1 Step 2
