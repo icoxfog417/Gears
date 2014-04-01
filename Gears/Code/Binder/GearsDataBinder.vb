@@ -116,6 +116,7 @@ Namespace Gears.Binder
             Dim defEnd As ArrayList = New ArrayList
             Dim result As Boolean = True
 
+            'アイテム設定
             '既存リスト項目を一旦削除する。ただし、デフォルトで表示する設定のものは残す
             For Each item As ListItem In list.Items
                 If item.Attributes("Default") <> "" Then
@@ -143,6 +144,8 @@ Namespace Gears.Binder
                 list.Items.Add(New ListItem(value, key))
 
             Next
+
+            '最終のアイテムを追加
             For Each item As ListItem In defEnd
                 list.Items.Add(item)
             Next

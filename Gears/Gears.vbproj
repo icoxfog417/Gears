@@ -85,6 +85,7 @@
     <Compile Include="Code\GearsSection.vb" />
     <Compile Include="Code\IGearsTarget.vb" />
     <Compile Include="Code\JS\JSVariableAttribute.vb" />
+    <Compile Include="Code\Util\ButtonListAdapter.vb" />
     <Compile Include="Code\Util\ControlSearcher.vb" />
     <Compile Include="Code\Util\DataSetReader.vb" />
     <Compile Include="Code\Util\IFormItem.vb" />
