@@ -314,6 +314,9 @@ Namespace Gears.DataSource
             Try
                 Dim action As ActionType = confirmRecord(dto) 'Saveの場合INS/UPDに調整など
                 sqlb = makeSqlBuilder(dto)
+                If dto.Action = ActionType.SAVE And action = ActionType.UPD Then
+                    sqlb = keySelectToFilter(sqlb) '更新キーをフィルタに移す
+                End If
                 sqlb.Action = action
             Catch ex As Exception
                 Throw
@@ -532,7 +535,7 @@ Namespace Gears.DataSource
             Else
                 Dim action As ActionType = confirmRecord(sqlb)
                 If action = ActionType.INS Then gInsert(sqlb)
-                If action = ActionType.UPD Then gUpdate(sqlb)
+                If action = ActionType.UPD Then gUpdate(keySelectToFilter(sqlb))
             End If
         End Sub
 
@@ -777,6 +780,24 @@ Namespace Gears.DataSource
             End If
 
             Return result
+
+        End Function
+
+        ''' <summary>
+        ''' SAVEの場合で、UPDATEと判定された場合キー設定されたSelectionをFilterに移す処理を行う
+        ''' </summary>
+        ''' <param name="sqlb"></param>
+        ''' <remarks></remarks>
+        Private Function keySelectToFilter(ByRef sqlb As SqlBuilder) As SqlBuilder
+            Dim newBuilder As New SqlBuilder(sqlb)
+            Dim keySelects As List(Of SqlSelectItem) = newBuilder.Selection.Where(Function(s) s.IsKey).ToList
+            For Each s As SqlSelectItem In keySelects
+                If newBuilder.Filter(s.Column) Is Nothing Then
+                    newBuilder.addFilter(s.toFilter)
+                End If
+            Next
+
+            Return newBuilder
 
         End Function
 

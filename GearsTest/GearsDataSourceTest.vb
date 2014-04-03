@@ -269,7 +269,7 @@ Namespace GearsTest
             Dim ds As New DataSource.EMP(DefaultConnection)
 
             Dim saveDto As New GearsDTO(ActionType.SAVE)
-            saveDto.addFilter(SqlBuilder.F("EMPNO").eq(KeyForSave).asKey)
+            saveDto.Add(SqlBuilder.S("EMPNO").setValue(KeyForSave).asKey)
             saveDto.Add(SqlBuilder.S("SAL").setValue("9999"))
             saveDto.Add(SqlBuilder.S("HIREDATE").setValue("1000-01-01"))
 
