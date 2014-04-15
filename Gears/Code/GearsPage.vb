@@ -388,7 +388,8 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 自動で登録されないコントロールを手動でGearsMediatorに登録する
+        ''' 自動で登録されないコントロールを手動でGearsMediatorに登録する<br/>
+        ''' ※データソースが推定されるケースは基本的に自動で行われるため、このメソッドにはisRepaceオプションは付与しない
         ''' </summary>
         ''' <param name="con"></param>
         ''' <param name="isAutoLoadAttr"></param>
@@ -399,14 +400,21 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 自動で登録されないコントロールを手動でGearsMediatorに登録する
+        ''' 自動で登録されないコントロールを手動でGearsMediatorに登録する(データソース指定)<br/>
+        ''' 先行して登録されているコントロールを明示的に入れ替えたい場合は、isReplaceをTrueに設定する
         ''' </summary>
         ''' <param name="con"></param>
         ''' <param name="ds"></param>
+        ''' <param name="isReplace"></param>
+        ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Function GAdd(ByVal con As Control, ByVal ds As GearsDataSource) As gRuleExpression
+        Public Function GAdd(ByVal con As Control, ByVal ds As GearsDataSource, Optional ByVal isReplace As Boolean = False) As gRuleExpression
             Dim gcon As GearsControl = New GearsControl(con, ds)
-            GMediator.addControl(gcon)
+            If isReplace Then
+                GMediator.replaceControl(gcon)
+            Else
+                GMediator.addControl(gcon)
+            End If
             Return New gRuleExpression(con, GMediator)
         End Function
 
