@@ -698,7 +698,12 @@ Namespace Gears.DataSource
                     params.Add(pName, value)
                 End If
             ElseIf filter.Value Is Nothing Then
-                list.Add(part + formatColumn(filter) + " IS NULL") '値がNothingの場合、NULLで比較
+                '値がNothingの場合、NULLで比較
+                If filter.Operand = "<>" Then
+                    list.Add(part + formatColumn(filter) + " IS NOT NULL") 'NEQの際はNot Nullを設定
+                Else
+                    list.Add(part + formatColumn(filter) + " IS NULL")
+                End If
             Else
                 isAdd = False
             End If
