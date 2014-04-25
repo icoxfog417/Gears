@@ -113,6 +113,19 @@ Namespace Gears.DataSource
         End Sub
 
         ''' <summary>
+        ''' 楽観ロック用の列の取得
+        ''' </summary>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function getLockCheckColumns() As List(Of String)
+            Dim locks As New List(Of String)
+            For Each item As KeyValuePair(Of String, LockType) In TargetTable.LockCheckColumn
+                locks.Add(item.Key)
+            Next
+            Return locks
+        End Function
+
+        ''' <summary>
         ''' SQL実行結果から楽観ロック用列の値を取得する
         ''' </summary>
         ''' <returns></returns>
