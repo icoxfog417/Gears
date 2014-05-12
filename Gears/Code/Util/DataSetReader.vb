@@ -111,6 +111,26 @@ Namespace Gears.Util
             Return DataSetReader.Item(row, colIndex)
         End Function
 
+        ''' <summary>指定行、指定列の値を取得する(列名指定)</summary>
+        ''' <param name="table"></param>
+        ''' <param name="colName"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        <Runtime.CompilerServices.Extension()> _
+        Public Function ItemOrDefault(ByVal table As DataTable, ByVal colName As String, Optional ByVal rowIndex As Integer = 0) As Object
+            Return DataSetReader.Item(table, colName, rowIndex)
+        End Function
+
+
+        ''' <summary>指定行、指定列の値を取得する(列番号指定)</summary>
+        ''' <param name="table"></param>
+        ''' <param name="colIndex"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        <Runtime.CompilerServices.Extension()> _
+        Public Function ItemOrDefault(ByVal table As DataTable, ByVal colIndex As Integer, Optional ByVal rowIndex As Integer = 0) As Object
+            Return DataSetReader.Item(table, colIndex, rowIndex)
+        End Function
 
         ''' <summary>
         ''' JSONへ変換する
