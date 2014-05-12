@@ -179,20 +179,20 @@ Namespace Gears.DataSource
 
         ''' <summary>選択/更新項目(SqlSelectItem)を作成するためのユーティリティ</summary>
         ''' <param name="col"></param>
-        ''' <param name="pf"></param>
+        ''' <param name="paramName"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function S(ByVal col As String, Optional ByVal pf As String = "") As SqlSelectItem
-            Return New SqlSelectItem(col, pf)
+        Public Shared Function S(ByVal col As String, Optional ByVal paramName As String = "") As SqlSelectItem
+            Return New SqlSelectItem(col, paramName)
         End Function
 
         ''' <summary>条件(SqlFilterItem)を作成するためのユーティリティ</summary>
         ''' <param name="col"></param>
-        ''' <param name="pf"></param>
+        ''' <param name="paramName"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Shared Function F(ByVal col As String, Optional ByVal pf As String = "") As SqlFilterItem
-            Return New SqlFilterItem(col, pf)
+        Public Shared Function F(ByVal col As String, Optional ByVal paramName As String = "") As SqlFilterItem
+            Return New SqlFilterItem(col, paramName)
         End Function
 
         ''' <summary>Table/View(SqlDataSource)を作成するためのユーティリティ</summary>
@@ -229,7 +229,7 @@ Namespace Gears.DataSource
 
             Dim ds As New SqlDataSource("(" + sql + ")", suffix)
             For Each item As KeyValuePair(Of String, Object) In param
-                ds.addParameter(item.Key, item.Value)
+                ds.addParameter("dp" + item.Key, item.Value) '本体のWhere句と変数名がバッティングしないよう調整
             Next
 
             Return ds

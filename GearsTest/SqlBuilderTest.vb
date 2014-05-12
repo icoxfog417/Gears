@@ -33,13 +33,12 @@ Namespace GearsTest
                     answer = " SELECT t.[COL1] AS [COL1_IS_COLUMN1], t.[COL2],count(*) AS [件数] FROM SCHEMA.[TAB] t WHERE t.[COL1] = @p1 GROUP BY t.[COL1],t.[COL2] ORDER BY t.[COL1] ASC "
             End Select
 
-            sqlbd.addSelection(SqlBuilder.S("COL1", "t").asName("COL1_IS_COLUMN1").inGroup.ASC)
-            sqlbd.addSelection(SqlBuilder.S("COL2", "t").inGroup)
+            sqlbd.addSelection(SqlBuilder.S("COL1").pf("t").asName("COL1_IS_COLUMN1").inGroup.ASC)
+            sqlbd.addSelection(SqlBuilder.S("COL2").pf("t").inGroup)
             sqlbd.addSelection(SqlBuilder.S("count(*)").asNoFormat.asName("件数"))
             sqlbd.DataSource = (SqlBuilder.DS("TAB", "t").inSchema("SCHEMA"))
 
-            Dim filter As SqlFilterItem = SqlBuilder.F("COL1", "t").eq("xxx")
-            filter.ParamName = "p1"
+            Dim filter As SqlFilterItem = SqlBuilder.F("COL1", "p1").pf("t").eq("xxx")
             sqlbd.addFilter(filter)
 
             Dim sql As String = sqlbd.confirmSql(ActionType.SEL, True)

@@ -138,10 +138,10 @@ Namespace Gears.DataSource
             End Set
         End Property
 
-        Public Sub New(ByVal col As String, Optional ByVal px As String = "")
+        Public Sub New(ByVal col As String, Optional ByVal paramName As String = "")
             MyBase.New()
             _column = col
-            Prefix = px
+            Me.ParamName = paramName
         End Sub
 
         Public Sub New(ByVal sqlf As SqlFilterItem, Optional ByVal val As Object = Nothing)
