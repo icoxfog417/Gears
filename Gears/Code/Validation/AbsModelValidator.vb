@@ -83,6 +83,12 @@ Namespace Gears.Validation
             End Get
         End Property
 
+        ''' <summary>検証結果が途中でFalseになっても処理を続行するか否か</summary>
+        ''' <value></value>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Property IsStockError As Boolean = False
+
         Private _errorMessage As String = ""
         ''' <summary>検証結果メッセージを取得する</summary>
         Public Property ErrorMessage As String
@@ -124,9 +130,8 @@ Namespace Gears.Validation
         ''' ModelValidationMethodアノテーションの付与された、返り値が BooleanのPublicメソッドを実行していく
         ''' </summary>
         ''' <param name="sqlb">バリデーション対象のSqlBuilder</param>
-        ''' <param name="isStockError">致命的エラーがあっても続行してエラーをため続ける場合はTrue</param>
         ''' <returns></returns>
-        Public Function Validate(ByVal sqlb As SqlBuilder, Optional ByVal isStockError As Boolean = False) As ValidationResults
+        Public Function Validate(ByVal sqlb As SqlBuilder) As ValidationResults
             'ModelValidationMethodを抽出
             Dim methods As List(Of ModelValidator) _
                 = (From m As MethodInfo In Me.GetType.GetMethods
@@ -135,7 +140,7 @@ Namespace Gears.Validation
                   Order By attr.Order
                   Select CType([Delegate].CreateDelegate(GetType(ModelValidator), Me, m.Name), ModelValidator)).ToList
 
-            Validate(sqlb, methods, isStockError)
+            Validate(sqlb, methods)
 
             Return _validResults
 
@@ -146,7 +151,6 @@ Namespace Gears.Validation
         ''' </summary>
         ''' <param name="validatee">バリデーション対象のSqlBuilder</param>
         ''' <param name="validates">バリデーションメソッドのリスト</param>
-        ''' <param name="isStockError">致命的エラーがあっても続行してエラーをため続ける場合はTrue</param>
         ''' <returns></returns>
         ''' <remarks>
         ''' <example>
@@ -163,7 +167,7 @@ Namespace Gears.Validation
         ''' </para>
         ''' </example>
         ''' </remarks>
-        Public Function Validate(ByVal validatee As SqlBuilder, ByVal validates As List(Of ModelValidator), Optional ByVal isStockError As Boolean = False) As ValidationResults
+        Public Function Validate(ByVal validatee As SqlBuilder, ByVal validates As List(Of ModelValidator)) As ValidationResults
             _validResults.Clear()
 
             '検証処理のセットアップ
@@ -200,7 +204,7 @@ Namespace Gears.Validation
                             _validResults.Add(ValidationResultType.Alert, _errorMessage, _errorSource)
                         Else
                             _validResults.Add(ValidationResultType.Critical, _errorMessage, _errorSource)
-                            If Not isStockError Then Exit For
+                            If Not IsStockError Then Exit For
                         End If
                     End If
 
