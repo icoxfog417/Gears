@@ -1028,8 +1028,9 @@ Namespace Gears
         ''' </summary>
         ''' <param name="result"></param>
         ''' <param name="label"></param>
+        ''' <returns></returns>
         ''' <remarks></remarks>
-        Public Sub LogToLabel(ByVal result As Boolean, ByRef label As Label)
+        Public Function LogToLabel(ByVal result As Boolean, ByRef label As Label) As Boolean
 
             Dim emsg As String = ""
             If GLog.Count > 0 Then
@@ -1042,9 +1043,9 @@ Namespace Gears
                     End If
                 End If
             End If
-            LogToLabel(result, "処理は正常に行われました", emsg, label)
+            Return LogToLabel(result, "処理は正常に行われました", emsg, label)
 
-        End Sub
+        End Function
 
         ''' <summary>
         ''' 指定されたラベルに対し、メッセージをセットします<br/>
@@ -1055,8 +1056,9 @@ Namespace Gears
         ''' <param name="label">メッセージをセットするラベル</param>
         ''' <param name="successMsg">成功時メッセージ</param>
         ''' <param name="result">処理結果のBoolean</param>
+        ''' <returns></returns>
         ''' <remarks></remarks>
-        Protected Sub LogToLabel(ByVal result As Boolean, ByVal successMsg As String, ByVal errorMsg As String, ByRef label As Label)
+        Protected Function LogToLabel(ByVal result As Boolean, ByVal successMsg As String, ByVal errorMsg As String, ByRef label As Label) As Boolean
             Dim css As String = label.CssClass
 
             '既存スタイルを消去
@@ -1077,7 +1079,9 @@ Namespace Gears
                 label.CssClass += " g-msg-error"
             End If
 
-        End Sub
+            Return result
+
+        End Function
 
         ''' <summary>
         ''' クエリ引数を取得する
