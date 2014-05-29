@@ -753,13 +753,13 @@ Namespace Gears.DataSource
 
                     'キーを更新するUpdateは、許可されている場合のみOK
                     If isKeyUpdateOccur And Not sqlb.IsPermitOtherKeyUpdate Then
-                        Throw New GearsSqlException("キーの変更処理は許可されていません(PermitOtherKeyUpdate:False)")
+                        Throw New GearsSqlException(sqlb.Action, "キーの変更処理は許可されていません(PermitOtherKeyUpdate:False)")
                     End If
 
                 ElseIf keySelection.Count > 0 Then 'キー選択がなく、キーの更新がある場合それをフィルタとして設定
                     keySelection.ForEach(Sub(s) selSqlb.addFilter(s.toFilter))
                 Else
-                    Throw New GearsSqlException("キー項目が設定されていないか空白です", "更新対象のテーブルのキーを表すGearsControlに対しsetAskey()を行うか、名称に__KEYを含めるかし、キー情報を設定してください")
+                    Throw New GearsSqlException(sqlb.Action, "キー項目が設定されていないか空白です", "更新対象のテーブルのキーを表すGearsControlに対しsetAskey()を行うか、名称に__KEYを含めるかし、キー情報を設定してください")
                 End If
 
                 'SELECTを実行
