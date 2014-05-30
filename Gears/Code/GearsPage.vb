@@ -7,6 +7,7 @@ Imports System.Web
 Imports System.Web.Security
 Imports System.Text
 Imports System.Reflection
+Imports System.Globalization
 Imports Gears.Validation
 Imports Gears.DataSource
 Imports Gears.Util
@@ -49,6 +50,9 @@ Namespace Gears
         ''' <summary>権限の有無によって切り替える属性(VISIBLE/ENABLEなど)</summary>
         Public Const A_ROLE_EVAL_ACTION As String = "ROLEEVALACTION"
 
+        ''' <summary>グローバル化を行う対象を示す属性名</summary>
+        Public Const A_GLOBALIZE_TARGET As String = "GGLOBALIZE"
+
         ''' <summary>
         ''' ログ出力を行うか否かの引数指定<br/>
         ''' gs_log_out=trueを設定することでログの出力が可能
@@ -66,6 +70,9 @@ Namespace Gears
 
         ''' <summary>ViewStateに値を設定する際の区切り文字</summary>
         Protected Const VIEW_STATE_SEPARATOR As String = "/"
+
+        ''' <summary>デフォルトで使用するグローバルリソースファイル</summary>
+        Protected Overridable Property GearsGlobalResource As String = "GearsResource"
 
         Private _isNeedJudgeReload As Boolean = True
         ''' <summary>リロードを判定するか否かのフラグ</summary>
@@ -162,6 +169,9 @@ Namespace Gears
 
             'コントロールへのデータ/アトリビュートのセット
             setUpPageControls()
+
+            'ローカライゼーションを行う
+            globalizeControl(Me)
 
             'ログ出力モードの場合トレースを開始する
             If IsLoggingMode() Then
@@ -348,6 +358,22 @@ Namespace Gears
             End If
 
         End Sub
+
+        ''' <summary>
+        ''' 指定コントロールについて、ローカライゼーションを行う
+        ''' </summary>
+        ''' <param name="target"></param>
+        ''' <remarks></remarks>
+        Protected Sub globalizeControl(ByVal target As Control)
+            ControlSearcher.fetchControls(target, Sub(control As Control, ByRef dto As GearsDTO)
+                                                      Dim itext As ITextControl = CType(control, ITextControl)
+                                                      itext.Text = GGlobalize(itext.Text, GearsControl.getControlAttribute(control, A_GLOBALIZE_TARGET))
+                                                  End Sub,
+                                              Function(control As Control) As Boolean
+                                                  Return TypeOf control Is ITextControl AndAlso Not String.IsNullOrEmpty(GearsControl.getControlAttribute(control, A_GLOBALIZE_TARGET))
+                                              End Function)
+        End Sub
+
 
         ''' <summary>
         ''' 登録済みのコントロールを取得する(id指定)
@@ -1080,6 +1106,47 @@ Namespace Gears
             End If
 
             Return result
+
+        End Function
+
+        ''' <summary>
+        ''' サーバーにインストールされたCultureとCurrentCultureが異なる場合、resourceKeyを使用しリソースファイルから値を取得する。<br/>
+        ''' seeGlobal=Trueの場合、まずグローバルリソースを参照しなければローカルリソースを参照する。
+        ''' </summary>
+        ''' <param name="message"></param>
+        ''' <param name="resourceKey"></param>
+        ''' <param name="seeGlobal"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function GGlobalize(ByVal message As String, ByVal resourceKey As String, Optional ByVal seeGlobal As Boolean = True) As Object
+            Dim serverCulture As Globalization.CultureInfo = CultureInfo.InstalledUICulture
+            Dim currentCulture As Globalization.CultureInfo = CultureInfo.CurrentCulture
+
+            If serverCulture.Equals(currentCulture) Then
+                Return message
+            Else
+                If seeGlobal Then
+                    Return GetResource(resourceKey)
+                Else
+                    Return GetLocalResourceObject(resourceKey)
+                End If
+            End If
+
+        End Function
+
+        ''' <summary>
+        ''' 与えられたリソースキーで、まずグローバルリソースを参照しなければローカルリソースを参照する。
+        ''' </summary>
+        ''' <param name="resourceKey"></param>
+        ''' <returns></returns>
+        ''' <remarks></remarks>
+        Public Function GetResource(ByVal resourceKey As String) As Object
+            Dim resource As Object = GetGlobalResourceObject(GearsGlobalResource, resourceKey)
+            If resource Is Nothing Then
+                resource = GetLocalResourceObject(resourceKey)
+            End If
+
+            Return resource
 
         End Function
 
