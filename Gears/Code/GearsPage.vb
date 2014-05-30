@@ -1135,15 +1135,15 @@ Namespace Gears
         End Function
 
         ''' <summary>
-        ''' 与えられたリソースキーで、まずグローバルリソースを参照しなければローカルリソースを参照する。
+        ''' 与えられたリソースキーで、まずローカルリソースを参照しなければグローバルリソースを参照する。
         ''' </summary>
         ''' <param name="resourceKey"></param>
         ''' <returns></returns>
         ''' <remarks></remarks>
         Public Function GetResource(ByVal resourceKey As String) As Object
-            Dim resource As Object = GetGlobalResourceObject(GearsGlobalResource, resourceKey)
+            Dim resource As Object = GetLocalResourceObject(resourceKey)
             If resource Is Nothing Then
-                resource = GetLocalResourceObject(resourceKey)
+                resource = GetGlobalResourceObject(GearsGlobalResource, resourceKey)
             End If
 
             Return resource
